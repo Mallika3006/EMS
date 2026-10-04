@@ -4,7 +4,9 @@
 
 <head>
     <title>My Profile - StaffSync</title>
+
     <link rel="stylesheet" th:href="@{/style.css}">
+    <link rel="icon" type="image/x-icon" th:href="@{/favicon.ico}">
 </head>
 
 <body>
@@ -33,9 +35,10 @@
 
 </div>
 
+
 <script>
 
-    fetch('/employees/me')
+    fetch('/employees/me/profile-details')
         .then(response => {
 
             if (!response.ok) {
@@ -53,11 +56,15 @@
                          class="profile-photo">`
                 : `<p>No profile photo uploaded.</p>`;
 
+
             document.getElementById("profile").innerHTML = `
 
                 <div class="profile-photo-container">
                     ${photoHtml}
                 </div>
+
+
+                <h3>Personal Information</h3>
 
                 <div class="profile-row">
                     <span class="profile-label">Employee ID</span>
@@ -66,47 +73,118 @@
 
                 <div class="profile-row">
                     <span class="profile-label">First Name</span>
-                    <span>${employee.firstName}</span>
+                    <span>${employee.firstName ?? "Not available"}</span>
                 </div>
 
                 <div class="profile-row">
                     <span class="profile-label">Last Name</span>
-                    <span>${employee.lastName}</span>
+                    <span>${employee.lastName ?? "Not available"}</span>
                 </div>
 
                 <div class="profile-row">
                     <span class="profile-label">Email</span>
-                    <span>${employee.email}</span>
+                    <span>${employee.email ?? "Not available"}</span>
                 </div>
 
                 <div class="profile-row">
                     <span class="profile-label">Phone</span>
-                    <span>${employee.phone}</span>
+                    <span>${employee.phone ?? "Not available"}</span>
                 </div>
 
                 <div class="profile-row">
                     <span class="profile-label">Date of Birth</span>
-                    <span>${employee.dateOfBirth}</span>
+                    <span>${employee.dateOfBirth ?? "Not available"}</span>
                 </div>
 
                 <div class="profile-row">
                     <span class="profile-label">Hire Date</span>
-                    <span>${employee.hireDate}</span>
+                    <span>${employee.hireDate ?? "Not available"}</span>
                 </div>
 
                 <div class="profile-row">
                     <span class="profile-label">Address</span>
-                    <span>${employee.address}</span>
+                    <span>${employee.address ?? "Not available"}</span>
+                </div>
+
+
+                <h3>Work Information</h3>
+
+                <div class="profile-row">
+                    <span class="profile-label">
+                        Department
+                    </span>
+                    <span>
+                        ${employee.departmentName ?? "Not assigned"}
+                    </span>
                 </div>
 
                 <div class="profile-row">
-                    <span class="profile-label">Designation ID</span>
-                    <span>${employee.designationId ?? "Not assigned"}</span>
+                    <span class="profile-label">
+                        Designation
+                    </span>
+                    <span>
+                        ${employee.designationTitle ?? "Not assigned"}
+                    </span>
+                </div>
+
+
+                <h3>Manager</h3>
+
+                <div class="profile-row">
+                    <span class="profile-label">
+                        Name
+                    </span>
+                    <span>
+                        ${employee.managerName ?? "Not assigned"}
+                    </span>
                 </div>
 
                 <div class="profile-row">
-                    <span class="profile-label">Team ID</span>
-                    <span>${employee.teamId ?? "Not assigned"}</span>
+                    <span class="profile-label">
+                        Email
+                    </span>
+                    <span>
+                        ${employee.managerEmail ?? "Not available"}
+                    </span>
+                </div>
+
+                <div class="profile-row">
+                    <span class="profile-label">
+                        Phone
+                    </span>
+                    <span>
+                        ${employee.managerPhone ?? "Not available"}
+                    </span>
+                </div>
+
+
+                <h3>HR</h3>
+
+                <div class="profile-row">
+                    <span class="profile-label">
+                        Name
+                    </span>
+                    <span>
+                        ${employee.hrName ?? "Not assigned"}
+                    </span>
+                </div>
+
+                <div class="profile-row">
+                    <span class="profile-label">
+                        Email
+                    </span>
+                    <span>
+                        ${employee.hrEmail ?? "Not available"}
+                    </span>
+                </div>
+
+                <div class="profile-row">
+                    <span class="profile-label">
+                        Phone
+                    </span>
+                    <span>
+                        ${employee.hrPhone ?? "Not available"}
+                    </span>
                 </div>
 
             `;

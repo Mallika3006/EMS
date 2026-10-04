@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -14,7 +15,11 @@
     <h1>My Department</h1>
 
     <div class="card" id="department">
-        <p class="loading">Loading department...</p>
+
+        <p class="loading">
+            Loading department...
+        </p>
+
     </div>
 
     <a class="back-link" href="/employee-dashboard">
@@ -22,6 +27,7 @@
     </a>
 
 </div>
+
 
 <script>
 
@@ -33,6 +39,7 @@
             }
 
             return response.json();
+
         })
 
         .then(department => {
@@ -47,7 +54,7 @@
                         Department ID
                     </span>
                     <span>
-                        ${department.departmentId}
+                        ${department.departmentId ?? "Not available"}
                     </span>
                 </div>
 
@@ -56,7 +63,7 @@
                         Name
                     </span>
                     <span>
-                        ${department.departmentName}
+                        ${department.departmentName ?? "Not available"}
                     </span>
                 </div>
 
@@ -65,7 +72,7 @@
                         Location
                     </span>
                     <span>
-                        ${department.location}
+                        ${department.location ?? "Not available"}
                     </span>
                 </div>
 
@@ -74,11 +81,12 @@
                         Description
                     </span>
                     <span>
-                        ${department.description}
+                        ${department.description ?? "Not available"}
                     </span>
                 </div>
 
             `;
+
         })
 
         .catch(error => {

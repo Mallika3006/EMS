@@ -69,7 +69,6 @@ public class ProjectService {
 
     // SEARCH BY NAME
     public List<Project> searchByProjectName(String projectName) {
-
         return projectRepository.searchByProjectName(projectName);
     }
 
@@ -109,7 +108,6 @@ public class ProjectService {
 
     // ONGOING PROJECTS
     public List<Project> getOngoingProjects() {
-
         return projectRepository.getOngoingProjects();
     }
 
@@ -124,33 +122,28 @@ public class ProjectService {
         );
     }
 
-    // GET PROJECTS OF LOGGED-IN EMPLOYEE'S TEAM
-    // Temporarily kept on JPA because
-    // Team-Project relationship will be converted later.
-    public List<Project> getMyProjects() {
-
-        String username =
-                org.springframework.security.core.context.SecurityContextHolder
-                        .getContext()
-                        .getAuthentication()
-                        .getName();
+    // GET PROJECTS OF LOGGED-IN EMPLOYEE
+    public List<Project> getMyProjects(String username) {
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "User not found"
+                                "User not found: " + username
                         ));
 
         if (user.getEmployee() == null ||
-                user.getEmployee().getTeam() == null) {
+                user.getEmployee().getEmployeeId() == null) {
 
             throw new ResourceNotFoundException(
-                    "Employee or team not found"
+                    "Employee not assigned to this user"
             );
         }
 
-        return user.getEmployee()
-                .getTeam()
-                .getProjects();
+        Integer employeeId =
+                user.getEmployee().getEmployeeId();
+
+        return projectRepository.getProjectsByEmployeeId(
+                employeeId
+        );
     }
 }

@@ -34,6 +34,35 @@ public class PageController {
 
 
     // ==========================================
+// MANAGER FEATURES
+// ==========================================
+
+    @GetMapping("/manager/profile")
+    public String managerProfile() {
+        return "manager/profile";
+    }
+
+    @GetMapping("/manager/profile/edit")
+    public String editManagerProfile() {
+        return "manager/edit-profile";
+    }
+
+    @GetMapping("/manager/my-attendance")
+    public String managerAttendance() {
+        return "manager/my-attendance";
+    }
+
+    @GetMapping("/manager/my-leaves")
+    public String managerLeaves() {
+        return "manager/my-leaves";
+    }
+
+    @GetMapping("/manager/my-payroll")
+    public String managerPayroll() {
+        return "manager/my-payroll";
+    }
+
+    // ==========================================
     // EMPLOYEE FEATURES
     // ==========================================
 
@@ -65,11 +94,6 @@ public class PageController {
     @GetMapping("/my-tasks")
     public String myTasks() {
         return "employee/my-tasks";
-    }
-
-    @GetMapping("/my-team")
-    public String myTeam() {
-        return "employee/my-team";
     }
 
     @GetMapping("/my-department")
@@ -161,21 +185,6 @@ public class PageController {
         return "hr/teams";
     }
 
-    @GetMapping("/hr/teams/{id}")
-    public String hrTeamDetails(
-            @PathVariable Integer id,
-            Model model) {
-
-        model.addAttribute("teamId", id);
-        return "hr/team-details";
-    }
-
-    @GetMapping("/hr/teams/{id}/edit")
-    public String editHrTeam(@PathVariable Integer id, Model model) {
-        model.addAttribute("teamId", id);
-        return "hr/team-edit";
-    }
-
     @GetMapping("/hr/projects")
     public String hrProjects() {
         return "hr/projects";
@@ -199,5 +208,48 @@ public class PageController {
         model.addAttribute("projectId", id);
 
         return "hr/project-edit";
+    }
+
+    @GetMapping("/hr/tasks")
+    public String hrTasks() {
+        return "hr/tasks";
+    }
+
+    @GetMapping("/hr/tasks/{id}")
+    public String hrTaskDetails(
+            @PathVariable Integer id,
+            Model model) {
+
+        model.addAttribute("taskId", id);
+
+        return "hr/task-details";
+    }
+
+    @GetMapping("/hr/tasks/{id}/edit")
+    public String editHrTask(
+            @PathVariable Integer id,
+            Model model) {
+
+        model.addAttribute("taskId", id);
+
+        return "hr/task-edit";
+    }
+
+// HR - EMPLOYEE ATTENDANCE
+    @GetMapping("/hr/employee-attendance")
+    public String hrEmployeeAttendance() {
+        return "hr/employee-attendance";
+    }
+
+// HR - EMPLOYEE LEAVES
+    @GetMapping("/hr/employee-leaves")
+    public String hrEmployeeLeaves() {
+        return "hr/employee-leaves";
+    }
+
+// HR - EMPLOYEE PAYROLL
+    @GetMapping("/hr/employee-payroll")
+    public String hrEmployeePayroll() {
+        return "hr/employee-payroll";
     }
 }

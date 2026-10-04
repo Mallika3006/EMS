@@ -4,6 +4,7 @@
 
 <head>
     <title>My Projects - StaffSync</title>
+
     <link rel="stylesheet" th:href="@{/style.css}">
 </head>
 
@@ -11,7 +12,6 @@
 
 <div class="container">
 
-    ```
     <h1>My Projects</h1>
 
     <div class="card" id="projects">
@@ -22,13 +22,14 @@
 
     </div>
 
+    <br>
 
     <a class="back-link" href="/employee-dashboard">
         ← Back to Dashboard
     </a>
-    ```
 
 </div>
+
 
 <script>
 
@@ -63,25 +64,38 @@
             // NO PROJECTS
             // =====================================================
 
-            if (projectList.length === 0) {
+            if (
+                !projectList ||
+                projectList.length === 0
+            ) {
 
-                projectsDiv.innerHTML =
+                projectsDiv.innerHTML = `
 
-                    "<p class='empty-message'>" +
-                    "No projects found." +
-                    "</p>";
+                    <h3>My Project Records</h3>
+
+                    <p class="empty-message">
+                        No projects found.
+                    </p>
+
+                `;
 
                 return;
             }
 
 
             // =====================================================
-            // SEPARATE COMPLETED AND NOT COMPLETED
+            // GET TODAY'S DATE
             // =====================================================
 
             const today =
-                new Date().toISOString().split("T")[0];
+                new Date()
+                    .toISOString()
+                    .split("T")[0];
 
+
+            // =====================================================
+            // SEPARATE COMPLETED AND CURRENT/UPCOMING
+            // =====================================================
 
             const completedProjects =
                 projectList.filter(project =>
@@ -92,7 +106,7 @@
                 );
 
 
-            const notCompletedProjects =
+            const activeProjects =
                 projectList.filter(project =>
 
                     !project.endDate ||
@@ -107,12 +121,17 @@
 
             function createProjectTable(projects) {
 
-                if (projects.length === 0) {
+                if (
+                    !projects ||
+                    projects.length === 0
+                ) {
 
                     return `
+
                         <p class="empty-message">
                             No projects in this section.
                         </p>
+
                     `;
 
                 }
@@ -122,17 +141,20 @@
 
                     <table>
 
-                        <tr>
+                        <thead>
 
-                            <th>Project ID</th>
+                            <tr>
 
-                            <th>Project Name</th>
+                                <th>Project ID</th>
+                                <th>Project Name</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
 
-                            <th>Start Date</th>
+                            </tr>
 
-                            <th>End Date</th>
+                        </thead>
 
-                        </tr>
+                        <tbody>
 
                 `;
 
@@ -144,11 +166,11 @@
                         <tr>
 
                             <td>
-                                ${project.projectId}
+                                ${project.projectId ?? "-"}
                             </td>
 
                             <td>
-                                ${project.projectName}
+                                ${project.projectName ?? "-"}
                             </td>
 
                             <td>
@@ -166,7 +188,13 @@
                 });
 
 
-                html += `</table>`;
+                html += `
+
+                        </tbody>
+
+                    </table>
+
+                `;
 
                 return html;
 
@@ -174,10 +202,10 @@
 
 
             // =====================================================
-            // DISPLAY SECTIONS
+            // DISPLAY PROJECT SECTIONS
             // =====================================================
 
-            let html = `
+            projectsDiv.innerHTML = `
 
                 <h3>My Project Records</h3>
 
@@ -185,12 +213,10 @@
                 <details>
 
                     <summary>
-                        Completed
+                        Active / Upcoming (${activeProjects.length})
                     </summary>
 
-                    ${createProjectTable(
-                completedProjects
-            )}
+                    ${createProjectTable(activeProjects)}
 
                 </details>
 
@@ -201,19 +227,14 @@
                 <details>
 
                     <summary>
-                        Not Completed
+                        Completed (${completedProjects.length})
                     </summary>
 
-                    ${createProjectTable(
-                notCompletedProjects
-            )}
+                    ${createProjectTable(completedProjects)}
 
                 </details>
 
             `;
-
-
-            projectsDiv.innerHTML = html;
 
         })
 
@@ -224,11 +245,13 @@
 
         .catch(error => {
 
-            document.getElementById("projects").innerHTML =
+            document.getElementById("projects").innerHTML = `
 
-                "<p class='error-message'>" +
-                "Unable to load projects." +
-                "</p>";
+                <p class="error-message">
+                    Unable to load projects.
+                </p>
+
+            `;
 
             console.error(error);
 

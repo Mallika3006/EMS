@@ -3,8 +3,11 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
+    <meta charset="UTF-8">
     <title>My Leaves - StaffSync</title>
+
     <link rel="stylesheet" th:href="@{/style.css}">
+    <link rel="icon" type="image/x-icon" th:href="@{/favicon.ico}">
 </head>
 
 <body>
@@ -84,8 +87,8 @@
 
     <br>
 
-    <a class="back-link" href="/employee-dashboard">
-        ← Back to Dashboard
+    <a class="back-link" href="/manager-dashboard">
+        ← Back to Manager Dashboard
     </a>
 
 </div>
@@ -95,7 +98,7 @@
 
     // =========================================================
     // SET MINIMUM DATE
-    // Employee can apply only for future dates
+    // Manager can apply only for future dates
     // =========================================================
 
     function setMinimumDate() {
@@ -104,10 +107,13 @@
 
         tomorrow.setHours(0, 0, 0, 0);
 
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setDate(
+            tomorrow.getDate() + 1
+        );
 
 
-        const year = tomorrow.getFullYear();
+        const year =
+            tomorrow.getFullYear();
 
         const month =
             String(tomorrow.getMonth() + 1)
@@ -153,7 +159,9 @@
                     toDate.value &&
                     toDate.value < fromDate
                 ) {
+
                     toDate.value = "";
+
                 }
 
             }
@@ -295,9 +303,11 @@
             .then(response => {
 
                 if (!response.ok) {
+
                     throw new Error(
                         "Failed to load leaves"
                     );
+
                 }
 
                 return response.json();
@@ -340,29 +350,41 @@
 
                 const pendingLeaves =
                     leaveList.filter(leave =>
+
                         leave.status &&
+
                         leave.status.toLowerCase() === "pending"
+
                     );
 
 
                 const approvedLeaves =
                     leaveList.filter(leave =>
+
                         leave.status &&
+
                         leave.status.toLowerCase() === "approved"
+
                     );
 
 
                 const withdrawnLeaves =
                     leaveList.filter(leave =>
+
                         leave.status &&
+
                         leave.status.toLowerCase() === "withdrawn"
+
                     );
 
 
                 const rejectedLeaves =
                     leaveList.filter(leave =>
+
                         leave.status &&
+
                         leave.status.toLowerCase() === "rejected"
+
                     );
 
 
@@ -443,6 +465,10 @@
 
             })
 
+
+            // =====================================================
+            // ERROR HANDLING
+            // =====================================================
 
             .catch(error => {
 
@@ -571,6 +597,7 @@
 
             })
 
+
                 .then(response => {
 
                     if (!response.ok) {
@@ -578,6 +605,7 @@
                         throw new Error(
                             "Failed to apply for leave"
                         );
+
                     }
 
                     return response.json();
@@ -622,7 +650,9 @@
         if (!confirm(
             "Are you sure you want to withdraw this leave?"
         )) {
+
             return;
+
         }
 
 
@@ -633,6 +663,7 @@
             }
         )
 
+
             .then(response => {
 
                 if (!response.ok) {
@@ -640,6 +671,7 @@
                     throw new Error(
                         "Failed to withdraw leave"
                     );
+
                 }
 
                 return response.json();

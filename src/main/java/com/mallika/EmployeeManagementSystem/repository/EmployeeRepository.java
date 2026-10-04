@@ -1,9 +1,12 @@
 package com.mallika.EmployeeManagementSystem.repository;
 
+import com.mallika.EmployeeManagementSystem.dto.EmployeeProfileDTO;
 import com.mallika.EmployeeManagementSystem.dto.EmployeeUpdateDTO;
 import com.mallika.EmployeeManagementSystem.exception.ResourceNotFoundException;
+import com.mallika.EmployeeManagementSystem.model.Department;
 import com.mallika.EmployeeManagementSystem.model.Employee;
 import org.springframework.stereotype.Repository;
+import com.mallika.EmployeeManagementSystem.model.Designation;
 
 import javax.sql.DataSource;
 import java.sql.CallableStatement;
@@ -221,50 +224,6 @@ public class EmployeeRepository {
 
 
     // =========================
-    // FILTER BY TEAM
-    // =========================
-
-    public List<Employee> getEmployeesByTeam(
-            Integer teamId) {
-
-        List<Employee> employees =
-                new ArrayList<>();
-
-        String sql =
-                "{call get_employees_by_team(?)}";
-
-        try (
-                Connection connection = dataSource.getConnection();
-                CallableStatement statement =
-                        connection.prepareCall(sql)
-        ) {
-
-            statement.setInt(1, teamId);
-
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
-
-                while (resultSet.next()) {
-
-                    employees.add(
-                            mapEmployee(resultSet)
-                    );
-                }
-            }
-
-        } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error fetching employees by team",
-                    e
-            );
-        }
-
-        return employees;
-    }
-
-
-    // =========================
     // MAP RESULTSET TO EMPLOYEE
     // =========================
 
@@ -317,13 +276,86 @@ public class EmployeeRepository {
                 rs.getString("profile_photo")
         );
 
+
+// =========================
+// DESIGNATION
+// =========================
+
+        Integer designationId =
+                rs.getObject(
+                        "designation_id",
+                        Integer.class
+                );
+
+        if (designationId != null) {
+
+            Designation designation =
+                    new Designation();
+
+            designation.setDesignationId(
+                    designationId
+            );
+
+            employee.setDesignation(
+                    designation
+            );
+        }
+
+        // =========================
+        // DEPARTMENT
+        // =========================
+
+        Integer departmentId =
+                rs.getObject(
+                        "department_id",
+                        Integer.class
+                );
+
+        if (departmentId != null) {
+
+            Department department =
+                    new Department();
+
+            department.setDepartmentId(
+                    departmentId
+            );
+
+            employee.setDepartment(
+                    department
+            );
+        }
+
+
+        // =========================
+        // MANAGER
+        // =========================
+
+        employee.setManagerId(
+                rs.getObject(
+                        "manager_id",
+                        Integer.class
+                )
+        );
+
+
+        // =========================
+        // HR
+        // =========================
+
+        employee.setHrId(
+                rs.getObject(
+                        "hr_id",
+                        Integer.class
+                )
+        );
+
         return employee;
     }
 
 
-// =========================
-// UPDATE MY PROFILE
-// =========================
+    // =========================
+    // UPDATE MY PROFILE
+    // =========================
 
     public Employee updateMyProfile(
             Integer employeeId,
@@ -338,37 +370,31 @@ public class EmployeeRepository {
                         connection.prepareCall(sql)
         ) {
 
-            // 1. employee_id
             statement.setInt(
                     1,
                     employeeId
             );
 
-            // 2. first_name
             statement.setString(
                     2,
                     updateDetails.getFirstName()
             );
 
-            // 3. last_name
             statement.setString(
                     3,
                     updateDetails.getLastName()
             );
 
-            // 4. email
             statement.setString(
                     4,
                     updateDetails.getEmail()
             );
 
-            // 5. phone
             statement.setString(
                     5,
                     updateDetails.getPhone()
             );
 
-            // 6. date_of_birth
             if (updateDetails.getDateOfBirth() != null) {
 
                 statement.setDate(
@@ -386,13 +412,11 @@ public class EmployeeRepository {
                 );
             }
 
-            // 7. address
             statement.setString(
                     7,
                     updateDetails.getAddress()
             );
 
-            // 8. profile_photo
             statement.setString(
                     8,
                     updateDetails.getProfilePhoto()
@@ -421,19 +445,19 @@ public class EmployeeRepository {
     }
 
 
-// =========================
-// UPDATE PROFILE PHOTO
-// =========================
+    // =========================
+    // UPDATE PROFILE PHOTO
+    // =========================
 
     public Employee updateProfilePhoto(
             Integer employeeId,
             String profilePhoto) {
 
-        // First get the existing employee
         Employee employee = getEmployeeById(employeeId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Employee not found with id: " + employeeId
+                                "Employee not found with id: "
+                                        + employeeId
                         )
                 );
 
@@ -446,37 +470,31 @@ public class EmployeeRepository {
                         connection.prepareCall(sql)
         ) {
 
-            // 1. employee_id
             statement.setInt(
                     1,
                     employeeId
             );
 
-            // 2. first_name
             statement.setString(
                     2,
                     employee.getFirstName()
             );
 
-            // 3. last_name
             statement.setString(
                     3,
                     employee.getLastName()
             );
 
-            // 4. email
             statement.setString(
                     4,
                     employee.getEmail()
             );
 
-            // 5. phone
             statement.setString(
                     5,
                     employee.getPhone()
             );
 
-            // 6. date_of_birth
             if (employee.getDateOfBirth() != null) {
 
                 statement.setDate(
@@ -494,13 +512,11 @@ public class EmployeeRepository {
                 );
             }
 
-            // 7. address
             statement.setString(
                     7,
                     employee.getAddress()
             );
 
-            // 8. new profile photo
             statement.setString(
                     8,
                     profilePhoto
@@ -526,5 +542,400 @@ public class EmployeeRepository {
         throw new ResourceNotFoundException(
                 "Employee not found with id: " + employeeId
         );
+    }
+
+
+    // =========================
+    // ASSIGN MANAGER
+    // =========================
+
+    public Employee assignManager(
+            Integer employeeId,
+            Integer managerId) {
+
+        String sql =
+                "{call assign_employee_manager(?, ?)}";
+
+        try (
+                Connection connection = dataSource.getConnection();
+                CallableStatement statement =
+                        connection.prepareCall(sql)
+        ) {
+
+            statement.setInt(
+                    1,
+                    employeeId
+            );
+
+            if (managerId != null) {
+
+                statement.setInt(
+                        2,
+                        managerId
+                );
+
+            } else {
+
+                statement.setNull(
+                        2,
+                        java.sql.Types.INTEGER
+                );
+            }
+
+            try (ResultSet resultSet =
+                         statement.executeQuery()) {
+
+                if (resultSet.next()) {
+
+                    return mapEmployee(resultSet);
+                }
+            }
+
+        } catch (SQLException e) {
+
+            throw new RuntimeException(
+                    "Error assigning manager to employee",
+                    e
+            );
+        }
+
+        throw new ResourceNotFoundException(
+                "Employee not found with id: "
+                        + employeeId
+        );
+    }
+
+
+    // =========================
+    // ASSIGN HR
+    // =========================
+
+    public Employee assignHr(
+            Integer employeeId,
+            Integer hrId) {
+
+        String sql =
+                "{call assign_employee_hr(?, ?)}";
+
+        try (
+                Connection connection = dataSource.getConnection();
+                CallableStatement statement =
+                        connection.prepareCall(sql)
+        ) {
+
+            statement.setInt(
+                    1,
+                    employeeId
+            );
+
+            if (hrId != null) {
+
+                statement.setInt(
+                        2,
+                        hrId
+                );
+
+            } else {
+
+                statement.setNull(
+                        2,
+                        java.sql.Types.INTEGER
+                );
+            }
+
+            try (ResultSet resultSet =
+                         statement.executeQuery()) {
+
+                if (resultSet.next()) {
+
+                    return mapEmployee(resultSet);
+                }
+            }
+
+        } catch (SQLException e) {
+
+            throw new RuntimeException(
+                    "Error assigning HR to employee",
+                    e
+            );
+        }
+
+        throw new ResourceNotFoundException(
+                "Employee not found with id: "
+                        + employeeId
+        );
+    }
+
+
+    // =========================
+    // GET EMPLOYEES BY MANAGER
+    // =========================
+
+    public List<Employee> getEmployeesByManager(
+            Integer managerId) {
+
+        List<Employee> employees =
+                new ArrayList<>();
+
+        String sql =
+                "{call get_employees_by_manager(?)}";
+
+        try (
+                Connection connection = dataSource.getConnection();
+                CallableStatement statement =
+                        connection.prepareCall(sql)
+        ) {
+
+            statement.setInt(
+                    1,
+                    managerId
+            );
+
+            try (ResultSet resultSet =
+                         statement.executeQuery()) {
+
+                while (resultSet.next()) {
+
+                    employees.add(
+                            mapEmployee(resultSet)
+                    );
+                }
+            }
+
+        } catch (SQLException e) {
+
+            throw new RuntimeException(
+                    "Error fetching employees by manager",
+                    e
+            );
+        }
+
+        return employees;
+    }
+
+
+    // =========================
+    // GET EMPLOYEES BY HR
+    // =========================
+
+    public List<Employee> getEmployeesByHr(
+            Integer hrId) {
+
+        List<Employee> employees =
+                new ArrayList<>();
+
+        String sql =
+                "{call get_employees_by_hr(?)}";
+
+        try (
+                Connection connection = dataSource.getConnection();
+                CallableStatement statement =
+                        connection.prepareCall(sql)
+        ) {
+
+            statement.setInt(
+                    1,
+                    hrId
+            );
+
+            try (ResultSet resultSet =
+                         statement.executeQuery()) {
+
+                while (resultSet.next()) {
+
+                    employees.add(
+                            mapEmployee(resultSet)
+                    );
+                }
+            }
+
+        } catch (SQLException e) {
+
+            throw new RuntimeException(
+                    "Error fetching employees by HR",
+                    e
+            );
+        }
+
+        return employees;
+    }
+
+    // =========================
+// GET EMPLOYEE PROFILE DETAILS
+// =========================
+
+    public Optional<EmployeeProfileDTO> getEmployeeProfileDetails(
+            Integer employeeId) {
+
+        String sql =
+                "{call get_employee_profile_details(?)}";
+
+        try (
+                Connection connection = dataSource.getConnection();
+                CallableStatement statement =
+                        connection.prepareCall(sql)
+        ) {
+
+            statement.setInt(1, employeeId);
+
+            try (ResultSet rs = statement.executeQuery()) {
+
+                if (rs.next()) {
+
+                    EmployeeProfileDTO profile =
+                            new EmployeeProfileDTO();
+
+                    // =========================
+                    // EMPLOYEE
+                    // =========================
+
+                    profile.setEmployeeId(
+                            rs.getInt("employee_id")
+                    );
+
+                    profile.setFirstName(
+                            rs.getString("first_name")
+                    );
+
+                    profile.setLastName(
+                            rs.getString("last_name")
+                    );
+
+                    profile.setEmail(
+                            rs.getString("email")
+                    );
+
+                    profile.setPhone(
+                            rs.getString("phone")
+                    );
+
+
+                    // =========================
+                    // DATE OF BIRTH
+                    // =========================
+
+                    if (rs.getDate("date_of_birth") != null) {
+
+                        profile.setDateOfBirth(
+                                rs.getDate("date_of_birth")
+                                        .toLocalDate()
+                        );
+                    }
+
+
+                    // =========================
+                    // HIRE DATE
+                    // =========================
+
+                    if (rs.getDate("hire_date") != null) {
+
+                        profile.setHireDate(
+                                rs.getDate("hire_date")
+                                        .toLocalDate()
+                        );
+                    }
+
+
+                    profile.setAddress(
+                            rs.getString("address")
+                    );
+
+                    profile.setProfilePhoto(
+                            rs.getString("profile_photo")
+                    );
+
+
+                    // =========================
+                    // DEPARTMENT
+                    // =========================
+
+                    profile.setDepartmentId(
+                            rs.getObject(
+                                    "department_id",
+                                    Integer.class
+                            )
+                    );
+
+                    profile.setDepartmentName(
+                            rs.getString("department_name")
+                    );
+
+
+                    // =========================
+                    // DESIGNATION
+                    // =========================
+
+                    profile.setDesignationId(
+                            rs.getObject(
+                                    "designation_id",
+                                    Integer.class
+                            )
+                    );
+
+                    profile.setDesignationTitle(
+                            rs.getString("designation_title")
+                    );
+
+
+                    // =========================
+                    // MANAGER
+                    // =========================
+
+                    profile.setManagerId(
+                            rs.getObject(
+                                    "manager_id",
+                                    Integer.class
+                            )
+                    );
+
+                    profile.setManagerName(
+                            rs.getString("manager_name")
+                    );
+
+                    profile.setManagerEmail(
+                            rs.getString("manager_email")
+                    );
+
+                    profile.setManagerPhone(
+                            rs.getString("manager_phone")
+                    );
+
+
+                    // =========================
+                    // HR
+                    // =========================
+
+                    profile.setHrId(
+                            rs.getObject(
+                                    "hr_id",
+                                    Integer.class
+                            )
+                    );
+
+                    profile.setHrName(
+                            rs.getString("hr_name")
+                    );
+
+                    profile.setHrEmail(
+                            rs.getString("hr_email")
+                    );
+
+                    profile.setHrPhone(
+                            rs.getString("hr_phone")
+                    );
+
+                    return Optional.of(profile);
+                }
+            }
+
+        } catch (SQLException e) {
+
+            throw new RuntimeException(
+                    "Error fetching employee profile details",
+                    e
+            );
+        }
+
+        return Optional.empty();
     }
 }

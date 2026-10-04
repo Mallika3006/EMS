@@ -22,5 +22,10 @@ public class EmployeeUpdateDTO {
     private String address;
 
     private String profilePhoto;
-}
 
+    private Integer departmentId;
+
+    private Integer managerId;
+
+    private Integer hrId;
+}

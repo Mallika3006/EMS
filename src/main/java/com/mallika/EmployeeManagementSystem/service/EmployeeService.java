@@ -1,5 +1,6 @@
 package com.mallika.EmployeeManagementSystem.service;
 
+import com.mallika.EmployeeManagementSystem.dto.EmployeeProfileDTO;
 import com.mallika.EmployeeManagementSystem.dto.EmployeeUpdateDTO;
 import com.mallika.EmployeeManagementSystem.exception.ResourceNotFoundException;
 import com.mallika.EmployeeManagementSystem.model.Employee;
@@ -108,6 +109,9 @@ public class EmployeeService {
             Integer id,
             Employee employeeDetails) {
 
+        Employee existingEmployee =
+                getEmployeeById(id);
+
         EmployeeUpdateDTO updateDetails =
                 new EmployeeUpdateDTO();
 
@@ -136,11 +140,28 @@ public class EmployeeService {
         );
 
         // Keep existing profile photo
-        Employee existingEmployee =
-                getEmployeeById(id);
-
         updateDetails.setProfilePhoto(
                 existingEmployee.getProfilePhoto()
+        );
+
+        // Department
+        if (employeeDetails.getDepartment() != null) {
+
+            updateDetails.setDepartmentId(
+                    employeeDetails
+                            .getDepartment()
+                            .getDepartmentId()
+            );
+        }
+
+        // Manager
+        updateDetails.setManagerId(
+                employeeDetails.getManagerId()
+        );
+
+        // HR
+        updateDetails.setHrId(
+                employeeDetails.getHrId()
         );
 
         return employeeRepository.updateMyProfile(
@@ -220,18 +241,6 @@ public class EmployeeService {
 
         return employeeRepository
                 .getEmployeesByDesignation(designationId);
-    }
-
-
-    // =========================
-    // FILTER BY TEAM
-    // =========================
-
-    public List<Employee> getEmployeesByTeam(
-            Integer teamId) {
-
-        return employeeRepository
-                .getEmployeesByTeam(teamId);
     }
 
 
@@ -317,5 +326,103 @@ public class EmployeeService {
             );
         }
     }
-}
 
+
+    // =========================
+    // ASSIGN MANAGER
+    // =========================
+
+    public Employee assignManager(
+            Integer employeeId,
+            Integer managerId) {
+
+        getEmployeeById(employeeId);
+        getEmployeeById(managerId);
+
+        return employeeRepository.assignManager(
+                employeeId,
+                managerId
+        );
+    }
+
+
+    // =========================
+    // ASSIGN HR
+    // =========================
+
+    public Employee assignHr(
+            Integer employeeId,
+            Integer hrId) {
+
+        getEmployeeById(employeeId);
+        getEmployeeById(hrId);
+
+        return employeeRepository.assignHr(
+                employeeId,
+                hrId
+        );
+    }
+
+
+    // =========================
+    // GET EMPLOYEES BY MANAGER
+    // =========================
+
+    public List<Employee> getEmployeesByManager(
+            Integer managerId) {
+
+        getEmployeeById(managerId);
+
+        return employeeRepository
+                .getEmployeesByManager(managerId);
+    }
+
+
+    // =========================
+    // GET EMPLOYEES BY HR
+    // =========================
+
+    public List<Employee> getEmployeesByHr(
+            Integer hrId) {
+
+        getEmployeeById(hrId);
+
+        return employeeRepository
+                .getEmployeesByHr(hrId);
+    }
+
+    // =========================
+    // GET MY PROFILE DETAILS
+    // =========================
+
+    public EmployeeProfileDTO getMyProfileDetails(
+            String username) {
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found: " + username
+                        )
+                );
+
+        if (user.getEmployee() == null) {
+
+            throw new ResourceNotFoundException(
+                    "No employee profile linked to user: "
+                            + username
+            );
+        }
+
+        Integer employeeId =
+                user.getEmployee().getEmployeeId();
+
+        return employeeRepository
+                .getEmployeeProfileDetails(employeeId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Employee profile not found with id: "
+                                        + employeeId
+                        )
+                );
+    }
+}

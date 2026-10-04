@@ -1,6 +1,5 @@
 package com.mallika.EmployeeManagementSystem.config;
 
-import com.mallika.EmployeeManagementSystem.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -25,8 +24,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(
-            HttpSecurity http,
-            CustomUserDetailsService userDetailsService)
+            HttpSecurity http)
             throws Exception {
 
         http
@@ -69,8 +67,10 @@ public class SecurityConfig {
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
-                                "/style.css"
-                        ).permitAll()
+                                "/style.css",
+                                "/favicon.ico"
+                        )
+                        .permitAll()
 
 
                         // ==========================================
@@ -103,6 +103,12 @@ public class SecurityConfig {
                                 "MANAGER"
                         )
 
+                                // ==========================================
+                                // MANAGER PAGES
+                                // ==========================================
+
+                                .requestMatchers("/manager/**")
+                                .hasRole("MANAGER")
 
                         // ==========================================
                         // HR PAGES
@@ -124,19 +130,21 @@ public class SecurityConfig {
                         // OWN EMPLOYEE DATA
                         // ==========================================
 
-                        .requestMatchers("/employees/me")
+                        .requestMatchers(
+                                "/employees/me",
+                                "/employees/me/profile-details",
+                                "/employees/me/photo"
+                        )
                         .hasAnyRole(
                                 "EMPLOYEE",
                                 "HR",
                                 "MANAGER"
                         )
 
-                        .requestMatchers("/employees/me/photo")
-                        .hasAnyRole(
-                                "EMPLOYEE",
-                                "HR",
-                                "MANAGER"
-                        )
+
+                        // ==========================================
+                        // OWN ATTENDANCE
+                        // ==========================================
 
                         .requestMatchers("/attendance/me")
                         .hasAnyRole(
@@ -145,12 +153,22 @@ public class SecurityConfig {
                                 "MANAGER"
                         )
 
+
+                        // ==========================================
+                        // OWN PAYROLL
+                        // ==========================================
+
                         .requestMatchers("/payrolls/me")
                         .hasAnyRole(
                                 "EMPLOYEE",
                                 "HR",
                                 "MANAGER"
                         )
+
+
+                        // ==========================================
+                        // OWN PROJECTS
+                        // ==========================================
 
                         .requestMatchers("/projects/me")
                         .hasAnyRole(
@@ -159,6 +177,11 @@ public class SecurityConfig {
                                 "MANAGER"
                         )
 
+
+                        // ==========================================
+                        // OWN TASKS
+                        // ==========================================
+
                         .requestMatchers("/tasks/me")
                         .hasAnyRole(
                                 "EMPLOYEE",
@@ -166,12 +189,10 @@ public class SecurityConfig {
                                 "MANAGER"
                         )
 
-                        .requestMatchers("/teams/me/members")
-                        .hasAnyRole(
-                                "EMPLOYEE",
-                                "HR",
-                                "MANAGER"
-                        )
+
+                        // ==========================================
+                        // OWN DEPARTMENT
+                        // ==========================================
 
                         .requestMatchers("/departments/me")
                         .hasAnyRole(
@@ -182,7 +203,23 @@ public class SecurityConfig {
 
 
                         // ==========================================
-                        // LEAVES
+                        // MANAGER - OWN EMPLOYEES
+                        // ==========================================
+
+                        .requestMatchers("/employees/manager/me")
+                        .hasRole("MANAGER")
+
+
+                        // ==========================================
+                        // HR - OWN EMPLOYEES
+                        // ==========================================
+
+                        .requestMatchers("/employees/hr/me")
+                        .hasRole("HR")
+
+
+                        // ==========================================
+                        // LEAVES - OWN
                         // ==========================================
 
                         .requestMatchers(
@@ -218,15 +255,19 @@ public class SecurityConfig {
                                 "ADMIN"
                         )
 
+
+                        // ==========================================
+                        // LEAVES - MANAGEMENT
+                        // ==========================================
+
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/leaves/*"
                         )
                         .hasAnyRole(
-                                "EMPLOYEE",
+                                "ADMIN",
                                 "HR",
-                                "MANAGER",
-                                "ADMIN"
+                                "MANAGER"
                         )
 
                         .requestMatchers(
@@ -278,13 +319,6 @@ public class SecurityConfig {
                         // ==========================================
                         // ADMIN + HR + MANAGER
                         // ==========================================
-
-                        .requestMatchers("/teams/**")
-                        .hasAnyRole(
-                                "ADMIN",
-                                "HR",
-                                "MANAGER"
-                        )
 
                         .requestMatchers("/projects/**")
                         .hasAnyRole(

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Task - StaffSync</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Edit Task</h1>
+
+    <div class="card">
+
+        <form id="taskForm">
+
+            <label>Task Name:</label>
+            <input type="text" id="taskName" required>
+
+            <br><br>
+
+            <label>Description:</label>
+            <textarea id="description"></textarea>
+
+            <br><br>
+
+            <label>Priority:</label>
+            <select id="priority" required>
+                <option value="">Select Priority</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+            </select>
+
+            <br><br>
+
+            <label>Status:</label>
+            <select id="status" required>
+                <option value="">Select Status</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+            </select>
+
+            <br><br>
+
+            <label>Start Date:</label>
+            <input type="date" id="startDate">
+
+            <br><br>
+
+            <label>Due Date:</label>
+            <input type="date" id="dueDate">
+
+            <br><br>
+
+            <label>Project ID:</label>
+            <input type="number" id="projectId">
+
+            <br><br>
+
+            <label>Employee ID:</label>
+            <input type="number" id="employeeId">
+
+            <br><br>
+
+            <button type="submit">
+                Update Task
+            </button>
+
+        </form>
+
+    </div>
+
+
+    <div class="dashboard-links">
+
+        <a href="/hr/tasks">
+            Back to Tasks
+        </a>
+
+        <a href="/hr-dashboard">
+            Back to HR Dashboard
+        </a>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    // =========================
+    // GET TASK ID FROM URL
+    // =========================
+
+    const pathParts =
+        window.location.pathname.split("/");
+
+    const taskId =
+        pathParts[3];
+
+    console.log("Task ID:", taskId);
+
+
+    // =========================
+    // LOAD TASK
+    // =========================
+
+    async function loadTask() {
+
+        try {
+
+            const response =
+                await fetch(
+                    `/tasks/${taskId}`
+                );
+
+
+            if (!response.ok) {
+
+                const errorText =
+                    await response.text();
+
+                console.error(errorText);
+
+                throw new Error(
+                    "Failed to fetch task"
+                );
+            }
+
+
+            const task =
+                await response.json();
+
+
+            document.getElementById(
+                "taskName"
+            ).value =
+                task.taskName ?? "";
+
+
+            document.getElementById(
+                "description"
+            ).value =
+                task.description ?? "";
+
+
+            document.getElementById(
+                "priority"
+            ).value =
+                task.priority ?? "";
+
+
+            document.getElementById(
+                "status"
+            ).value =
+                task.status ?? "";
+
+
+            document.getElementById(
+                "startDate"
+            ).value =
+                task.startDate ?? "";
+
+
+            document.getElementById(
+                "dueDate"
+            ).value =
+                task.dueDate ?? "";
+
+
+            document.getElementById(
+                "projectId"
+            ).value =
+                task.project
+                    ? task.project.projectId
+                    : "";
+
+
+            document.getElementById(
+                "employeeId"
+            ).value =
+                task.assignedTo
+                    ? task.assignedTo.employeeId
+                    : "";
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Error loading task."
+            );
+        }
+    }
+
+
+    // =========================
+    // UPDATE TASK
+    // =========================
+
+    document.getElementById(
+        "taskForm"
+    ).addEventListener(
+        "submit",
+        async function(event) {
+
+            event.preventDefault();
+
+
+            const projectId =
+                document.getElementById(
+                    "projectId"
+                ).value;
+
+
+            const employeeId =
+                document.getElementById(
+                    "employeeId"
+                ).value;
+
+
+            const task = {
+
+                taskName:
+                document.getElementById(
+                    "taskName"
+                ).value,
+
+                description:
+                document.getElementById(
+                    "description"
+                ).value,
+
+                priority:
+                document.getElementById(
+                    "priority"
+                ).value,
+
+                status:
+                document.getElementById(
+                    "status"
+                ).value,
+
+                startDate:
+                    document.getElementById(
+                        "startDate"
+                    ).value || null,
+
+                dueDate:
+                    document.getElementById(
+                        "dueDate"
+                    ).value || null,
+
+                project:
+                    projectId
+                        ? {
+                            projectId:
+                                Number(projectId)
+                        }
+                        : null,
+
+                assignedTo:
+                    employeeId
+                        ? {
+                            employeeId:
+                                Number(employeeId)
+                        }
+                        : null
+            };
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        `/tasks/${taskId}`,
+                        {
+                            method: "PUT",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify(task)
+                        }
+                    );
+
+
+                if (!response.ok) {
+
+                    const errorText =
+                        await response.text();
+
+                    console.error(errorText);
+
+                    throw new Error(
+                        "Failed to update task"
+                    );
+                }
+
+
+                alert(
+                    "Task updated successfully!"
+                );
+
+
+                window.location.href =
+                    "/hr/tasks";
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                alert(
+                    "Error updating task."
+                );
+            }
+
+        }
+    );
+
+
+    // =========================
+    // INITIAL LOAD
+    // =========================
+
+    loadTask();
+
+</script>
+
+</body>
+
+</html>

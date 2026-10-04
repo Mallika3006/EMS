@@ -20,17 +20,31 @@
         <strong sec:authentication="name"></strong>
     </p>
 
+
+    <!-- =====================================================
+         MY PROFILE
+         ===================================================== -->
+
     <div class="card">
 
-        <h3>My Features</h3>
+        <h3>My Profile</h3>
+
+        <a href="/my-profile">
+            View My Profile
+        </a>
+
+    </div>
+
+
+    <!-- =====================================================
+         MY WORK
+         ===================================================== -->
+
+    <div class="card">
+
+        <h3>My Work</h3>
 
         <ul class="dashboard-links">
-
-            <li>
-                <a href="/my-profile">
-                    My Profile
-                </a>
-            </li>
 
             <li>
                 <a href="/my-attendance">
@@ -62,26 +76,21 @@
                 </a>
             </li>
 
-            <li>
-                <a href="/my-team">
-                    My Team
-                </a>
-            </li>
-
-            <li>
-                <a href="/my-department">
-                    My Department
-                </a>
-            </li>
-
         </ul>
 
     </div>
 
+
+    <!-- =====================================================
+         LOGOUT
+         ===================================================== -->
+
     <form action="/logout" method="post">
+
         <button type="submit">
             Logout
         </button>
+
     </form>
 
 </div>

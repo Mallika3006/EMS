@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Payroll - StaffSync</title>
+
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Employee Payroll</h1>
+
+    <!-- SEARCH / FILTERS -->
+
+    <div class="card">
+
+        <h2>Search Payroll</h2>
+
+        <div>
+            <label>Employee ID:</label>
+            <input type="number" id="employeeId">
+
+            <button onclick="searchByEmployee()">
+                Search
+            </button>
+        </div>
+
+        <br>
+
+        <div>
+            <label>Pay Month:</label>
+            <input type="text"
+                   id="payMonth"
+                   placeholder="Example: September 2026">
+
+            <button onclick="searchByMonth()">
+                Search
+            </button>
+        </div>
+
+        <br>
+
+        <div>
+            <label>Employee ID:</label>
+            <input type="number" id="employeeMonthId">
+
+            <label>Pay Month:</label>
+            <input type="text"
+                   id="employeeMonth"
+                   placeholder="Example: September 2026">
+
+            <button onclick="searchEmployeeMonth()">
+                Search
+            </button>
+        </div>
+
+        <br>
+
+        <div>
+            <label>Payment Date:</label>
+            <input type="date" id="paymentDate">
+
+            <button onclick="searchByPaymentDate()">
+                Search
+            </button>
+        </div>
+
+        <br>
+
+        <button onclick="loadPayrolls()">
+            Show All
+        </button>
+
+    </div>
+
+
+    <!-- PAYROLL TABLE -->
+
+    <div class="card">
+
+        <h2>Payroll Records</h2>
+
+        <table border="1"
+               width="100%"
+               cellpadding="10">
+
+            <thead>
+
+            <tr>
+                <th>Payroll ID</th>
+                <th>Employee ID</th>
+                <th>Pay Month</th>
+                <th>Basic Salary</th>
+                <th>Allowances</th>
+                <th>Deductions</th>
+                <th>Net Salary</th>
+                <th>Payment Date</th>
+                <th>Action</th>
+            </tr>
+
+            </thead>
+
+            <tbody id="payrollTableBody">
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    // ==========================================
+    // LOAD ALL PAYROLLS
+    // ==========================================
+
+    function loadPayrolls() {
+
+        fetch('/payrolls')
+            .then(response => {
+
+                if (!response.ok) {
+                    throw new Error("Failed to load payrolls");
+                }
+
+                return response.json();
+            })
+            .then(data => {
+
+                displayPayrolls(data);
+
+            })
+            .catch(error => {
+
+                console.error(error);
+
+                alert("Failed to load payroll records");
+            });
+    }
+
+
+    // ==========================================
+    // SEARCH BY EMPLOYEE
+    // ==========================================
+
+    function searchByEmployee() {
+
+        const employeeId =
+            document.getElementById("employeeId").value;
+
+        if (!employeeId) {
+
+            alert("Please enter Employee ID");
+
+            return;
+        }
+
+        fetch(`/payrolls/employee/${employeeId}`)
+            .then(response => {
+
+                if (!response.ok) {
+                    throw new Error("Employee payroll not found");
+                }
+
+                return response.json();
+            })
+            .then(data => {
+
+                displayPayrolls(data);
+
+            })
+            .catch(error => {
+
+                console.error(error);
+
+                alert("Failed to fetch payroll records");
+            });
+    }
+
+
+    // ==========================================
+    // SEARCH BY MONTH
+    // ==========================================
+
+    function searchByMonth() {
+
+        const payMonth =
+            document.getElementById("payMonth").value;
+
+        if (!payMonth) {
+
+            alert("Please enter Pay Month");
+
+            return;
+        }
+
+        fetch(
+            `/payrolls/month?payMonth=${encodeURIComponent(payMonth)}`
+        )
+            .then(response => {
+
+                if (!response.ok) {
+                    throw new Error("Payroll not found");
+                }
+
+                return response.json();
+            })
+            .then(data => {
+
+                displayPayrolls(data);
+
+            })
+            .catch(error => {
+
+                console.error(error);
+
+                alert("Failed to fetch payroll records");
+            });
+    }
+
+
+    // ==========================================
+    // EMPLOYEE + MONTH
+    // ==========================================
+
+    function searchEmployeeMonth() {
+
+        const employeeId =
+            document.getElementById("employeeMonthId").value;
+
+        const payMonth =
+            document.getElementById("employeeMonth").value;
+
+        if (!employeeId || !payMonth) {
+
+            alert("Please enter Employee ID and Pay Month");
+
+            return;
+        }
+
+        fetch(
+            `/payrolls/employee/${employeeId}/month?payMonth=${encodeURIComponent(payMonth)}`
+        )
+            .then(response => {
+
+                if (!response.ok) {
+                    throw new Error("Payroll not found");
+                }
+
+                return response.json();
+            })
+            .then(data => {
+
+                displayPayrolls(data);
+
+            })
+            .catch(error => {
+
+                console.error(error);
+
+                alert("Failed to fetch payroll records");
+            });
+    }
+
+
+    // ==========================================
+    // SEARCH BY PAYMENT DATE
+    // ==========================================
+
+    function searchByPaymentDate() {
+
+        const paymentDate =
+            document.getElementById("paymentDate").value;
+
+        if (!paymentDate) {
+
+            alert("Please select Payment Date");
+
+            return;
+        }
+
+        fetch(
+            `/payrolls/payment-date?paymentDate=${paymentDate}`
+        )
+            .then(response => {
+
+                if (!response.ok) {
+                    throw new Error("Payroll not found");
+                }
+
+                return response.json();
+            })
+            .then(data => {
+
+                displayPayrolls(data);
+
+            })
+            .catch(error => {
+
+                console.error(error);
+
+                alert("Failed to fetch payroll records");
+            });
+    }
+
+
+    // ==========================================
+    // DISPLAY PAYROLLS
+    // ==========================================
+
+    function displayPayrolls(payrolls) {
+
+        const tableBody =
+            document.getElementById("payrollTableBody");
+
+        tableBody.innerHTML = "";
+
+        if (!payrolls || payrolls.length === 0) {
+
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="9">
+                        No payroll records found
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+        payrolls.forEach(payroll => {
+
+            const employeeId =
+                payroll.employee
+                    ? payroll.employee.employeeId
+                    : "-";
+
+            const row =
+                document.createElement("tr");
+
+            row.innerHTML = `
+
+                <td>${payroll.payrollId}</td>
+
+                <td>${employeeId}</td>
+
+                <td>${payroll.payMonth || "-"}</td>
+
+                <td>${payroll.basicSalary || "-"}</td>
+
+                <td>${payroll.allowances || "-"}</td>
+
+                <td>${payroll.deductions || "-"}</td>
+
+                <td>${payroll.netSalary || "-"}</td>
+
+                <td>${payroll.paymentDate || "-"}</td>
+
+                <td>
+                    <button
+                        onclick="deletePayroll(${payroll.payrollId})">
+                        Delete
+                    </button>
+                </td>
+
+            `;
+
+            tableBody.appendChild(row);
+        });
+    }
+
+
+    // ==========================================
+    // DELETE PAYROLL
+    // ==========================================
+
+    function deletePayroll(id) {
+
+        if (!confirm(
+            "Are you sure you want to delete this payroll record?"
+        )) {
+            return;
+        }
+
+        fetch(`/payrolls/${id}`, {
+            method: "DELETE"
+        })
+            .then(response => {
+
+                if (!response.ok) {
+                    throw new Error("Delete failed");
+                }
+
+                return response.text();
+            })
+            .then(message => {
+
+                alert(message);
+
+                loadPayrolls();
+
+            })
+            .catch(error => {
+
+                console.error(error);
+
+                alert("Failed to delete payroll record");
+            });
+    }
+
+
+    // ==========================================
+    // INITIAL LOAD
+    // ==========================================
+
+    loadPayrolls();
+
+</script>
+
+</body>
+
+</html>

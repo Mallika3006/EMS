@@ -5,8 +5,6 @@ import com.mallika.EmployeeManagementSystem.model.Task;
 import com.mallika.EmployeeManagementSystem.model.User;
 import com.mallika.EmployeeManagementSystem.repository.TaskRepository;
 import com.mallika.EmployeeManagementSystem.repository.UserRepository;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -234,7 +232,10 @@ public class TaskService {
             String direction) {
 
         return taskRepository
-                .sortTasks(field, direction);
+                .sortTasks(
+                        field,
+                        direction
+                );
     }
 
 
@@ -242,27 +243,21 @@ public class TaskService {
     // GET TASKS ASSIGNED TO LOGGED-IN EMPLOYEE
     // =========================================================
 
-    public List<Task> getMyTasks() {
-
-        Authentication authentication =
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication();
-
-        String username =
-                authentication.getName();
+    public List<Task> getMyTasks(String username) {
 
         User user =
                 userRepository
                         .findByUsername(username)
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
-                                        "User not found"
+                                        "User not found: " + username
                                 ));
 
-        if (user.getEmployee() == null) {
+        if (user.getEmployee() == null ||
+                user.getEmployee().getEmployeeId() == null) {
+
             throw new ResourceNotFoundException(
-                    "Employee not found"
+                    "Employee not assigned to this user"
             );
         }
 

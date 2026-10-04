@@ -23,9 +23,13 @@ public class EmployeeResponseDTO {
 
     private String address;
 
+    private Long departmentId;
+
     private Long designationId;
 
-    private Long teamId;
+    private Long managerId;
+
+    private Long hrId;
 
     private String profilePhoto;
 }

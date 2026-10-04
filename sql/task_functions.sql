@@ -198,20 +198,42 @@ $$;
 -- =========================================================
 -- 8. GET TASKS BY EMPLOYEE
 -- =========================================================
-
 CREATE OR REPLACE FUNCTION get_tasks_by_employee(
     p_employee_id INTEGER
 )
-RETURNS SETOF tasks
+RETURNS TABLE (
+    task_id INTEGER,
+    task_name VARCHAR,
+    description TEXT,
+    priority VARCHAR,
+    status VARCHAR,
+    start_date DATE,
+    due_date DATE,
+    project_id INTEGER,
+    assigned_to INTEGER,
+    project_name VARCHAR
+)
 LANGUAGE plpgsql
 AS $$
 BEGIN
 
 RETURN QUERY
-SELECT *
-FROM tasks
-WHERE assigned_to = p_employee_id
-ORDER BY task_id;
+SELECT
+    t.task_id,
+    t.task_name,
+    t.description,
+    t.priority,
+    t.status,
+    t.start_date,
+    t.due_date,
+    t.project_id,
+    t.assigned_to,
+    p.project_name
+FROM tasks t
+         LEFT JOIN projects p
+                   ON t.project_id = p.project_id
+WHERE t.assigned_to = p_employee_id
+ORDER BY t.task_id;
 
 END;
 $$;

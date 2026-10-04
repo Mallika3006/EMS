@@ -3,15 +3,21 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
+
     <title>My Tasks - StaffSync</title>
+
     <link rel="stylesheet" th:href="@{/style.css}">
+
+    <link rel="icon"
+          type="image/x-icon"
+          th:href="@{/favicon.ico}">
+
 </head>
 
 <body>
 
 <div class="container">
 
-    ```
     <h1>My Tasks</h1>
 
     <div class="card" id="tasks">
@@ -22,13 +28,17 @@
 
     </div>
 
+    <br>
 
-    <a class="back-link" href="/employee-dashboard">
+    <a class="back-link"
+       href="/employee-dashboard">
+
         ← Back to Dashboard
+
     </a>
-    ```
 
 </div>
+
 
 <script>
 
@@ -63,13 +73,20 @@
             // NO TASKS
             // =====================================================
 
-            if (taskList.length === 0) {
+            if (
+                !taskList ||
+                taskList.length === 0
+            ) {
 
-                tasksDiv.innerHTML =
+                tasksDiv.innerHTML = `
 
-                    "<p class='empty-message'>" +
-                    "No tasks found." +
-                    "</p>";
+                    <h3>My Task Records</h3>
+
+                    <p class="empty-message">
+                        No tasks found.
+                    </p>
+
+                `;
 
                 return;
             }
@@ -107,12 +124,17 @@
 
             function createTaskTable(tasks) {
 
-                if (tasks.length === 0) {
+                if (
+                    !tasks ||
+                    tasks.length === 0
+                ) {
 
                     return `
+
                         <p class="empty-message">
                             No tasks in this section.
                         </p>
+
                     `;
 
                 }
@@ -122,23 +144,31 @@
 
                     <table>
 
-                        <tr>
+                        <thead>
 
-                            <th>Task ID</th>
+                            <tr>
 
-                            <th>Task Name</th>
+                                <th>Task ID</th>
 
-                            <th>Description</th>
+                                <th>Task Name</th>
 
-                            <th>Priority</th>
+                                <th>Description</th>
 
-                            <th>Status</th>
+                                <th>Project</th>
 
-                            <th>Start Date</th>
+                                <th>Priority</th>
 
-                            <th>Due Date</th>
+                                <th>Status</th>
 
-                        </tr>
+                                <th>Start Date</th>
+
+                                <th>Due Date</th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
 
                 `;
 
@@ -150,15 +180,22 @@
                         <tr>
 
                             <td>
-                                ${task.taskId}
+                                ${task.taskId ?? "-"}
                             </td>
 
                             <td>
-                                ${task.taskName}
+                                ${task.taskName ?? "-"}
                             </td>
 
                             <td>
                                 ${task.description ?? "-"}
+                            </td>
+
+                            <td>
+                                ${
+                        task.project?.projectName
+                        ?? "-"
+                    }
                             </td>
 
                             <td>
@@ -184,7 +221,13 @@
                 });
 
 
-                html += `</table>`;
+                html += `
+
+                        </tbody>
+
+                    </table>
+
+                `;
 
                 return html;
 
@@ -195,7 +238,7 @@
             // DISPLAY SECTIONS
             // =====================================================
 
-            let html = `
+            tasksDiv.innerHTML = `
 
                 <h3>My Task Records</h3>
 
@@ -203,11 +246,11 @@
                 <details>
 
                     <summary>
-                        Completed
+                        Pending (${pendingTasks.length})
                     </summary>
 
                     ${createTaskTable(
-                completedTasks
+                pendingTasks
             )}
 
                 </details>
@@ -219,19 +262,16 @@
                 <details>
 
                     <summary>
-                        Pending
+                        Completed (${completedTasks.length})
                     </summary>
 
                     ${createTaskTable(
-                pendingTasks
+                completedTasks
             )}
 
                 </details>
 
             `;
-
-
-            tasksDiv.innerHTML = html;
 
         })
 
@@ -242,11 +282,15 @@
 
         .catch(error => {
 
-            document.getElementById("tasks").innerHTML =
+            document.getElementById(
+                "tasks"
+            ).innerHTML = `
 
-                "<p class='error-message'>" +
-                "Unable to load tasks." +
-                "</p>";
+                <p class="error-message">
+                    Unable to load tasks.
+                </p>
+
+            `;
 
             console.error(error);
 

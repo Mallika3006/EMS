@@ -1,35 +1,139 @@
 <!DOCTYPE html>
+
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
 <head>
-    <title>Manager Dashboard</title>
+    <title>Manager Dashboard - StaffSync</title>
+
+    <link rel="stylesheet" th:href="@{/style.css}">
 </head>
 
 <body>
 
-<h1>Manager Dashboard</h1>
+<div class="container">
 
-<p>
-    Welcome, <span sec:authentication="name"></span>
-</p>
+    <h1>Manager Dashboard</h1>
 
-<h3>Manager Features</h3>
+    <p>
+        Welcome,
+        <strong sec:authentication="name"></strong>
+    </p>
 
-<ul>
-    <li><a href="/teams">Manage Teams</a></li>
-    <li><a href="/projects">Manage Projects</a></li>
-    <li><a href="/tasks">Manage Tasks</a></li>
-    <li><a href="/leaves">Manage Leaves</a></li>
-</ul>
 
-<hr>
+    <!-- =====================================================
+         MY PROFILE
+         ===================================================== -->
 
-<h3>Employee Dashboard</h3>
+    <div class="card">
 
-<a href="/employee-dashboard">
-    Go to Employee Dashboard
-</a>
+        <h3>My Profile</h3>
+
+        <a href="/manager/profile">
+            View My Profile
+        </a>
+
+    </div>
+
+
+    <!-- =====================================================
+         MY WORK
+         ===================================================== -->
+
+    <div class="card">
+
+        <h3>My Work</h3>
+
+        <ul class="dashboard-links">
+
+            <li>
+                <a href="/manager/my-attendance">
+                    My Attendance
+                </a>
+            </li>
+
+            <li>
+                <a href="/manager/my-leaves">
+                    My Leaves
+                </a>
+            </li>
+
+            <li>
+                <a href="/manager/my-payroll">
+                    My Payroll
+                </a>
+            </li>
+
+        </ul>
+
+    </div>
+
+
+    <!-- =====================================================
+         TEAM & WORK MANAGEMENT
+         ===================================================== -->
+
+    <div class="card">
+
+        <h3>Team &amp; Work Management</h3>
+
+        <ul class="dashboard-links">
+
+            <li>
+                <a href="/manager/team">
+                    My Team
+                </a>
+            </li>
+
+            <li>
+                <a href="/manager/leaves">
+                    Leave Requests
+                </a>
+            </li>
+
+            <li>
+                <a href="/manager/attendance">
+                    Team Attendance
+                </a>
+            </li>
+
+            <li>
+                <a href="/manager/payroll">
+                    Team Payroll
+                </a>
+            </li>
+
+            <li>
+                <a href="/manager/projects">
+                    Team Projects
+                </a>
+            </li>
+
+            <li>
+                <a href="/manager/tasks">
+                    Team Tasks
+                </a>
+            </li>
+
+        </ul>
+
+    </div>
+
+
+    <!-- =====================================================
+         LOGOUT
+         ===================================================== -->
+
+    <form action="/logout" method="post">
+
+        <button type="submit">
+            Logout
+        </button>
+
+    </form>
+
+</div>
 
 </body>
+
 </html>

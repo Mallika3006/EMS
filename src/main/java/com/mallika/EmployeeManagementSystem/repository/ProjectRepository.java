@@ -420,4 +420,34 @@ public class ProjectRepository {
 
         return project;
     }
+
+    // GET PROJECTS BY EMPLOYEE
+    public List<Project> getProjectsByEmployeeId(Integer employeeId) {
+
+        List<Project> projects = new ArrayList<>();
+
+        String sql = "SELECT * FROM get_projects_by_employee(?)";
+
+        try (Connection connection = dataSource.getConnection();
+             CallableStatement statement = connection.prepareCall(sql)) {
+
+            statement.setInt(1, employeeId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+
+                while (resultSet.next()) {
+                    projects.add(mapProject(resultSet));
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Error fetching projects for employee: "
+                            + employeeId,
+                    e
+            );
+        }
+
+        return projects;
+    }
 }

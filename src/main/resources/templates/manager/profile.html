@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>My Profile - StaffSync</title>
+
+    <link rel="stylesheet" th:href="@{/style.css}">
+
+    <link rel="icon"
+          type="image/x-icon"
+          th:href="@{/favicon.ico}">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>My Profile</h1>
+
+    <div class="card">
+
+        <!-- ==========================================
+             PROFILE PHOTO
+        =========================================== -->
+
+        <div>
+
+            <img id="profilePhoto"
+                 alt="Profile Photo"
+                 style="width:120px;
+                        height:120px;
+                        object-fit:cover;
+                        border-radius:50%;">
+
+            <p id="noPhoto">
+                No profile photo uploaded.
+            </p>
+
+        </div>
+
+
+        <hr>
+
+
+        <!-- ==========================================
+             PERSONAL INFORMATION
+        =========================================== -->
+
+        <h3>Personal Information</h3>
+
+        <p>
+            <strong>Employee ID</strong>
+            <span id="employeeId"></span>
+        </p>
+
+        <p>
+            <strong>First Name</strong>
+            <span id="firstName"></span>
+        </p>
+
+        <p>
+            <strong>Last Name</strong>
+            <span id="lastName"></span>
+        </p>
+
+        <p>
+            <strong>Email</strong>
+            <span id="email"></span>
+        </p>
+
+        <p>
+            <strong>Phone</strong>
+            <span id="phone"></span>
+        </p>
+
+        <p>
+            <strong>Date of Birth</strong>
+            <span id="dateOfBirth"></span>
+        </p>
+
+        <p>
+            <strong>Hire Date</strong>
+            <span id="hireDate"></span>
+        </p>
+
+        <p>
+            <strong>Address</strong>
+            <span id="address"></span>
+        </p>
+
+
+        <hr>
+
+
+        <!-- ==========================================
+             WORK INFORMATION
+        =========================================== -->
+
+        <h3>Work Information</h3>
+
+        <p>
+            <strong>Department</strong>
+            <span id="departmentName"></span>
+        </p>
+
+        <p>
+            <strong>Designation</strong>
+            <span id="designationTitle"></span>
+        </p>
+
+
+        <br>
+
+
+        <!-- ==========================================
+             ACTIONS
+        =========================================== -->
+
+        <a class="btn"
+           href="/manager/profile/edit">
+
+            Edit Profile
+
+        </a>
+
+        <br>
+        <br>
+
+        <a class="back-link"
+           href="/manager-dashboard">
+
+            ← Back to Manager Dashboard
+
+        </a>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    // ==========================================
+    // LOAD MANAGER PROFILE
+    // ==========================================
+
+    fetch('/employees/me/profile-details')
+
+        .then(response => {
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Failed to load profile"
+                );
+
+            }
+
+            return response.json();
+
+        })
+
+        .then(profile => {
+
+
+            // ==========================================
+            // PERSONAL INFORMATION
+            // ==========================================
+
+            document.getElementById("employeeId").textContent =
+                profile.employeeId ?? "";
+
+            document.getElementById("firstName").textContent =
+                profile.firstName ?? "";
+
+            document.getElementById("lastName").textContent =
+                profile.lastName ?? "";
+
+            document.getElementById("email").textContent =
+                profile.email ?? "";
+
+            document.getElementById("phone").textContent =
+                profile.phone ?? "";
+
+            document.getElementById("dateOfBirth").textContent =
+                profile.dateOfBirth ?? "";
+
+            document.getElementById("hireDate").textContent =
+                profile.hireDate ?? "";
+
+            document.getElementById("address").textContent =
+                profile.address ?? "";
+
+
+            // ==========================================
+            // WORK INFORMATION
+            // ==========================================
+
+            document.getElementById("departmentName").textContent =
+                profile.departmentName ?? "";
+
+            document.getElementById("designationTitle").textContent =
+                profile.designationTitle ?? "";
+
+
+            // ==========================================
+            // PROFILE PHOTO
+            // ==========================================
+
+            if (profile.profilePhoto) {
+
+                const photo =
+                    document.getElementById("profilePhoto");
+
+                /*
+                 * profilePhoto contains the uploaded
+                 * image URL, for example:
+                 *
+                 * /uploads/profile-photos/example.jpg
+                 *
+                 * So use it directly.
+                 */
+
+                photo.src = profile.profilePhoto;
+
+                photo.style.display = "block";
+
+                document.getElementById("noPhoto").style.display =
+                    "none";
+
+            } else {
+
+                document.getElementById("profilePhoto").style.display =
+                    "none";
+
+                document.getElementById("noPhoto").style.display =
+                    "block";
+
+            }
+
+        })
+
+        .catch(error => {
+
+            console.error(error);
+
+            alert(
+                "Unable to load profile."
+            );
+
+        });
+
+</script>
+
+</body>
+
+</html>

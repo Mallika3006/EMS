@@ -4,6 +4,7 @@ import com.mallika.EmployeeManagementSystem.model.Project;
 import com.mallika.EmployeeManagementSystem.service.ProjectService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -40,9 +41,13 @@ public class ProjectController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<List<Project>> getMyProjects() {
+    public ResponseEntity<List<Project>> getMyProjects(
+            Authentication authentication) {
+
+        String username = authentication.getName();
+
         return ResponseEntity.ok(
-                projectService.getMyProjects()
+                projectService.getMyProjects(username)
         );
     }
 

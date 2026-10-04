@@ -4,6 +4,7 @@ import com.mallika.EmployeeManagementSystem.model.Task;
 import com.mallika.EmployeeManagementSystem.service.TaskService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -39,10 +40,15 @@ public class TaskController {
         );
     }
 
+    // MY TASKS
     @GetMapping("/me")
-    public ResponseEntity<List<Task>> getMyTasks() {
+    public ResponseEntity<List<Task>> getMyTasks(
+            Authentication authentication) {
+
+        String username = authentication.getName();
+
         return ResponseEntity.ok(
-                taskService.getMyTasks()
+                taskService.getMyTasks(username)
         );
     }
 

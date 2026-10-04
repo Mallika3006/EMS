@@ -19,7 +19,7 @@ public class DepartmentController {
         this.departmentService = departmentService;
     }
 
-    // CREATE
+    // CREATE - ADMIN only
     @PostMapping
     public ResponseEntity<Department> createDepartment(
             @RequestBody Department department) {
@@ -33,7 +33,7 @@ public class DepartmentController {
         );
     }
 
-    // GET ALL
+    // GET ALL - ADMIN, HR, MANAGER
     @GetMapping
     public ResponseEntity<List<Department>> getAllDepartments() {
 
@@ -42,7 +42,7 @@ public class DepartmentController {
         );
     }
 
-    // GET BY ID
+    // GET BY ID - ADMIN, HR, MANAGER
     @GetMapping("/{id}")
     public ResponseEntity<Department> getDepartmentById(
             @PathVariable Integer id) {
@@ -52,7 +52,7 @@ public class DepartmentController {
         );
     }
 
-    // UPDATE
+    // UPDATE - ADMIN only
     @PutMapping("/{id}")
     public ResponseEntity<Department> updateDepartment(
             @PathVariable Integer id,
@@ -63,7 +63,7 @@ public class DepartmentController {
         );
     }
 
-    // DELETE
+    // DELETE - ADMIN only
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteDepartment(
             @PathVariable Integer id) {
@@ -75,7 +75,7 @@ public class DepartmentController {
         );
     }
 
-    // SEARCH BY NAME
+    // SEARCH BY NAME - ADMIN, HR, MANAGER
     @GetMapping("/search")
     public ResponseEntity<List<Department>> searchByName(
             @RequestParam String name) {
@@ -85,7 +85,7 @@ public class DepartmentController {
         );
     }
 
-    // GET BY EXACT NAME
+    // GET BY EXACT NAME - ADMIN, HR, MANAGER
     @GetMapping("/name")
     public ResponseEntity<Department> getDepartmentByName(
             @RequestParam String name) {
@@ -95,7 +95,7 @@ public class DepartmentController {
         );
     }
 
-    // SEARCH BY LOCATION
+    // SEARCH BY LOCATION - ADMIN, HR, MANAGER
     @GetMapping("/location")
     public ResponseEntity<List<Department>> getDepartmentsByLocation(
             @RequestParam String location) {
@@ -106,6 +106,7 @@ public class DepartmentController {
     }
 
     // GET LOGGED-IN EMPLOYEE'S DEPARTMENT
+    // EMPLOYEE, HR, MANAGER, ADMIN
     @GetMapping("/me")
     public ResponseEntity<Department> getMyDepartment(
             Authentication authentication) {

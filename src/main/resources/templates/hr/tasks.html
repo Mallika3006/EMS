@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Tasks - StaffSync</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Task Management</h1>
+
+    <!-- ========================= -->
+    <!-- ADD TASK -->
+    <!-- ========================= -->
+
+    <div class="card">
+
+        <h2>Add Task</h2>
+
+        <form id="taskForm">
+
+            <label>Task Name:</label>
+            <input type="text" id="taskName" required>
+
+            <br><br>
+
+            <label>Description:</label>
+            <textarea id="description"></textarea>
+
+            <br><br>
+
+            <label>Priority:</label>
+            <select id="priority" required>
+                <option value="">Select Priority</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+            </select>
+
+            <br><br>
+
+            <label>Status:</label>
+            <select id="status" required>
+                <option value="">Select Status</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+            </select>
+
+            <br><br>
+
+            <label>Start Date:</label>
+            <input type="date" id="startDate">
+
+            <br><br>
+
+            <label>Due Date:</label>
+            <input type="date" id="dueDate">
+
+            <br><br>
+
+            <label>Project ID:</label>
+            <input type="number" id="projectId">
+
+            <br><br>
+
+            <label>Employee ID:</label>
+            <input type="number" id="employeeId">
+
+            <br><br>
+
+            <button type="submit">
+                Add Task
+            </button>
+
+        </form>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- SEARCH -->
+    <!-- ========================= -->
+
+    <div class="card">
+
+        <h2>Search Tasks</h2>
+
+        <input
+                type="text"
+                id="searchName"
+                placeholder="Enter task name">
+
+        <button onclick="searchTasks()">
+            Search
+        </button>
+
+        <button onclick="loadTasks()">
+            Show All
+        </button>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- TASK LIST -->
+    <!-- ========================= -->
+
+    <div class="card">
+
+        <h2>All Tasks</h2>
+
+        <table border="1" width="100%">
+
+            <thead>
+
+            <tr>
+
+                <th>ID</th>
+                <th>Task Name</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Start Date</th>
+                <th>Due Date</th>
+                <th>Project</th>
+                <th>Employee</th>
+                <th>Actions</th>
+
+            </tr>
+
+            </thead>
+
+            <tbody id="taskTableBody">
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- NAVIGATION -->
+    <!-- ========================= -->
+
+    <div class="dashboard-links">
+
+        <a href="/hr-dashboard">
+            Back to HR Dashboard
+        </a>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    // =========================
+    // LOAD ALL TASKS
+    // =========================
+
+    async function loadTasks() {
+
+        try {
+
+            const response =
+                await fetch("/tasks");
+
+            if (!response.ok) {
+                throw new Error("Failed to fetch tasks");
+            }
+
+            const tasks =
+                await response.json();
+
+            displayTasks(tasks);
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert("Unable to load tasks.");
+        }
+    }
+
+
+    // =========================
+    // DISPLAY TASKS
+    // =========================
+
+    function displayTasks(tasks) {
+
+        const tableBody =
+            document.getElementById("taskTableBody");
+
+        tableBody.innerHTML = "";
+
+
+        tasks.forEach(task => {
+
+            const row =
+                document.createElement("tr");
+
+
+            const projectId =
+                task.project
+                    ? task.project.projectId
+                    : "-";
+
+
+            const employeeId =
+                task.assignedTo
+                    ? task.assignedTo.employeeId
+                    : "-";
+
+
+            row.innerHTML = `
+
+                <td>${task.taskId}</td>
+
+                <td>${task.taskName ?? ""}</td>
+
+                <td>${task.priority ?? ""}</td>
+
+                <td>${task.status ?? ""}</td>
+
+                <td>${task.startDate ?? ""}</td>
+
+                <td>${task.dueDate ?? ""}</td>
+
+                <td>${projectId}</td>
+
+                <td>${employeeId}</td>
+
+                <td>
+
+                    <button
+                        onclick="viewTask(${task.taskId})">
+                        View
+                    </button>
+
+                    <button
+                        onclick="editTask(${task.taskId})">
+                        Edit
+                    </button>
+
+                    <button
+                        onclick="deleteTask(${task.taskId})">
+                        Delete
+                    </button>
+
+                </td>
+
+            `;
+
+
+            tableBody.appendChild(row);
+
+        });
+
+    }
+
+
+    // =========================
+    // ADD TASK
+    // =========================
+
+    document.getElementById("taskForm")
+        .addEventListener(
+            "submit",
+            async function(event) {
+
+                event.preventDefault();
+
+
+                const projectId =
+                    document.getElementById(
+                        "projectId"
+                    ).value;
+
+
+                const employeeId =
+                    document.getElementById(
+                        "employeeId"
+                    ).value;
+
+
+                const task = {
+
+                    taskName:
+                    document.getElementById(
+                        "taskName"
+                    ).value,
+
+                    description:
+                    document.getElementById(
+                        "description"
+                    ).value,
+
+                    priority:
+                    document.getElementById(
+                        "priority"
+                    ).value,
+
+                    status:
+                    document.getElementById(
+                        "status"
+                    ).value,
+
+                    startDate:
+                        document.getElementById(
+                            "startDate"
+                        ).value || null,
+
+                    dueDate:
+                        document.getElementById(
+                            "dueDate"
+                        ).value || null,
+
+                    project:
+                        projectId
+                            ? {
+                                projectId:
+                                    Number(projectId)
+                            }
+                            : null,
+
+                    assignedTo:
+                        employeeId
+                            ? {
+                                employeeId:
+                                    Number(employeeId)
+                            }
+                            : null
+                };
+
+
+                try {
+
+                    const response =
+                        await fetch(
+                            "/tasks",
+                            {
+                                method: "POST",
+
+                                headers: {
+                                    "Content-Type":
+                                        "application/json"
+                                },
+
+                                body:
+                                    JSON.stringify(task)
+                            }
+                        );
+
+
+                    if (!response.ok) {
+
+                        const errorText =
+                            await response.text();
+
+                        console.error(errorText);
+
+                        throw new Error(
+                            "Failed to create task"
+                        );
+                    }
+
+
+                    alert(
+                        "Task created successfully!"
+                    );
+
+
+                    document.getElementById(
+                        "taskForm"
+                    ).reset();
+
+
+                    loadTasks();
+
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    alert(
+                        "Unable to create task."
+                    );
+                }
+
+            }
+        );
+
+
+    // =========================
+    // SEARCH
+    // =========================
+
+    async function searchTasks() {
+
+        const name =
+            document.getElementById(
+                "searchName"
+            ).value.trim();
+
+
+        if (!name) {
+
+            loadTasks();
+
+            return;
+        }
+
+
+        try {
+
+            const response =
+                await fetch(
+                    `/tasks/search?name=${encodeURIComponent(name)}`
+                );
+
+
+            if (!response.ok) {
+                throw new Error(
+                    "Search failed"
+                );
+            }
+
+
+            const tasks =
+                await response.json();
+
+
+            displayTasks(tasks);
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Unable to search tasks."
+            );
+        }
+    }
+
+
+    // =========================
+    // VIEW TASK
+    // =========================
+
+    function viewTask(taskId) {
+
+        window.location.href =
+            `/hr/tasks/${taskId}`;
+    }
+
+
+    // =========================
+    // EDIT TASK
+    // =========================
+
+    function editTask(taskId) {
+
+        window.location.href =
+            `/hr/tasks/${taskId}/edit`;
+    }
+
+
+    // =========================
+    // DELETE TASK
+    // =========================
+
+    async function deleteTask(taskId) {
+
+        const confirmed =
+            confirm(
+                "Are you sure you want to delete this task?"
+            );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        try {
+
+            const response =
+                await fetch(
+                    `/tasks/${taskId}`,
+                    {
+                        method: "DELETE"
+                    }
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Failed to delete task"
+                );
+            }
+
+
+            alert(
+                "Task deleted successfully!"
+            );
+
+
+            loadTasks();
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Unable to delete task."
+            );
+        }
+    }
+
+
+    // =========================
+    // INITIAL LOAD
+    // =========================
+
+    loadTasks();
+
+</script>
+
+</body>
+
+</html>

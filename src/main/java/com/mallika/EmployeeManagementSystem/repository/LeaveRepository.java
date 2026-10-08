@@ -584,6 +584,48 @@ public class LeaveRepository {
         return leaves;
     }
 
+    // =========================================================
+// UPDATE MANAGER LEAVE STATUS
+// =========================================================
+
+    public Leave updateManagerLeaveStatus(
+            Integer leaveId,
+            Integer managerId,
+            String status) {
+
+        String sql =
+                "SELECT * FROM update_manager_leave_status(?, ?, ?)";
+
+        try (Connection connection = dataSource.getConnection();
+             CallableStatement statement =
+                     connection.prepareCall(sql)) {
+
+            statement.setInt(1, leaveId);
+            statement.setInt(2, managerId);
+            statement.setString(3, status);
+
+            try (ResultSet resultSet =
+                         statement.executeQuery()) {
+
+                if (resultSet.next()) {
+                    return mapLeave(resultSet);
+                }
+            }
+
+        } catch (SQLException e) {
+
+            throw new RuntimeException(
+                    "Error updating manager leave status",
+                    e
+            );
+        }
+
+        throw new RuntimeException(
+                "Leave request not found, not pending, " +
+                        "or does not belong to this manager's team"
+        );
+    }
+
 
     // =========================================================
     // MAP RESULT SET TO LEAVE
@@ -639,5 +681,29 @@ public class LeaveRepository {
         }
 
         return leave;
+    }
+
+    public List<Leave> getManagerLeaveRequests(Integer managerId) {
+
+        List<Leave> leaves = new ArrayList<>();
+
+        String sql = "SELECT * FROM get_manager_leave_requests(?)";
+
+        try (Connection connection = dataSource.getConnection();
+             CallableStatement statement = connection.prepareCall(sql)) {
+
+            statement.setInt(1, managerId);
+
+            ResultSet rs = statement.executeQuery();
+
+            while (rs.next()) {
+                leaves.add(mapLeave(rs));
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Error fetching manager leave requests", e);
+        }
+
+        return leaves;
     }
 }

@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Team Tasks</title>
+
+    <link rel="stylesheet" href="/style.css">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1 id="pageTitle">
+        Team Tasks
+    </h1>
+
+    <p>
+        Create and track tasks assigned to your team.
+    </p>
+
+
+    <!-- =====================================================
+         CREATE TASK
+         ===================================================== -->
+
+    <div class="card">
+
+        <h2>Create Task</h2>
+
+        <form id="createTaskForm">
+
+
+            <!-- PROJECT -->
+
+            <label for="projectId">
+                Project
+            </label>
+
+            <br>
+
+            <select id="projectId">
+
+                <option value="">
+                    No Project
+                </option>
+
+            </select>
+
+            <br><br>
+
+
+            <!-- TASK NAME -->
+
+            <label for="taskName">
+                Task Name
+            </label>
+
+            <br>
+
+            <input
+                    type="text"
+                    id="taskName"
+                    required
+            >
+
+            <br><br>
+
+
+            <!-- DESCRIPTION -->
+
+            <label for="description">
+                Description
+            </label>
+
+            <br>
+
+            <textarea
+                    id="description"
+                    rows="4"
+                    required
+            ></textarea>
+
+            <br><br>
+
+
+            <!-- EMPLOYEE -->
+
+            <label for="employeeId">
+                Assign Employee
+            </label>
+
+            <br>
+
+            <select id="employeeId" required>
+
+                <option value="">
+                    Select Employee
+                </option>
+
+            </select>
+
+            <br><br>
+
+
+            <!-- PRIORITY -->
+
+            <label for="priority">
+                Priority
+            </label>
+
+            <br>
+
+            <select id="priority" required>
+
+                <option value="">
+                    Select Priority
+                </option>
+
+                <option value="Low">
+                    Low
+                </option>
+
+                <option value="Medium">
+                    Medium
+                </option>
+
+                <option value="High">
+                    High
+                </option>
+
+            </select>
+
+            <br><br>
+
+
+            <!-- STATUS -->
+
+            <label for="status">
+                Status
+            </label>
+
+            <br>
+
+            <select id="status" required>
+
+                <option value="Pending">
+                    Pending
+                </option>
+
+                <option value="In Progress">
+                    In Progress
+                </option>
+
+                <option value="Completed">
+                    Completed
+                </option>
+
+            </select>
+
+            <br><br>
+
+
+            <!-- START DATE -->
+
+            <label for="startDate">
+                Start Date
+            </label>
+
+            <br>
+
+            <input
+                    type="date"
+                    id="startDate"
+                    required
+            >
+
+            <br><br>
+
+
+            <!-- DUE DATE -->
+
+            <label for="dueDate">
+                Due Date
+            </label>
+
+            <br>
+
+            <input
+                    type="date"
+                    id="dueDate"
+                    required
+            >
+
+            <br><br>
+
+
+            <button type="submit">
+                Create Task
+            </button>
+
+        </form>
+
+    </div>
+
+
+    <br>
+
+
+    <!-- =====================================================
+         TEAM / PROJECT TASKS
+         ===================================================== -->
+
+    <div class="card">
+
+        <h2 id="taskSectionTitle">
+            Team Tasks
+        </h2>
+
+
+        <button onclick="loadTeamTasks()">
+            Refresh
+        </button>
+
+
+        <!-- =====================================================
+             BACK TO PROJECTS
+             ONLY SHOWN ON PROJECT TASKS PAGE
+             ===================================================== -->
+
+        <button
+                id="backToProjectsButton"
+                onclick="goBackToProjects()"
+                style="display: none;">
+            Back to Projects
+        </button>
+
+
+        <button onclick="window.location.href='/manager-dashboard'">
+            Back to Dashboard
+        </button>
+
+
+        <br><br>
+
+
+        <!-- =====================================================
+             FILTER TASKS
+             ===================================================== -->
+
+        <h3>
+            Filter Tasks
+        </h3>
+
+
+        <!-- PROJECT FILTER -->
+
+        <div id="projectFilterContainer">
+
+            <label for="filterProject">
+                Project
+            </label>
+
+            <br>
+
+            <select id="filterProject">
+
+                <option value="">
+                    All Projects
+                </option>
+
+                <option value="NO_PROJECT">
+                    No Project
+                </option>
+
+            </select>
+
+            <br><br>
+
+        </div>
+
+
+        <!-- EMPLOYEE FILTER -->
+
+        <label for="filterEmployee">
+            Employee
+        </label>
+
+        <br>
+
+        <select id="filterEmployee">
+
+            <option value="">
+                All Employees
+            </option>
+
+        </select>
+
+        <br><br>
+
+
+        <!-- PRIORITY FILTER -->
+
+        <label for="filterPriority">
+            Priority
+        </label>
+
+        <br>
+
+        <select id="filterPriority">
+
+            <option value="">
+                All Priorities
+            </option>
+
+            <option value="Low">
+                Low
+            </option>
+
+            <option value="Medium">
+                Medium
+            </option>
+
+            <option value="High">
+                High
+            </option>
+
+        </select>
+
+        <br><br>
+
+
+        <!-- STATUS FILTER -->
+
+        <label for="filterStatus">
+            Status
+        </label>
+
+        <br>
+
+        <select id="filterStatus">
+
+            <option value="">
+                All Statuses
+            </option>
+
+            <option value="Pending">
+                Pending
+            </option>
+
+            <option value="In Progress">
+                In Progress
+            </option>
+
+            <option value="Completed">
+                Completed
+            </option>
+
+        </select>
+
+        <br><br>
+
+
+        <button onclick="applyFilters()">
+            Apply Filters
+        </button>
+
+
+        <button onclick="clearFilters()">
+            Clear Filters
+        </button>
+
+
+        <br><br>
+
+
+        <!-- =====================================================
+             TASK TABLE
+             ===================================================== -->
+
+        <table border="1"
+               width="100%"
+               cellpadding="10">
+
+            <thead>
+
+            <tr>
+
+                <th>Task ID</th>
+
+                <th>Project</th>
+
+                <th>Task</th>
+
+                <th>Description</th>
+
+                <th>Employee ID</th>
+
+                <th>Priority</th>
+
+                <th>Status</th>
+
+                <th>Start Date</th>
+
+                <th>Due Date</th>
+
+                <th>Actions</th>
+
+            </tr>
+
+            </thead>
+
+
+            <tbody id="taskTableBody">
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<script>
+
+
+    /* =====================================================
+       GET PROJECT ID FROM URL
+       ===================================================== */
+
+    const urlParams =
+        new URLSearchParams(
+            window.location.search
+        );
+
+
+    const selectedProjectId =
+        urlParams.get("projectId");
+
+
+    /* =====================================================
+       STORE LOADED TASKS
+       ===================================================== */
+
+    let allTeamTasks = [];
+
+
+    /* =====================================================
+       LOAD PROJECTS
+       ===================================================== */
+
+    async function loadProjects() {
+
+        try {
+
+            const response =
+                await fetch(
+                    "/projects/manager/team"
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Failed to load team projects"
+                );
+
+            }
+
+
+            const projects =
+                await response.json();
+
+
+            const projectSelect =
+                document.getElementById(
+                    "projectId"
+                );
+
+
+            /*
+             * Create Task project dropdown.
+             */
+
+            projectSelect.innerHTML = `
+                <option value="">
+                    No Project
+                </option>
+            `;
+
+
+            projects.forEach(project => {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+
+                option.value =
+                    project.projectId;
+
+
+                /*
+                 * Create Task dropdown
+                 * shows ID + project name.
+                 */
+
+                option.textContent =
+                    project.projectId +
+                    " - " +
+                    project.projectName;
+
+
+                projectSelect.appendChild(
+                    option
+                );
+
+            });
+
+
+            /*
+             * If a project ID exists in the URL,
+             * find that project and display its name.
+             */
+
+            if (selectedProjectId) {
+
+                const selectedProject =
+                    projects.find(
+                        project =>
+                            project.projectId ==
+                            parseInt(
+                                selectedProjectId
+                            )
+                    );
+
+
+                if (selectedProject) {
+
+                    document.getElementById(
+                        "pageTitle"
+                    ).textContent =
+                        "Project Tasks - " +
+                        selectedProject.projectName;
+
+
+                    document.getElementById(
+                        "taskSectionTitle"
+                    ).textContent =
+                        "Project Tasks - " +
+                        selectedProject.projectName;
+
+
+                    /*
+                     * Automatically select
+                     * the current project.
+                     */
+
+                    projectSelect.value =
+                        selectedProjectId;
+
+                }
+
+            }
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Failed to load team projects"
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       LOAD MANAGER TEAM
+       ===================================================== */
+
+    async function loadEmployees() {
+
+        try {
+
+            const response =
+                await fetch(
+                    "/employees/manager/my-team"
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Failed to load team members"
+                );
+
+            }
+
+
+            const employees =
+                await response.json();
+
+
+            const employeeSelect =
+                document.getElementById(
+                    "employeeId"
+                );
+
+
+            employeeSelect.innerHTML = `
+                <option value="">
+                    Select Employee
+                </option>
+            `;
+
+
+            employees.forEach(employee => {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+
+                option.value =
+                    employee.employeeId;
+
+
+                const firstName =
+                    employee.firstName || "";
+
+
+                const lastName =
+                    employee.lastName || "";
+
+
+                option.textContent =
+                    "Employee " +
+                    employee.employeeId +
+                    " - " +
+                    firstName +
+                    " " +
+                    lastName;
+
+
+                employeeSelect.appendChild(
+                    option
+                );
+
+            });
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Failed to load team members"
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       CREATE TASK
+       ===================================================== */
+
+    document
+        .getElementById("createTaskForm")
+        .addEventListener(
+            "submit",
+            async function(event) {
+
+                event.preventDefault();
+
+
+                const projectId =
+                    document.getElementById(
+                        "projectId"
+                    ).value;
+
+
+                const employeeId =
+                    document.getElementById(
+                        "employeeId"
+                    ).value;
+
+
+                const taskName =
+                    document.getElementById(
+                        "taskName"
+                    ).value;
+
+
+                const description =
+                    document.getElementById(
+                        "description"
+                    ).value;
+
+
+                const priority =
+                    document.getElementById(
+                        "priority"
+                    ).value;
+
+
+                const status =
+                    document.getElementById(
+                        "status"
+                    ).value;
+
+
+                const startDate =
+                    document.getElementById(
+                        "startDate"
+                    ).value;
+
+
+                const dueDate =
+                    document.getElementById(
+                        "dueDate"
+                    ).value;
+
+
+                /*
+                 * Create task without project first.
+                 */
+
+                const task = {
+
+                    taskName:
+                    taskName,
+
+                    description:
+                    description,
+
+                    priority:
+                    priority,
+
+                    status:
+                    status,
+
+                    startDate:
+                    startDate,
+
+                    dueDate:
+                    dueDate,
+
+                    assignedTo: {
+
+                        employeeId:
+                            parseInt(employeeId)
+
+                    }
+
+                };
+
+
+                /*
+                 * Add project only if
+                 * manager selected one.
+                 */
+
+                if (projectId) {
+
+                    task.project = {
+
+                        projectId:
+                            parseInt(projectId)
+
+                    };
+
+                }
+
+
+                try {
+
+                    const response =
+                        await fetch(
+                            "/tasks",
+                            {
+                                method: "POST",
+
+                                headers: {
+                                    "Content-Type":
+                                        "application/json"
+                                },
+
+                                body:
+                                    JSON.stringify(task)
+                            }
+                        );
+
+
+                    if (!response.ok) {
+
+                        const errorText =
+                            await response.text();
+
+
+                        throw new Error(
+                            errorText ||
+                            "Failed to create task"
+                        );
+
+                    }
+
+
+                    alert(
+                        "Task created successfully"
+                    );
+
+
+                    document
+                        .getElementById(
+                            "createTaskForm"
+                        )
+                        .reset();
+
+
+                    /*
+                     * If this is a project-specific
+                     * task page, keep that project selected.
+                     */
+
+                    if (selectedProjectId) {
+
+                        document.getElementById(
+                            "projectId"
+                        ).value =
+                            selectedProjectId;
+
+                    }
+
+
+                    await loadTeamTasks();
+
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    alert(
+                        "Failed to create task: " +
+                        error.message
+                    );
+
+                }
+
+            }
+        );
+
+
+    /* =====================================================
+       LOAD TEAM / PROJECT TASKS
+       ===================================================== */
+
+    async function loadTeamTasks() {
+
+        try {
+
+            let url =
+                "/tasks/manager/team";
+
+
+            /*
+             * If projectId is present,
+             * load only that project's tasks.
+             *
+             * Otherwise load all team tasks.
+             */
+
+            if (selectedProjectId) {
+
+                url =
+                    "/tasks/project/" +
+                    selectedProjectId;
+
+            }
+
+
+            const response =
+                await fetch(url);
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Failed to load tasks"
+                );
+
+            }
+
+
+            allTeamTasks =
+                await response.json();
+
+
+            /*
+             * Load project filter only
+             * for Team Tasks page.
+             */
+
+            populateProjectFilter();
+
+
+            /*
+             * Load employee filter options.
+             */
+
+            populateEmployeeFilter();
+
+
+            /*
+             * Display tasks.
+             */
+
+            applyFilters();
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Failed to load tasks: " +
+                error.message
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       POPULATE PROJECT FILTER
+       ===================================================== */
+
+    function populateProjectFilter() {
+
+        /*
+         * Do nothing on Project Tasks page.
+         */
+
+        if (selectedProjectId) {
+
+            return;
+
+        }
+
+
+        const projectSelect =
+            document.getElementById(
+                "filterProject"
+            );
+
+
+        projectSelect.innerHTML = `
+            <option value="">
+                All Projects
+            </option>
+
+            <option value="NO_PROJECT">
+                No Project
+            </option>
+        `;
+
+
+        const projects =
+            new Map();
+
+
+        allTeamTasks.forEach(task => {
+
+            if (
+                task.project &&
+                task.project.projectId
+            ) {
+
+                projects.set(
+                    task.project.projectId,
+                    task.project.projectName
+                );
+
+            }
+
+        });
+
+
+        projects.forEach(
+            (projectName, projectId) => {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+
+                option.value =
+                    projectId;
+
+
+                /*
+                 * Team Tasks filter shows
+                 * ONLY project name.
+                 */
+
+                option.textContent =
+                    projectName;
+
+
+                projectSelect.appendChild(
+                    option
+                );
+
+            }
+        );
+
+    }
+
+
+    /* =====================================================
+       POPULATE EMPLOYEE FILTER
+       ===================================================== */
+
+    function populateEmployeeFilter() {
+
+        const employeeSelect =
+            document.getElementById(
+                "filterEmployee"
+            );
+
+
+        employeeSelect.innerHTML = `
+            <option value="">
+                All Employees
+            </option>
+        `;
+
+
+        const employeeIds =
+            new Set();
+
+
+        allTeamTasks.forEach(task => {
+
+            if (
+                task.assignedTo &&
+                task.assignedTo.employeeId
+            ) {
+
+                employeeIds.add(
+                    task.assignedTo.employeeId
+                );
+
+            }
+
+        });
+
+
+        employeeIds.forEach(employeeId => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+
+            option.value =
+                employeeId;
+
+
+            option.textContent =
+                "Employee " +
+                employeeId;
+
+
+            employeeSelect.appendChild(
+                option
+            );
+
+        });
+
+    }
+
+
+    /* =====================================================
+       APPLY FILTERS
+       ===================================================== */
+
+    function applyFilters() {
+
+        const employeeFilter =
+            document.getElementById(
+                "filterEmployee"
+            ).value;
+
+
+        const priorityFilter =
+            document.getElementById(
+                "filterPriority"
+            ).value;
+
+
+        const statusFilter =
+            document.getElementById(
+                "filterStatus"
+            ).value;
+
+
+        /*
+         * Project filter is used only
+         * on the main Team Tasks page.
+         */
+
+        let projectFilter = "";
+
+
+        if (!selectedProjectId) {
+
+            projectFilter =
+                document.getElementById(
+                    "filterProject"
+                ).value;
+
+        }
+
+
+        const filteredTasks =
+            allTeamTasks.filter(task => {
+
+
+                /* =================================================
+                   PROJECT FILTER
+                   ================================================= */
+
+                if (
+                    projectFilter ===
+                    "NO_PROJECT"
+                ) {
+
+                    if (
+                        task.project &&
+                        task.project.projectId
+                    ) {
+
+                        return false;
+
+                    }
+
+                }
+                else if (projectFilter) {
+
+                    if (
+                        !task.project ||
+                        task.project.projectId !=
+                        parseInt(projectFilter)
+                    ) {
+
+                        return false;
+
+                    }
+
+                }
+
+
+                /* =================================================
+                   EMPLOYEE FILTER
+                   ================================================= */
+
+                if (employeeFilter) {
+
+                    if (
+                        !task.assignedTo ||
+                        task.assignedTo.employeeId !=
+                        parseInt(employeeFilter)
+                    ) {
+
+                        return false;
+
+                    }
+
+                }
+
+
+                /* =================================================
+                   PRIORITY FILTER
+                   ================================================= */
+
+                if (
+                    priorityFilter &&
+                    task.priority !==
+                    priorityFilter
+                ) {
+
+                    return false;
+
+                }
+
+
+                /* =================================================
+                   STATUS FILTER
+                   ================================================= */
+
+                if (
+                    statusFilter &&
+                    task.status !==
+                    statusFilter
+                ) {
+
+                    return false;
+
+                }
+
+
+                return true;
+
+            });
+
+
+        displayTasks(filteredTasks);
+
+    }
+
+
+    /* =====================================================
+       CLEAR FILTERS
+       ===================================================== */
+
+    function clearFilters() {
+
+        /*
+         * Clear Project filter only
+         * on Team Tasks page.
+         */
+
+        if (!selectedProjectId) {
+
+            document.getElementById(
+                "filterProject"
+            ).value = "";
+
+        }
+
+
+        document.getElementById(
+            "filterEmployee"
+        ).value = "";
+
+
+        document.getElementById(
+            "filterPriority"
+        ).value = "";
+
+
+        document.getElementById(
+            "filterStatus"
+        ).value = "";
+
+
+        applyFilters();
+
+    }
+
+
+    /* =====================================================
+       DISPLAY TASKS
+       ===================================================== */
+
+    function displayTasks(tasks) {
+
+        const tableBody =
+            document.getElementById(
+                "taskTableBody"
+            );
+
+
+        tableBody.innerHTML = "";
+
+
+        if (tasks.length === 0) {
+
+            const row =
+                document.createElement(
+                    "tr"
+                );
+
+
+            row.innerHTML = `
+                <td colspan="10">
+                    No tasks found.
+                </td>
+            `;
+
+
+            tableBody.appendChild(
+                row
+            );
+
+
+            return;
+
+        }
+
+
+        tasks.forEach(task => {
+
+            const row =
+                document.createElement(
+                    "tr"
+                );
+
+
+            /*
+             * If the task has no project,
+             * display "-".
+             */
+
+            const projectName =
+                task.project &&
+                task.project.projectName
+                    ? task.project.projectName
+                    : "-";
+
+
+            const employeeId =
+                task.assignedTo
+                    ? task.assignedTo.employeeId
+                    : "-";
+
+
+            row.innerHTML = `
+
+                <td>
+                    ${task.taskId}
+                </td>
+
+                <td>
+                    ${projectName}
+                </td>
+
+                <td>
+                    ${task.taskName || "-"}
+                </td>
+
+                <td>
+                    ${task.description || "-"}
+                </td>
+
+                <td>
+                    ${employeeId}
+                </td>
+
+                <td>
+                    ${task.priority || "-"}
+                </td>
+
+                <td>
+                    ${task.status || "-"}
+                </td>
+
+                <td>
+                    ${task.startDate || "-"}
+                </td>
+
+                <td>
+                    ${task.dueDate || "-"}
+                </td>
+
+                <td>
+
+                    <button
+                        onclick="editTask(${task.taskId})">
+                        Edit
+                    </button>
+
+                    <button
+                        onclick="deleteTask(${task.taskId})">
+                        Delete
+                    </button>
+
+                </td>
+
+            `;
+
+
+            tableBody.appendChild(
+                row
+            );
+
+        });
+
+    }
+
+
+    /* =====================================================
+       OPEN EDIT TASK PAGE
+       ===================================================== */
+
+    function editTask(taskId) {
+
+        let url =
+            "/manager/tasks/edit?id=" +
+            taskId;
+
+
+        /*
+         * Preserve project ID when editing
+         * from a project-specific task page.
+         */
+
+        if (selectedProjectId) {
+
+            url +=
+                "&projectId=" +
+                selectedProjectId;
+
+        }
+
+
+        window.location.href =
+            url;
+
+    }
+
+
+    /* =====================================================
+       DELETE TASK
+       ===================================================== */
+
+    async function deleteTask(taskId) {
+
+        const confirmed =
+            confirm(
+                "Are you sure you want to delete this task?"
+            );
+
+
+        if (!confirmed) {
+
+            return;
+
+        }
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "/tasks/" + taskId,
+                    {
+                        method: "DELETE"
+                    }
+                );
+
+
+            if (!response.ok) {
+
+                const errorText =
+                    await response.text();
+
+
+                throw new Error(
+                    errorText ||
+                    "Failed to delete task"
+                );
+
+            }
+
+
+            alert(
+                "Task deleted successfully"
+            );
+
+
+            /*
+             * Reload tasks.
+             *
+             * If this is a project-specific page,
+             * loadTeamTasks() continues using
+             * the existing projectId.
+             */
+
+            await loadTeamTasks();
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Failed to delete task: " +
+                error.message
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       BACK TO PROJECTS
+       ===================================================== */
+
+    function goBackToProjects() {
+
+        if (selectedProjectId) {
+
+            window.location.href =
+                "/manager/projects";
+
+        }
+
+    }
+
+
+    /* =====================================================
+       INITIAL LOAD
+       ===================================================== */
+
+    async function initializePage() {
+
+        /*
+         * Hide Project filter when viewing
+         * a specific project's tasks.
+         */
+
+        if (selectedProjectId) {
+
+            document.getElementById(
+                "projectFilterContainer"
+            ).style.display = "none";
+
+
+            /*
+             * Show Back to Projects button
+             * only on Project Tasks page.
+             */
+
+            document.getElementById(
+                "backToProjectsButton"
+            ).style.display = "inline-block";
+
+        }
+
+
+        await loadProjects();
+
+        await loadEmployees();
+
+        await loadTeamTasks();
+
+    }
+
+
+    initializePage();
+
+
+</script>
+
+</body>
+
+</html>

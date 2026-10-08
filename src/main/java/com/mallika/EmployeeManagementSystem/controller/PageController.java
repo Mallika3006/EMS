@@ -63,6 +63,45 @@ public class PageController {
     }
 
     // ==========================================
+    // MANAGER - TEAM & WORK MANAGEMENT
+    // ==========================================
+
+    @GetMapping("/manager/team")
+    public String managerTeam() {
+        return "manager/team";
+    }
+
+    @GetMapping("/manager/leaves")
+    public String managerLeaveRequests() {
+        return "manager/leaves";
+    }
+
+    @GetMapping("/manager/attendance")
+    public String managerTeamAttendance() {
+        return "manager/attendance";
+    }
+
+    @GetMapping("/manager/projects")
+    public String managerTeamProjects() {
+        return "manager/projects";
+    }
+
+    @GetMapping("/manager/tasks")
+    public String managerTeamTasks() {
+        return "manager/tasks";
+    }
+
+    @GetMapping("/manager/tasks/edit")
+    public String editManagerTask() {
+        return "manager/tasks-edit";
+    }
+
+    @GetMapping("/manager/projects/edit")
+    public String editProjectPage() {
+        return "manager/projects-edit";
+    }
+
+    // ==========================================
     // EMPLOYEE FEATURES
     // ==========================================
 

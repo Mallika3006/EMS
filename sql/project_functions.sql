@@ -280,3 +280,33 @@ END IF;
 
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION get_projects_by_manager(
+    p_manager_id INTEGER
+)
+RETURNS TABLE (
+    project_id INTEGER,
+    project_name VARCHAR,
+    start_date DATE,
+    end_date DATE
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+RETURN QUERY
+SELECT DISTINCT
+    p.project_id,
+    p.project_name,
+    p.start_date,
+    p.end_date
+FROM projects p
+         JOIN employee_project ep
+              ON p.project_id = ep.project_id
+         JOIN employees e
+              ON ep.employee_id = e.employee_id
+WHERE e.manager_id = p_manager_id
+ORDER BY p.project_id DESC;
+
+END;
+$$;

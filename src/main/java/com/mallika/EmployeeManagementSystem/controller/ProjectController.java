@@ -155,4 +155,16 @@ public class ProjectController {
                 projectService.sortProjects(field, direction)
         );
     }
+
+    // GET MANAGER TEAM PROJECTS
+    @GetMapping("/manager/team")
+    public ResponseEntity<List<Project>> getTeamProjects(
+            Authentication authentication) {
+
+        String username = authentication.getName();
+
+        return ResponseEntity.ok(
+                projectService.getTeamProjects(username)
+        );
+    }
 }

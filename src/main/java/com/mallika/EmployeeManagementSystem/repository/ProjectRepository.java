@@ -450,4 +450,34 @@ public class ProjectRepository {
 
         return projects;
     }
+
+    // GET PROJECTS BY MANAGER
+    public List<Project> getProjectsByManagerId(Integer managerId) {
+
+        List<Project> projects = new ArrayList<>();
+
+        String sql = "SELECT * FROM get_projects_by_manager(?)";
+
+        try (Connection connection = dataSource.getConnection();
+             CallableStatement statement = connection.prepareCall(sql)) {
+
+            statement.setInt(1, managerId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+
+                while (resultSet.next()) {
+                    projects.add(mapProject(resultSet));
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Error fetching projects for manager: "
+                            + managerId,
+                    e
+            );
+        }
+
+        return projects;
+    }
 }

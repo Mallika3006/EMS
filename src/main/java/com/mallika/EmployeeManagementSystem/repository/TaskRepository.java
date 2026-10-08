@@ -1006,4 +1006,46 @@ public class TaskRepository {
 
         return task;
     }
+
+    // =========================================================
+// GET TEAM TASKS BY MANAGER
+// =========================================================
+
+    public List<Task> getTasksByManagerId(Integer managerId) {
+
+        List<Task> tasks = new ArrayList<>();
+
+        String sql =
+                "SELECT * FROM get_tasks_by_manager(?)";
+
+        try (Connection connection =
+                     dataSource.getConnection();
+
+             CallableStatement statement =
+                     connection.prepareCall(sql)) {
+
+            statement.setInt(1, managerId);
+
+            try (ResultSet resultSet =
+                         statement.executeQuery()) {
+
+                while (resultSet.next()) {
+
+                    tasks.add(
+                            mapTask(resultSet)
+                    );
+                }
+            }
+
+        } catch (SQLException e) {
+
+            throw new RuntimeException(
+                    "Error fetching team tasks for manager: "
+                            + managerId,
+                    e
+            );
+        }
+
+        return tasks;
+    }
 }

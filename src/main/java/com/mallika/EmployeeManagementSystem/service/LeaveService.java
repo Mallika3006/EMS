@@ -334,4 +334,100 @@ public class LeaveService {
         return leaveRepository
                 .findByEmployeeEmployeeId(employeeId);
     }
+
+    // =========================================================
+// GET MANAGER LEAVE REQUESTS
+// =========================================================
+
+    public List<Leave> getManagerLeaveRequests() {
+
+        Authentication authentication =
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
+
+        String username =
+                authentication.getName();
+
+        User user =
+                userRepository
+                        .findByUsername(username)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "User not found: " + username
+                                ));
+
+        if (user.getEmployee() == null ||
+                user.getEmployee().getEmployeeId() == null) {
+
+            throw new ResourceNotFoundException(
+                    "Employee not found for manager: " + username
+            );
+        }
+
+        Integer managerId =
+                user.getEmployee().getEmployeeId();
+
+        return leaveRepository
+                .getManagerLeaveRequests(managerId);
+    }
+
+    // =========================================================
+    // UPDATE MANAGER LEAVE STATUS
+    // =========================================================
+
+    public Leave updateManagerLeaveStatus(
+            Integer leaveId,
+            String status) {
+
+        Authentication authentication =
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
+
+        String username =
+                authentication.getName();
+
+
+        // Find logged-in manager
+        User user =
+                userRepository
+                        .findByUsername(username)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "User not found: " + username
+                                ));
+
+
+        // Make sure manager has an employee record
+        if (user.getEmployee() == null ||
+                user.getEmployee().getEmployeeId() == null) {
+
+            throw new ResourceNotFoundException(
+                    "Employee not found for manager: " + username
+            );
+        }
+
+
+        // Logged-in manager's employee ID
+        Integer managerId =
+                user.getEmployee().getEmployeeId();
+
+
+        // Only APPROVED or REJECTED
+        if (!"APPROVED".equalsIgnoreCase(status) &&
+                !"REJECTED".equalsIgnoreCase(status)) {
+
+            throw new IllegalArgumentException(
+                    "Status must be APPROVED or REJECTED"
+            );
+        }
+
+
+        return leaveRepository.updateManagerLeaveStatus(
+                leaveId,
+                managerId,
+                status.toUpperCase()
+        );
+    }
 }

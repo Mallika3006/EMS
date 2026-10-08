@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Team Attendance</title>
+
+    <link rel="stylesheet"
+          href="/style.css">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Team Attendance</h1>
+
+    <p>
+        View and add attendance records of your team members.
+    </p>
+
+
+    <!-- =====================================================
+         ADD ATTENDANCE
+         ===================================================== -->
+
+    <h2>Add Attendance</h2>
+
+    <form id="attendanceForm">
+
+        <label>
+            Employee:
+        </label>
+
+        <select id="employeeId" required>
+
+            <option value="">
+                Select Employee
+            </option>
+
+        </select>
+
+        <br><br>
+
+
+        <label>
+            Date:
+        </label>
+
+        <input
+                type="date"
+                id="attDate"
+                required
+        >
+
+        <br><br>
+
+
+        <label>
+            Status:
+        </label>
+
+        <select id="status" required>
+
+            <option value="Present">
+                Present
+            </option>
+
+            <option value="Absent">
+                Absent
+            </option>
+
+            <option value="Late">
+                Late
+            </option>
+
+        </select>
+
+        <br><br>
+
+
+        <label>
+            Check In:
+        </label>
+
+        <input
+                type="time"
+                id="checkInTime"
+        >
+
+        <br><br>
+
+
+        <label>
+            Check Out:
+        </label>
+
+        <input
+                type="time"
+                id="checkOutTime"
+        >
+
+        <br><br>
+
+
+        <button type="submit">
+            Add Attendance
+        </button>
+
+    </form>
+
+
+    <br><br>
+
+
+    <!-- =====================================================
+         EXISTING CONTROLS
+         ===================================================== -->
+
+    <button onclick="loadTeamAttendance()">
+        Refresh
+    </button>
+
+
+    <br><br>
+
+
+    <!-- =====================================================
+         TEAM ATTENDANCE TABLE
+         ===================================================== -->
+
+    <table border="1">
+
+        <thead>
+
+        <tr>
+
+            <th>Attendance ID</th>
+
+            <th>Employee ID</th>
+
+            <th>Date</th>
+
+            <th>Status</th>
+
+            <th>Check In</th>
+
+            <th>Check Out</th>
+
+        </tr>
+
+        </thead>
+
+
+        <tbody id="attendanceTableBody">
+
+        </tbody>
+
+    </table>
+
+
+    <br>
+
+
+    <a href="/manager-dashboard">
+        Back to Dashboard
+    </a>
+
+</div>
+
+
+<script>
+
+
+    // =========================================================
+    // LOAD TEAM EMPLOYEES
+    // =========================================================
+
+    async function loadEmployees() {
+
+        try {
+
+            const response =
+                await fetch(
+                    "/employees/manager/my-team"
+                );
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Failed to load employees"
+                );
+            }
+
+            const employees =
+                await response.json();
+
+            const employeeSelect =
+                document.getElementById(
+                    "employeeId"
+                );
+
+            employeeSelect.innerHTML = `
+                <option value="">
+                    Select Employee
+                </option>
+            `;
+
+            employees.forEach(employee => {
+
+                const option =
+                    document.createElement("option");
+
+                option.value =
+                    employee.employeeId;
+
+                option.textContent =
+                    "Employee " +
+                    employee.employeeId +
+                    " - " +
+                    (
+                        employee.firstName
+                        || employee.name
+                        || ""
+                    );
+
+                employeeSelect.appendChild(option);
+
+            });
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Unable to load team employees."
+            );
+        }
+    }
+
+
+    // =========================================================
+    // LOAD TEAM ATTENDANCE
+    // =========================================================
+
+    async function loadTeamAttendance() {
+
+        try {
+
+            const response =
+                await fetch(
+                    "/attendance/manager/team"
+                );
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Failed to fetch team attendance"
+                );
+            }
+
+            const attendance =
+                await response.json();
+
+            const tableBody =
+                document.getElementById(
+                    "attendanceTableBody"
+                );
+
+            tableBody.innerHTML = "";
+
+
+            if (!attendance ||
+                attendance.length === 0) {
+
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            No attendance records found.
+                        </td>
+                    </tr>
+                `;
+
+                return;
+            }
+
+
+            attendance.forEach(record => {
+
+                const row =
+                    document.createElement("tr");
+
+                row.innerHTML = `
+
+                    <td>
+                        ${record.attendanceId}
+                    </td>
+
+                    <td>
+                        ${
+                    record.employee
+                        ? record.employee.employeeId
+                        : ""
+                }
+                    </td>
+
+                    <td>
+                        ${record.attDate}
+                    </td>
+
+                    <td>
+                        ${record.status}
+                    </td>
+
+                    <td>
+                        ${record.checkInTime || ""}
+                    </td>
+
+                    <td>
+                        ${record.checkOutTime || ""}
+                    </td>
+
+                `;
+
+                tableBody.appendChild(row);
+
+            });
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Unable to load team attendance."
+            );
+        }
+    }
+
+
+    // =========================================================
+    // ADD ATTENDANCE
+    // =========================================================
+
+    document.getElementById(
+        "attendanceForm"
+    ).addEventListener(
+        "submit",
+        async function(event) {
+
+            event.preventDefault();
+
+
+            const employeeId =
+                document.getElementById(
+                    "employeeId"
+                ).value;
+
+            const attDate =
+                document.getElementById(
+                    "attDate"
+                ).value;
+
+            const status =
+                document.getElementById(
+                    "status"
+                ).value;
+
+            const checkInTime =
+                document.getElementById(
+                    "checkInTime"
+                ).value;
+
+            const checkOutTime =
+                document.getElementById(
+                    "checkOutTime"
+                ).value;
+
+
+            const attendance = {
+
+                attDate: attDate,
+
+                status: status,
+
+                checkInTime:
+                    checkInTime || null,
+
+                checkOutTime:
+                    checkOutTime || null,
+
+                employee: {
+
+                    employeeId:
+                        parseInt(employeeId)
+
+                }
+
+            };
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/attendance/manager",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify(
+                                    attendance
+                                )
+                        }
+                    );
+
+
+                if (!response.ok) {
+
+                    const errorText =
+                        await response.text();
+
+                    throw new Error(
+                        errorText ||
+                        "Failed to add attendance"
+                    );
+                }
+
+
+                alert(
+                    "Attendance added successfully."
+                );
+
+
+                document.getElementById(
+                    "attendanceForm"
+                ).reset();
+
+
+                await loadTeamAttendance();
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                alert(
+                    "Failed to add attendance: " +
+                    error.message
+                );
+
+            }
+
+        }
+    );
+
+
+    // =========================================================
+    // INITIAL LOAD
+    // =========================================================
+
+    loadEmployees();
+
+    loadTeamAttendance();
+
+</script>
+
+</body>
+
+</html>

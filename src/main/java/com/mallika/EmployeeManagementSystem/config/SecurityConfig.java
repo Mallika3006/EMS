@@ -103,6 +103,9 @@ public class SecurityConfig {
                                 "MANAGER"
                         )
 
+                        // MANAGER - TEAM ATTENDANCE
+                        .requestMatchers("/attendance/manager/team")
+                        .hasRole("MANAGER")
                                 // ==========================================
                                 // MANAGER PAGES
                                 // ==========================================
@@ -140,7 +143,6 @@ public class SecurityConfig {
                                 "HR",
                                 "MANAGER"
                         )
-
 
                         // ==========================================
                         // OWN ATTENDANCE
@@ -209,6 +211,13 @@ public class SecurityConfig {
                         .requestMatchers("/employees/manager/me")
                         .hasRole("MANAGER")
 
+
+                                // ==========================================
+                                // MANAGER - MY TEAM
+                                // ==========================================
+
+                                .requestMatchers("/employees/manager/my-team")
+                                .hasRole("MANAGER")
 
                         // ==========================================
                         // HR - OWN EMPLOYEES

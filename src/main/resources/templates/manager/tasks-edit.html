@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Edit Task</title>
+
+    <link rel="stylesheet" href="/style.css">
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+    <h1>Edit Task</h1>
+
+    <p>
+        Update task details.
+    </p>
+
+
+    <div class="card">
+
+        <form id="editTaskForm">
+
+
+            <!-- PROJECT -->
+
+            <label for="projectId">
+                Project
+            </label>
+
+            <br>
+
+            <select id="projectId" required>
+
+                <option value="">
+                    Select Project
+                </option>
+
+            </select>
+
+            <br><br>
+
+
+            <!-- TASK NAME -->
+
+            <label for="taskName">
+                Task Name
+            </label>
+
+            <br>
+
+            <input
+                    type="text"
+                    id="taskName"
+                    required
+            >
+
+            <br><br>
+
+
+            <!-- DESCRIPTION -->
+
+            <label for="description">
+                Description
+            </label>
+
+            <br>
+
+            <textarea
+                    id="description"
+                    rows="4"
+                    required
+            ></textarea>
+
+            <br><br>
+
+
+            <!-- EMPLOYEE -->
+
+            <label for="employeeId">
+                Assign Employee
+            </label>
+
+            <br>
+
+            <select id="employeeId" required>
+
+                <option value="">
+                    Select Employee
+                </option>
+
+            </select>
+
+            <br><br>
+
+
+            <!-- PRIORITY -->
+
+            <label for="priority">
+                Priority
+            </label>
+
+            <br>
+
+            <select id="priority" required>
+
+                <option value="">
+                    Select Priority
+                </option>
+
+                <option value="Low">
+                    Low
+                </option>
+
+                <option value="Medium">
+                    Medium
+                </option>
+
+                <option value="High">
+                    High
+                </option>
+
+            </select>
+
+            <br><br>
+
+
+            <!-- STATUS -->
+
+            <label for="status">
+                Status
+            </label>
+
+            <br>
+
+            <select id="status" required>
+
+                <option value="Pending">
+                    Pending
+                </option>
+
+                <option value="In Progress">
+                    In Progress
+                </option>
+
+                <option value="Completed">
+                    Completed
+                </option>
+
+            </select>
+
+            <br><br>
+
+
+            <!-- START DATE -->
+
+            <label for="startDate">
+                Start Date
+            </label>
+
+            <br>
+
+            <input
+                    type="date"
+                    id="startDate"
+                    required
+            >
+
+            <br><br>
+
+
+            <!-- DUE DATE -->
+
+            <label for="dueDate">
+                Due Date
+            </label>
+
+            <br>
+
+            <input
+                    type="date"
+                    id="dueDate"
+                    required
+            >
+
+            <br><br>
+
+
+            <button type="submit">
+                Save Changes
+            </button>
+
+            <button
+                    type="button"
+                    onclick="goBackToTasks()">
+                Cancel
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<script>
+
+
+    /* =====================================================
+       GET TASK ID AND PROJECT ID FROM URL
+       ===================================================== */
+
+    const urlParams =
+        new URLSearchParams(
+            window.location.search
+        );
+
+
+    const taskId =
+        urlParams.get("id");
+
+
+    const selectedProjectId =
+        urlParams.get("projectId");
+
+
+    if (!taskId) {
+
+        alert("Task ID not found");
+
+        window.location.href =
+            "/manager/tasks";
+
+    }
+
+
+    /* =====================================================
+       BACK TO TASKS
+       ===================================================== */
+
+    function goBackToTasks() {
+
+        if (selectedProjectId) {
+
+            window.location.href =
+                "/manager/tasks?projectId=" +
+                selectedProjectId;
+
+        } else {
+
+            window.location.href =
+                "/manager/tasks";
+
+        }
+
+    }
+
+
+    /* =====================================================
+       LOAD PROJECTS
+       ===================================================== */
+
+    async function loadProjects() {
+
+        try {
+
+            const response =
+                await fetch(
+                    "/projects/manager/team"
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Failed to load projects"
+                );
+
+            }
+
+
+            const projects =
+                await response.json();
+
+
+            const projectSelect =
+                document.getElementById(
+                    "projectId"
+                );
+
+
+            projectSelect.innerHTML = `
+                <option value="">
+                    Select Project
+                </option>
+            `;
+
+
+            projects.forEach(project => {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+
+                option.value =
+                    project.projectId;
+
+
+                option.textContent =
+                    project.projectId +
+                    " - " +
+                    project.projectName;
+
+
+                projectSelect.appendChild(
+                    option
+                );
+
+            });
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Failed to load projects"
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       LOAD TEAM EMPLOYEES
+       ===================================================== */
+
+    async function loadEmployees() {
+
+        try {
+
+            const response =
+                await fetch(
+                    "/employees/manager/my-team"
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Failed to load team members"
+                );
+
+            }
+
+
+            const employees =
+                await response.json();
+
+
+            const employeeSelect =
+                document.getElementById(
+                    "employeeId"
+                );
+
+
+            employeeSelect.innerHTML = `
+                <option value="">
+                    Select Employee
+                </option>
+            `;
+
+
+            employees.forEach(employee => {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+
+                option.value =
+                    employee.employeeId;
+
+
+                const firstName =
+                    employee.firstName || "";
+
+
+                const lastName =
+                    employee.lastName || "";
+
+
+                option.textContent =
+                    "Employee " +
+                    employee.employeeId +
+                    " - " +
+                    firstName +
+                    " " +
+                    lastName;
+
+
+                employeeSelect.appendChild(
+                    option
+                );
+
+            });
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Failed to load team members"
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       LOAD TASK
+       ===================================================== */
+
+    async function loadTask() {
+
+        try {
+
+            const response =
+                await fetch(
+                    "/tasks/" + taskId
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Failed to load task"
+                );
+
+            }
+
+
+            const task =
+                await response.json();
+
+
+            document.getElementById(
+                "taskName"
+            ).value =
+                task.taskName || "";
+
+
+            document.getElementById(
+                "description"
+            ).value =
+                task.description || "";
+
+
+            document.getElementById(
+                "priority"
+            ).value =
+                task.priority || "";
+
+
+            document.getElementById(
+                "status"
+            ).value =
+                task.status || "";
+
+
+            document.getElementById(
+                "startDate"
+            ).value =
+                task.startDate || "";
+
+
+            document.getElementById(
+                "dueDate"
+            ).value =
+                task.dueDate || "";
+
+
+            if (task.project) {
+
+                document.getElementById(
+                    "projectId"
+                ).value =
+                    task.project.projectId;
+
+            }
+
+
+            if (task.assignedTo) {
+
+                document.getElementById(
+                    "employeeId"
+                ).value =
+                    task.assignedTo.employeeId;
+
+            }
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Failed to load task"
+            );
+
+            goBackToTasks();
+
+        }
+
+    }
+
+
+    /* =====================================================
+       UPDATE TASK
+       ===================================================== */
+
+    document
+        .getElementById("editTaskForm")
+        .addEventListener(
+            "submit",
+            async function(event) {
+
+                event.preventDefault();
+
+
+                const projectId =
+                    document.getElementById(
+                        "projectId"
+                    ).value;
+
+
+                const employeeId =
+                    document.getElementById(
+                        "employeeId"
+                    ).value;
+
+
+                const task = {
+
+                    taskName:
+                    document.getElementById(
+                        "taskName"
+                    ).value,
+
+                    description:
+                    document.getElementById(
+                        "description"
+                    ).value,
+
+                    priority:
+                    document.getElementById(
+                        "priority"
+                    ).value,
+
+                    status:
+                    document.getElementById(
+                        "status"
+                    ).value,
+
+                    startDate:
+                    document.getElementById(
+                        "startDate"
+                    ).value,
+
+                    dueDate:
+                    document.getElementById(
+                        "dueDate"
+                    ).value,
+
+                    project: {
+
+                        projectId:
+                            parseInt(projectId)
+
+                    },
+
+                    assignedTo: {
+
+                        employeeId:
+                            parseInt(employeeId)
+
+                    }
+
+                };
+
+
+                try {
+
+                    const response =
+                        await fetch(
+                            "/tasks/" + taskId,
+                            {
+                                method: "PUT",
+
+                                headers: {
+                                    "Content-Type":
+                                        "application/json"
+                                },
+
+                                body:
+                                    JSON.stringify(task)
+                            }
+                        );
+
+
+                    if (!response.ok) {
+
+                        const errorText =
+                            await response.text();
+
+
+                        throw new Error(
+                            errorText ||
+                            "Failed to update task"
+                        );
+
+                    }
+
+
+                    alert(
+                        "Task updated successfully"
+                    );
+
+
+                    /*
+                     * Return to the same
+                     * project-specific task page.
+                     */
+
+                    if (selectedProjectId) {
+
+                        window.location.href =
+                            "/manager/tasks?projectId=" +
+                            selectedProjectId;
+
+                    } else {
+
+                        window.location.href =
+                            "/manager/tasks";
+
+                    }
+
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    alert(
+                        "Failed to update task: " +
+                        error.message
+                    );
+
+                }
+
+            }
+        );
+
+
+    /* =====================================================
+       INITIAL LOAD
+       ===================================================== */
+
+    async function initializePage() {
+
+        await loadProjects();
+
+        await loadEmployees();
+
+        await loadTask();
+
+    }
+
+
+    initializePage();
+
+
+</script>
+
+</body>
+
+</html>

@@ -521,6 +521,47 @@ public class AttendanceRepository {
         return attendanceList;
     }
 
+// =========================================================
+// GET TEAM ATTENDANCE BY MANAGER
+// =========================================================
+
+    public List<Attendance> findTeamAttendanceByManager(
+            Integer managerId) {
+
+        List<Attendance> attendanceList =
+                new ArrayList<>();
+
+        String sql =
+                "SELECT * FROM get_team_attendance(?)";
+
+        try (Connection connection =
+                     dataSource.getConnection();
+             CallableStatement statement =
+                     connection.prepareCall(sql)) {
+
+            statement.setInt(1, managerId);
+
+            try (ResultSet resultSet =
+                         statement.executeQuery()) {
+
+                while (resultSet.next()) {
+
+                    attendanceList.add(
+                            mapAttendance(resultSet)
+                    );
+                }
+            }
+
+        } catch (SQLException e) {
+
+            throw new RuntimeException(
+                    "Error fetching team attendance",
+                    e
+            );
+        }
+
+        return attendanceList;
+    }
 
     // =========================================================
     // EMPLOYEE + STATUS

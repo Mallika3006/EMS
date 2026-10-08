@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+
+    <title>My Team - StaffSync</title>
+
+    <link rel="stylesheet" th:href="@{/style.css}">
+    <link rel="icon" type="image/x-icon" th:href="@{/favicon.ico}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>My Team</h1>
+
+    <p>
+        View the employees assigned to you.
+    </p>
+
+    <hr>
+
+    <div id="teamContainer">
+
+        <p>Loading team members...</p>
+
+    </div>
+
+    <br>
+
+    <a href="/manager-dashboard">
+        Back to Manager Dashboard
+    </a>
+
+</div>
+
+
+<script>
+
+    async function loadMyTeam() {
+
+        const container =
+            document.getElementById("teamContainer");
+
+        try {
+
+            const response =
+                await fetch("/employees/manager/my-team");
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Failed to load team members"
+                );
+            }
+
+            const employees =
+                await response.json();
+
+
+            if (employees.length === 0) {
+
+                container.innerHTML =
+                    "<p>No team members found.</p>";
+
+                return;
+            }
+
+
+            let html = `
+                <table border="1" cellpadding="8"
+                       cellspacing="0">
+
+                    <thead>
+                        <tr>
+                            <th>Employee ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Department ID</th>
+                            <th>Designation ID</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+            `;
+
+
+            employees.forEach(employee => {
+
+                const departmentId =
+                    employee.department
+                        ? employee.department.departmentId
+                        : "-";
+
+                const designationId =
+                    employee.designation
+                        ? employee.designation.designationId
+                        : "-";
+
+
+                html += `
+                    <tr>
+
+                        <td>
+                            ${employee.employeeId}
+                        </td>
+
+                        <td>
+                            ${employee.firstName}
+                            ${employee.lastName}
+                        </td>
+
+                        <td>
+                            ${employee.email}
+                        </td>
+
+                        <td>
+                            ${employee.phone || "-"}
+                        </td>
+
+                        <td>
+                            ${departmentId}
+                        </td>
+
+                        <td>
+                            ${designationId}
+                        </td>
+
+                    </tr>
+                `;
+
+            });
+
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+
+            container.innerHTML = html;
+
+        } catch (error) {
+
+            console.error(error);
+
+            container.innerHTML =
+                "<p>Unable to load team members.</p>";
+        }
+    }
+
+
+    loadMyTeam();
+
+</script>
+
+</body>
+
+</html>

@@ -4,6 +4,7 @@ import com.mallika.EmployeeManagementSystem.exception.ResourceNotFoundException;
 import com.mallika.EmployeeManagementSystem.model.Attendance;
 import com.mallika.EmployeeManagementSystem.model.User;
 import com.mallika.EmployeeManagementSystem.repository.AttendanceRepository;
+import com.mallika.EmployeeManagementSystem.repository.EmployeeRepository;
 import com.mallika.EmployeeManagementSystem.repository.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,13 +18,16 @@ public class AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
     private final UserRepository userRepository;
+    private final EmployeeRepository employeeRepository;
 
     public AttendanceService(
             AttendanceRepository attendanceRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            EmployeeRepository employeeRepository) {
 
         this.attendanceRepository = attendanceRepository;
         this.userRepository = userRepository;
+        this.employeeRepository = employeeRepository;
     }
 
 
@@ -210,5 +214,114 @@ public class AttendanceService {
                 .findByEmployeeEmployeeId(
                         employeeId
                 );
+    }
+
+    // =========================================================
+// MANAGER - GET MY TEAM ATTENDANCE
+// =========================================================
+
+    public List<Attendance> getMyTeamAttendance() {
+
+        Authentication authentication =
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
+
+        String username =
+                authentication.getName();
+
+        User user =
+                userRepository
+                        .findByUsername(username)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "User not found"
+                                )
+                        );
+
+        if (user.getEmployee() == null) {
+
+            throw new ResourceNotFoundException(
+                    "Employee not found"
+            );
+        }
+
+        Integer managerId =
+                user.getEmployee()
+                        .getEmployeeId();
+
+        return attendanceRepository
+                .findTeamAttendanceByManager(
+                        managerId
+                );
+    }
+
+    // =========================================================
+// MANAGER - CREATE TEAM ATTENDANCE
+// =========================================================
+
+    public Attendance createTeamAttendance(
+            Attendance attendance) {
+
+        Authentication authentication =
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
+
+        String username =
+                authentication.getName();
+
+        User user =
+                userRepository
+                        .findByUsername(username)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "User not found"
+                                )
+                        );
+
+        if (user.getEmployee() == null) {
+
+            throw new ResourceNotFoundException(
+                    "Employee not found"
+            );
+        }
+
+        Integer managerId =
+                user.getEmployee()
+                        .getEmployeeId();
+
+        if (attendance.getEmployee() == null ||
+                attendance.getEmployee().getEmployeeId() == null) {
+
+            throw new IllegalArgumentException(
+                    "Employee is required"
+            );
+        }
+
+        Integer employeeId =
+                attendance.getEmployee()
+                        .getEmployeeId();
+
+        // Get employees belonging to this manager
+        List<com.mallika.EmployeeManagementSystem.model.Employee> teamEmployees =
+                employeeRepository.getEmployeesByManager(managerId);
+
+        boolean isTeamMember =
+                teamEmployees.stream()
+                        .anyMatch(employee ->
+                                employee.getEmployeeId()
+                                        .equals(employeeId)
+                        );
+
+        if (!isTeamMember) {
+
+            throw new IllegalArgumentException(
+                    "You can only add attendance for your team members"
+            );
+        }
+
+        return attendanceRepository
+                .createAttendance(attendance);
     }
 }

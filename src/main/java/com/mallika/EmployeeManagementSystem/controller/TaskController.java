@@ -205,4 +205,20 @@ public class TaskController {
                 taskService.sortTasks(field, direction)
         );
     }
+
+    // =========================================================
+// TEAM TASKS
+// =========================================================
+
+    @GetMapping("/manager/team")
+    public ResponseEntity<List<Task>> getTeamTasks(
+            Authentication authentication) {
+
+        String username =
+                authentication.getName();
+
+        return ResponseEntity.ok(
+                taskService.getTeamTasks(username)
+        );
+    }
 }

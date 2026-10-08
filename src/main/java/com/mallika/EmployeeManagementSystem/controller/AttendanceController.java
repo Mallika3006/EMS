@@ -144,4 +144,35 @@ public class AttendanceController {
                 )
         );
     }
+
+    // =========================================================
+// MANAGER - TEAM ATTENDANCE
+// =========================================================
+
+    @GetMapping("/manager/team")
+    public ResponseEntity<List<Attendance>>
+    getMyTeamAttendance() {
+
+        return ResponseEntity.ok(
+                attendanceService
+                        .getMyTeamAttendance()
+        );
+    }
+
+    // =========================================================
+// MANAGER - ADD TEAM ATTENDANCE
+// =========================================================
+
+    @PostMapping("/manager")
+    public ResponseEntity<Attendance> createTeamAttendance(
+            @RequestBody Attendance attendance) {
+
+        Attendance savedAttendance =
+                attendanceService.createTeamAttendance(attendance);
+
+        return new ResponseEntity<>(
+                savedAttendance,
+                HttpStatus.CREATED
+        );
+    }
 }

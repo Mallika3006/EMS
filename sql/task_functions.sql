@@ -442,3 +442,43 @@ RETURN QUERY EXECUTE
 
 END;
 $$;
+
+CREATE FUNCTION get_tasks_by_manager(
+    p_manager_id INTEGER
+)
+    RETURNS TABLE (
+                      task_id INTEGER,
+                      task_name VARCHAR,
+                      description VARCHAR,
+                      priority VARCHAR,
+                      status VARCHAR,
+                      start_date DATE,
+                      due_date DATE,
+                      project_id INTEGER,
+                      project_name VARCHAR,
+                      assigned_to INTEGER
+                  )
+    LANGUAGE plpgsql
+AS $$
+BEGIN
+RETURN QUERY
+SELECT
+    t.task_id,
+    t.task_name,
+    t.description,
+    t.priority,
+    t.status,
+    t.start_date,
+    t.due_date,
+    t.project_id,
+    p.project_name,
+    t.assigned_to
+FROM tasks t
+         LEFT JOIN projects p
+                   ON t.project_id = p.project_id
+         JOIN employees e
+              ON t.assigned_to = e.employee_id
+WHERE e.manager_id = p_manager_id
+ORDER BY t.task_id DESC;
+END;
+$$;

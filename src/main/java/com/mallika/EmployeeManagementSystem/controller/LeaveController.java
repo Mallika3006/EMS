@@ -50,6 +50,18 @@ public class LeaveController {
         );
     }
 
+    // =========================================================
+    // MANAGER - LEAVE REQUESTS
+    // =========================================================
+
+    @GetMapping("/manager")
+    public ResponseEntity<List<Leave>> getManagerLeaveRequests() {
+
+        return ResponseEntity.ok(
+                leaveService.getManagerLeaveRequests()
+        );
+    }
+
     // GET BY ID
     @GetMapping("/{id}")
     public ResponseEntity<Leave> getLeaveById(
@@ -158,6 +170,23 @@ public class LeaveController {
 
         return ResponseEntity.ok(
                 leaveService.withdrawLeave(id)
+        );
+    }
+
+    // =========================================================
+    // MANAGER - APPROVE / REJECT LEAVE
+    // =========================================================
+
+    @PutMapping("/manager/{id}/status")
+    public ResponseEntity<Leave> updateManagerLeaveStatus(
+            @PathVariable Integer id,
+            @RequestParam String status) {
+
+        return ResponseEntity.ok(
+                leaveService.updateManagerLeaveStatus(
+                        id,
+                        status
+                )
         );
     }
 }

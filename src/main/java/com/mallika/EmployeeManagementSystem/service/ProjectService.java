@@ -146,4 +146,29 @@ public class ProjectService {
                 employeeId
         );
     }
+
+    // GET PROJECTS OF MANAGER'S TEAM
+    public List<Project> getTeamProjects(String username) {
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found: " + username
+                        ));
+
+        if (user.getEmployee() == null ||
+                user.getEmployee().getEmployeeId() == null) {
+
+            throw new ResourceNotFoundException(
+                    "Employee not assigned to this user"
+            );
+        }
+
+        Integer managerId =
+                user.getEmployee().getEmployeeId();
+
+        return projectRepository.getProjectsByManagerId(
+                managerId
+        );
+    }
 }

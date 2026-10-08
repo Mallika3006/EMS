@@ -249,3 +249,26 @@ BEGIN
 
 END;
 $$;
+
+-- =========================================================
+-- GET TEAM ATTENDANCE BY MANAGER
+-- =========================================================
+
+CREATE OR REPLACE FUNCTION get_team_attendance(
+    p_manager_id INTEGER
+)
+RETURNS SETOF attendance
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+RETURN QUERY
+SELECT a.*
+FROM attendance a
+         JOIN employees e
+              ON a.employee_id = e.employee_id
+WHERE e.manager_id = p_manager_id
+ORDER BY a.att_date DESC;
+
+END;
+$$;

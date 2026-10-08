@@ -267,4 +267,33 @@ public class TaskService {
         return taskRepository
                 .findByAssignedToEmployeeId(employeeId);
     }
+
+    // =========================================================
+// GET TEAM TASKS
+// =========================================================
+
+    public List<Task> getTeamTasks(String username) {
+
+        User user =
+                userRepository
+                        .findByUsername(username)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "User not found: " + username
+                                ));
+
+        if (user.getEmployee() == null ||
+                user.getEmployee().getEmployeeId() == null) {
+
+            throw new ResourceNotFoundException(
+                    "Employee not assigned to this user"
+            );
+        }
+
+        Integer managerId =
+                user.getEmployee().getEmployeeId();
+
+        return taskRepository
+                .getTasksByManagerId(managerId);
+    }
 }

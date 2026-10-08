@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Leave Requests</title>
+
+    <link rel="stylesheet"
+          href="/style.css">
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <h1>Leave Requests</h1>
+
+
+    <p>
+        Review leave requests submitted by your team members.
+    </p>
+
+
+    <a href="/manager-dashboard">
+        ← Back to Dashboard
+    </a>
+
+
+    <br>
+    <br>
+
+
+    <div id="message"></div>
+
+
+    <table border="1"
+           cellpadding="10"
+           cellspacing="0">
+
+
+        <thead>
+
+        <tr>
+
+            <th>Leave ID</th>
+
+            <th>Employee ID</th>
+
+            <th>From Date</th>
+
+            <th>To Date</th>
+
+            <th>Reason</th>
+
+            <th>Status</th>
+
+            <th>Action</th>
+
+        </tr>
+
+        </thead>
+
+
+        <tbody id="leaveTableBody">
+
+        </tbody>
+
+
+    </table>
+
+
+</div>
+
+
+
+<script>
+
+
+    // =========================================================
+    // LOAD MANAGER LEAVE REQUESTS
+    // =========================================================
+
+    async function loadLeaveRequests() {
+
+        try {
+
+            const response =
+                await fetch("/leaves/manager");
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Failed to load leave requests"
+                );
+
+            }
+
+
+            const leaves =
+                await response.json();
+
+
+            const tableBody =
+                document.getElementById(
+                    "leaveTableBody"
+                );
+
+
+            tableBody.innerHTML = "";
+
+
+            // -------------------------------------------------
+            // NO LEAVE REQUESTS
+            // -------------------------------------------------
+
+            if (leaves.length === 0) {
+
+                tableBody.innerHTML = `
+
+                    <tr>
+
+                        <td colspan="7">
+
+                            No leave requests found.
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+                return;
+
+            }
+
+
+            // -------------------------------------------------
+            // DISPLAY LEAVE REQUESTS
+            // -------------------------------------------------
+
+            leaves.forEach(leave => {
+
+
+                const row =
+                    document.createElement("tr");
+
+
+                row.innerHTML = `
+
+                    <td>
+                        ${leave.leaveId ?? "-"}
+                    </td>
+
+
+                    <td>
+                        ${leave.employee?.employeeId ?? "-"}
+                    </td>
+
+
+                    <td>
+                        ${leave.fromDate ?? "-"}
+                    </td>
+
+
+                    <td>
+                        ${leave.toDate ?? "-"}
+                    </td>
+
+
+                    <td>
+                        ${leave.reason ?? "-"}
+                    </td>
+
+
+                    <td>
+                        ${leave.status ?? "-"}
+                    </td>
+
+
+                    <td>
+
+                        ${
+                    leave.status?.toUpperCase()
+                    === "PENDING"
+
+                        ?
+
+                        `
+
+                            <button
+                                onclick="updateLeaveStatus(
+                                    ${leave.leaveId},
+                                    'APPROVED'
+                                )">
+
+                                Approve
+
+                            </button>
+
+
+                            <button
+                                onclick="updateLeaveStatus(
+                                    ${leave.leaveId},
+                                    'REJECTED'
+                                )">
+
+                                Reject
+
+                            </button>
+
+                            `
+
+                        :
+
+                        "No action"
+                }
+
+                    </td>
+
+                `;
+
+
+                tableBody.appendChild(row);
+
+            });
+
+
+        } catch (error) {
+
+
+            console.error(error);
+
+
+            document.getElementById(
+                "message"
+            ).innerText =
+                "Failed to load leave requests.";
+
+        }
+
+    }
+
+
+
+    // =========================================================
+    // APPROVE / REJECT LEAVE
+    // =========================================================
+
+    async function updateLeaveStatus(
+        leaveId,
+        status
+    ) {
+
+
+        try {
+
+
+            const response =
+                await fetch(
+                    `/leaves/manager/${leaveId}/status?status=${status}`,
+                    {
+                        method: "PUT"
+                    }
+                );
+
+
+            // -------------------------------------------------
+            // HANDLE ERROR
+            // -------------------------------------------------
+
+            if (!response.ok) {
+
+
+                const errorText =
+                    await response.text();
+
+
+                throw new Error(
+                    errorText ||
+                    "Failed to update leave"
+                );
+
+            }
+
+
+            // -------------------------------------------------
+            // SUCCESS
+            // -------------------------------------------------
+
+            alert(
+                `Leave ${status.toLowerCase()} successfully.`
+            );
+
+
+            // Reload the table
+            loadLeaveRequests();
+
+
+        } catch (error) {
+
+
+            console.error(error);
+
+
+            alert(
+                "Failed to update leave: " +
+                error.message
+            );
+
+        }
+
+    }
+
+
+
+    // =========================================================
+    // INITIAL LOAD
+    // =========================================================
+
+    loadLeaveRequests();
+
+
+</script>
+
+
+</body>
+
+</html>

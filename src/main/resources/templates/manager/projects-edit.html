@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Edit Project</title>
+
+    <link rel="stylesheet" href="/style.css">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Edit Project</h1>
+
+    <div class="card">
+
+        <form id="editProjectForm">
+
+            <label for="projectName">
+                Project Name
+            </label>
+
+            <br>
+
+            <input
+                    type="text"
+                    id="projectName"
+                    required
+            >
+
+            <br><br>
+
+
+            <label for="startDate">
+                Start Date
+            </label>
+
+            <br>
+
+            <input
+                    type="date"
+                    id="startDate"
+                    required
+            >
+
+            <br><br>
+
+
+            <label for="endDate">
+                End Date
+            </label>
+
+            <br>
+
+            <input
+                    type="date"
+                    id="endDate"
+                    required
+            >
+
+            <br><br>
+
+
+            <button type="submit">
+                Update Project
+            </button>
+
+            <button
+                    type="button"
+                    onclick="window.location.href='/manager/projects'">
+                Cancel
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    const urlParams =
+        new URLSearchParams(
+            window.location.search
+        );
+
+    const projectId =
+        urlParams.get("id");
+
+
+    if (!projectId) {
+
+        alert("Project ID is missing");
+
+        window.location.href =
+            "/manager/projects";
+    }
+
+
+    async function loadProject() {
+
+        try {
+
+            const response =
+                await fetch(
+                    "/projects/" + projectId
+                );
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Failed to load project"
+                );
+            }
+
+            const project =
+                await response.json();
+
+
+            document.getElementById(
+                "projectName"
+            ).value =
+                project.projectName || "";
+
+
+            document.getElementById(
+                "startDate"
+            ).value =
+                project.startDate || "";
+
+
+            document.getElementById(
+                "endDate"
+            ).value =
+                project.endDate || "";
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Failed to load project: " +
+                error.message
+            );
+
+            window.location.href =
+                "/manager/projects";
+        }
+    }
+
+
+    document
+        .getElementById("editProjectForm")
+        .addEventListener(
+            "submit",
+            async function(event) {
+
+                event.preventDefault();
+
+
+                const project = {
+
+                    projectName:
+                    document.getElementById(
+                        "projectName"
+                    ).value,
+
+                    startDate:
+                    document.getElementById(
+                        "startDate"
+                    ).value,
+
+                    endDate:
+                    document.getElementById(
+                        "endDate"
+                    ).value
+
+                };
+
+
+                try {
+
+                    const response =
+                        await fetch(
+                            "/projects/" + projectId,
+                            {
+                                method: "PUT",
+
+                                headers: {
+                                    "Content-Type":
+                                        "application/json"
+                                },
+
+                                body:
+                                    JSON.stringify(project)
+                            }
+                        );
+
+
+                    if (!response.ok) {
+
+                        const errorText =
+                            await response.text();
+
+                        throw new Error(
+                            errorText ||
+                            "Failed to update project"
+                        );
+                    }
+
+
+                    alert(
+                        "Project updated successfully"
+                    );
+
+
+                    window.location.href =
+                        "/manager/projects";
+
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    alert(
+                        "Failed to update project: " +
+                        error.message
+                    );
+
+                }
+
+            }
+        );
+
+
+    loadProject();
+
+</script>
+
+</body>
+
+</html>

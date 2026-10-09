@@ -1,1 +1,1 @@
-# StaffSync
+# Employee Management System

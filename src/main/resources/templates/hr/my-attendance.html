@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>My Attendance - StaffSync</title>
+
+    <link rel="stylesheet" th:href="@{/style.css}">
+    <link rel="icon" type="image/x-icon" th:href="@{/favicon.ico}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>My Attendance</h1>
+
+    <div class="card" id="attendance">
+        <p class="loading">
+            Loading attendance...
+        </p>
+    </div>
+
+    <br>
+
+    <a class="back-link" href="/hr-dashboard">
+        ← Back to HR Dashboard
+    </a>
+
+</div>
+
+<script>
+    fetch('/attendance/me')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Failed to load attendance");
+            }
+
+            return response.json();
+        })
+
+        .then(attendanceList => {
+            const attendanceDiv =
+                document.getElementById("attendance");
+
+            // HANDLE NO ATTENDANCE RECORDS
+            if (!attendanceList || attendanceList.length === 0) {
+                attendanceDiv.innerHTML = `
+                    <h3>Attendance Summary</h3>
+                    <p>No attendance records found.</p>
+                `;
+                return;
+            }
+
+            // COUNT PRESENT DAYS
+            const presentDays = attendanceList.filter(attendance =>
+                attendance.status &&
+                attendance.status.toLowerCase() === "present"
+            ).length;
+
+            // COUNT ABSENT DAYS
+            const absentDays = attendanceList.filter(attendance =>
+                attendance.status &&
+                attendance.status.toLowerCase() === "absent"
+            ).length;
+
+            // COUNT LATE DAYS
+            const lateDays = attendanceList.filter(attendance =>
+                attendance.status &&
+                attendance.status.toLowerCase() === "late"
+            ).length;
+
+            // DISPLAY SUMMARY
+            let html = `
+                <h3>Attendance Summary</h3>
+
+                <div class="attendance-summary">
+
+                    <div class="attendance-box">
+                        <h4>Days Present</h4>
+                        <p>${presentDays}</p>
+                    </div>
+
+                    <div class="attendance-box">
+                        <h4>Days Absent</h4>
+                        <p>${absentDays}</p>
+                    </div>
+
+                    <div class="attendance-box">
+                        <h4>Days Late</h4>
+                        <p>${lateDays}</p>
+                    </div>
+
+                </div>
+
+                <h3>Attendance Records</h3>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Check In</th>
+                            <th>Check Out</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+            `;
+
+            // DISPLAY ATTENDANCE RECORDS
+            attendanceList.forEach(attendance => {
+                html += `
+                    <tr>
+                        <td>${attendance.attDate ?? "N/A"}</td>
+                        <td>${attendance.status ?? "N/A"}</td>
+                        <td>${attendance.checkInTime ?? "N/A"}</td>
+                        <td>${attendance.checkOutTime ?? "N/A"}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            attendanceDiv.innerHTML = html;
+        })
+
+        // ERROR HANDLING
+        .catch(error => {
+            document.getElementById("attendance").innerHTML =
+                "<p class='error-message'>" +
+                "Unable to load attendance." +
+                "</p>";
+
+            console.error(error);
+        });
+</script>
+
+</body>
+</html>

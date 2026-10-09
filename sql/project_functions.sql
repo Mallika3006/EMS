@@ -7,7 +7,8 @@
 CREATE OR REPLACE FUNCTION create_project(
     p_project_name VARCHAR,
     p_start_date DATE,
-    p_end_date DATE
+    p_end_date DATE,
+    p_manager_id INTEGER
 )
 RETURNS SETOF projects
 LANGUAGE plpgsql
@@ -16,12 +17,14 @@ BEGIN
 INSERT INTO projects (
     project_name,
     start_date,
-    end_date
+    end_date,
+    manager_id
 )
 VALUES (
            p_project_name,
            p_start_date,
-           p_end_date
+           p_end_date,
+           p_manager_id
        );
 
 RETURN QUERY
@@ -281,7 +284,7 @@ END IF;
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION get_projects_by_manager(
+CREATE OR REPLACE FUNCTION public.get_projects_by_manager(
     p_manager_id INTEGER
 )
 RETURNS TABLE (
@@ -293,20 +296,59 @@ RETURNS TABLE (
 LANGUAGE plpgsql
 AS $$
 BEGIN
-
 RETURN QUERY
-SELECT DISTINCT
+SELECT
     p.project_id,
     p.project_name,
     p.start_date,
     p.end_date
 FROM projects p
-         JOIN employee_project ep
-              ON p.project_id = ep.project_id
-         JOIN employees e
-              ON ep.employee_id = e.employee_id
-WHERE e.manager_id = p_manager_id
+WHERE p.manager_id = p_manager_id
+ORDER BY p.project_id DESC;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION get_unassigned_projects()
+RETURNS SETOF projects
+LANGUAGE sql
+AS $$
+SELECT p.*
+FROM projects p
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM employee_project ep
+    WHERE ep.project_id = p.project_id
+)
+ORDER BY p.project_id;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_unassigned_projects_by_manager(
+    p_manager_id INTEGER
+)
+RETURNS TABLE(
+    project_id INTEGER,
+    project_name VARCHAR,
+    start_date DATE,
+    end_date DATE
+)
+LANGUAGE plpgsql
+AS $function$
+BEGIN
+
+RETURN QUERY
+SELECT
+    p.project_id,
+    p.project_name,
+    p.start_date,
+    p.end_date
+FROM projects p
+WHERE p.manager_id = p_manager_id
+  AND NOT EXISTS (
+    SELECT 1
+    FROM employee_project ep
+    WHERE ep.project_id = p.project_id
+)
 ORDER BY p.project_id DESC;
 
 END;
-$$;
+$function$;

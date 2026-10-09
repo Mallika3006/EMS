@@ -48,7 +48,11 @@
 
 <script>
 
+    // Load projects assigned to the manager's team
     async function loadProjects() {
+
+        const tableBody =
+            document.getElementById("projectTableBody");
 
         try {
 
@@ -56,18 +60,26 @@
                 await fetch("/projects/manager/team");
 
             if (!response.ok) {
-                throw new Error(
-                    "Failed to fetch team projects"
-                );
+                throw new Error("Failed to fetch team projects");
             }
 
             const projects =
                 await response.json();
 
-            const tableBody =
-                document.getElementById("projectTableBody");
-
             tableBody.innerHTML = "";
+
+            if (projects.length === 0) {
+
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5">
+                            No projects assigned to your team.
+                        </td>
+                    </tr>
+                `;
+
+                return;
+            }
 
             projects.forEach(project => {
 
@@ -84,7 +96,6 @@
                     <td>${project.endDate ?? "-"}</td>
 
                     <td>
-
                         <button
                             onclick="viewProjectTasks(${project.projectId})">
                             View Tasks
@@ -99,22 +110,31 @@
                             onclick="deleteProject(${project.projectId})">
                             Delete
                         </button>
-
                     </td>
                 `;
 
                 tableBody.appendChild(row);
+
             });
 
         } catch (error) {
 
             console.error(error);
 
-            alert("Failed to load team projects");
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5">
+                        Failed to load team projects.
+                    </td>
+                </tr>
+            `;
+
+            alert(error.message);
         }
     }
 
 
+    // Open tasks for the selected project
     function viewProjectTasks(projectId) {
 
         window.location.href =
@@ -122,6 +142,7 @@
     }
 
 
+    // Open the project edit page
     function editProject(projectId) {
 
         window.location.href =
@@ -129,6 +150,7 @@
     }
 
 
+    // Delete a project
     async function deleteProject(projectId) {
 
         const confirmed =
@@ -156,14 +178,11 @@
                     await response.text();
 
                 throw new Error(
-                    errorText ||
-                    "Failed to delete project"
+                    errorText || "Failed to delete project"
                 );
             }
 
-            alert(
-                "Project deleted successfully"
-            );
+            alert("Project deleted successfully");
 
             await loadProjects();
 
@@ -179,6 +198,7 @@
     }
 
 
+    // Load projects when the page opens
     loadProjects();
 
 </script>

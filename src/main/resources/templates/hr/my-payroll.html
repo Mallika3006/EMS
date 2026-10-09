@@ -2,6 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
+    <meta charset="UTF-8">
     <title>HR Payroll - StaffSync</title>
     <link rel="stylesheet" th:href="@{/style.css}">
 </head>
@@ -25,10 +26,8 @@
 </div>
 
 <script>
-
     fetch('/payrolls/me')
         .then(response => {
-
             if (!response.ok) {
                 throw new Error("Failed to load payroll");
             }
@@ -37,21 +36,16 @@
         })
 
         .then(payroll => {
-
-            const container =
-                document.getElementById("payroll");
+            const container = document.getElementById("payroll");
 
             if (!payroll || payroll.length === 0) {
-
                 container.innerHTML =
                     "<p>No payroll records found.</p>";
-
                 return;
             }
 
-            container.innerHTML = `
+            let html = `
                 <table>
-
                     <thead>
                         <tr>
                             <th>Payroll ID</th>
@@ -63,59 +57,43 @@
                             <th>Net Salary</th>
                         </tr>
                     </thead>
-
                     <tbody>
+            `;
 
-                        ${payroll.map(record => `
+            payroll.forEach(record => {
+                const payPeriod = record.payMonth ?? "";
+                const periodParts = payPeriod.match(/^(.+?)\s+(\d{4})$/);
 
-                            <tr>
+                const month = periodParts ? periodParts[1] : "N/A";
+                const year = periodParts ? periodParts[2] : "N/A";
 
-                                <td>
-                                    ${record.payrollId ?? "N/A"}
-                                </td>
+                html += `
+                    <tr>
+                        <td>${record.payrollId ?? "N/A"}</td>
+                        <td>${month}</td>
+                        <td>${year}</td>
+                        <td>${record.basicSalary ?? "N/A"}</td>
+                        <td>${record.allowances ?? "N/A"}</td>
+                        <td>${record.deductions ?? "N/A"}</td>
+                        <td>${record.netSalary ?? "N/A"}</td>
+                    </tr>
+                `;
+            });
 
-                                <td>
-                                    ${record.month ?? "N/A"}
-                                </td>
-
-                                <td>
-                                    ${record.year ?? "N/A"}
-                                </td>
-
-                                <td>
-                                    ${record.basicSalary ?? "N/A"}
-                                </td>
-
-                                <td>
-                                    ${record.allowances ?? "N/A"}
-                                </td>
-
-                                <td>
-                                    ${record.deductions ?? "N/A"}
-                                </td>
-
-                                <td>
-                                    ${record.netSalary ?? "N/A"}
-                                </td>
-
-                            </tr>
-
-                        `).join("")}
-
+            html += `
                     </tbody>
-
                 </table>
             `;
+
+            container.innerHTML = html;
         })
 
         .catch(error => {
-
             document.getElementById("payroll").innerHTML =
                 "<p class='error-message'>Unable to load payroll.</p>";
 
             console.error(error);
         });
-
 </script>
 
 </body>

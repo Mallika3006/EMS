@@ -156,22 +156,27 @@ public class PageController {
 
     @GetMapping("/hr/profile")
     public String hrProfile() {
-        return "hr/profile";
+        return "hr/my-profile";
+    }
+
+    @GetMapping("/hr/profile/edit")
+    public String editProfile() {
+        return "hr/edit-profile";
     }
 
     @GetMapping("/hr/attendance")
     public String hrAttendance() {
-        return "hr/attendance";
+        return "hr/my-attendance";
     }
 
     @GetMapping("/hr/leaves")
     public String hrLeaves() {
-        return "hr/leaves";
+        return "hr/my-leaves";
     }
 
     @GetMapping("/hr/payroll")
     public String hrPayroll() {
-        return "hr/payroll";
+        return "hr/my-payroll";
     }
 
     @GetMapping("/hr/employees")

@@ -126,6 +126,11 @@ public class EmployeeController {
                             .getDesignationId()
                             .longValue()
             );
+
+            dto.setDesignationName(
+                    employee.getDesignation()
+                            .getDesignationTitle()
+            );
         }
 
 
@@ -275,6 +280,11 @@ public class EmployeeController {
                             .getDesignationId()
                             .longValue()
             );
+
+            dto.setDesignationName(
+                    employee.getDesignation()
+                            .getDesignationTitle()
+            );
         }
 
 
@@ -373,6 +383,11 @@ public class EmployeeController {
                     employee.getDesignation()
                             .getDesignationId()
                             .longValue()
+            );
+
+            dto.setDesignationName(
+                    employee.getDesignation()
+                            .getDesignationTitle()
             );
         }
 

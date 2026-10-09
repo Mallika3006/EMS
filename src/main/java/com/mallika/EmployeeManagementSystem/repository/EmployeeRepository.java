@@ -277,28 +277,44 @@ public class EmployeeRepository {
         );
 
 
-// =========================
-// DESIGNATION
-// =========================
+        // =========================
+        // DESIGNATION
+        // =========================
 
         Integer designationId =
-                rs.getObject(
-                        "designation_id",
-                        Integer.class
-                );
+                rs.getObject("designation_id", Integer.class);
 
         if (designationId != null) {
 
-            Designation designation =
-                    new Designation();
+            Designation designation = new Designation();
 
-            designation.setDesignationId(
-                    designationId
-            );
+            designation.setDesignationId(designationId);
 
-            employee.setDesignation(
-                    designation
-            );
+            String designationSql =
+                    "SELECT designation_title FROM designation WHERE designation_id = ?";
+
+            try (Connection connection = dataSource.getConnection();
+                 java.sql.PreparedStatement statement =
+                         connection.prepareStatement(designationSql)) {
+
+                statement.setInt(1, designationId);
+
+                try (ResultSet designationResult = statement.executeQuery()) {
+
+                    if (designationResult.next()) {
+                        designation.setDesignationTitle(
+                                designationResult.getString("designation_title")
+                        );
+                    }
+                }
+
+            } catch (SQLException e) {
+                throw new RuntimeException(
+                        "Error fetching designation title", e
+                );
+            }
+
+            employee.setDesignation(designation);
         }
 
         // =========================
@@ -306,23 +322,39 @@ public class EmployeeRepository {
         // =========================
 
         Integer departmentId =
-                rs.getObject(
-                        "department_id",
-                        Integer.class
-                );
+                rs.getObject("department_id", Integer.class);
 
         if (departmentId != null) {
 
-            Department department =
-                    new Department();
+            Department department = new Department();
 
-            department.setDepartmentId(
-                    departmentId
-            );
+            department.setDepartmentId(departmentId);
 
-            employee.setDepartment(
-                    department
-            );
+            String departmentSql =
+                    "SELECT department_name FROM department WHERE department_id = ?";
+
+            try (Connection connection = dataSource.getConnection();
+                 java.sql.PreparedStatement statement =
+                         connection.prepareStatement(departmentSql)) {
+
+                statement.setInt(1, departmentId);
+
+                try (ResultSet departmentResult = statement.executeQuery()) {
+
+                    if (departmentResult.next()) {
+                        department.setDepartmentName(
+                                departmentResult.getString("department_name")
+                        );
+                    }
+                }
+
+            } catch (SQLException e) {
+                throw new RuntimeException(
+                        "Error fetching department name", e
+                );
+            }
+
+            employee.setDepartment(department);
         }
 
 

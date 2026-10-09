@@ -167,4 +167,16 @@ public class ProjectController {
                 projectService.getTeamProjects(username)
         );
     }
+
+    // GET UNASSIGNED PROJECTS FOR LOGGED-IN MANAGER
+    @GetMapping("/unassigned")
+    public ResponseEntity<List<Project>> getUnassignedProjects(
+            Authentication authentication) {
+
+        String username = authentication.getName();
+
+        return ResponseEntity.ok(
+                projectService.getUnassignedProjectsByManager(username)
+        );
+    }
 }

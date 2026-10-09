@@ -2,6 +2,8 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HR Employees - StaffSync</title>
     <link rel="stylesheet" th:href="@{/style.css}">
 </head>
@@ -14,7 +16,6 @@
 
     <!-- SEARCH -->
     <div class="card">
-
         <h2>Search Employee</h2>
 
         <input
@@ -22,17 +23,86 @@
                 id="searchName"
                 placeholder="Enter employee name">
 
-        <button
-                class="btn"
-                onclick="searchEmployees()">
+        <button class="btn" onclick="searchEmployees()">
             Search
         </button>
 
-        <button
-                class="btn"
-                onclick="loadEmployees()">
+        <button class="btn" onclick="loadEmployees()">
             Show All
         </button>
+
+        <button class="btn" onclick="showAddForm()">
+            Add Employee
+        </button>
+    </div>
+
+    <br>
+
+    <!-- ADD / EDIT FORM -->
+    <div class="card" id="employeeFormCard" style="display: none;">
+
+        <h2 id="formTitle">Add Employee</h2>
+
+        <form id="employeeForm">
+
+            <input type="hidden" id="employeeId">
+
+            <label for="firstName">First Name</label>
+            <input type="text" id="firstName" required>
+
+            <label for="lastName">Last Name</label>
+            <input type="text" id="lastName" required>
+
+            <label for="email">Email</label>
+            <input type="email" id="email" required>
+
+            <label for="phone">Phone</label>
+            <input type="text" id="phone">
+
+            <label for="dateOfBirth">Date of Birth</label>
+            <input type="date" id="dateOfBirth">
+
+            <label for="hireDate">Hire Date</label>
+            <input type="date" id="hireDate" required>
+
+            <label for="address">Address</label>
+            <textarea id="address" rows="3"></textarea>
+
+            <label for="departmentId">Department</label>
+            <select id="departmentId" required>
+                <option value="">Select Department</option>
+            </select>
+
+            <label for="designationId">Designation</label>
+            <select id="designationId" required>
+                <option value="">Select Designation</option>
+            </select>
+
+            <label for="managerId">Manager</label>
+            <select id="managerId">
+                <option value="">None</option>
+            </select>
+
+            <label for="hrName">Assigned HR</label>
+            <input type="text" id="hrName" readonly>
+            <input type="hidden" id="hrId">
+
+            <br><br>
+
+            <button type="submit" class="btn">
+                Save Employee
+            </button>
+
+            <button
+                    type="button"
+                    class="btn"
+                    onclick="hideEmployeeForm()">
+                Cancel
+            </button>
+
+        </form>
+
+        <p id="formMessage"></p>
 
     </div>
 
@@ -40,11 +110,9 @@
 
     <!-- EMPLOYEE LIST -->
     <div class="card">
-
         <div id="employees">
             <p class="loading">Loading employees...</p>
         </div>
-
     </div>
 
     <br>
@@ -55,7 +123,6 @@
 
 </div>
 
-
 <script>
 
     // ==========================================
@@ -64,173 +131,498 @@
 
     function displayEmployees(employees) {
 
-        const container =
-            document.getElementById("employees");
+        const container = document.getElementById("employees");
 
         if (!employees || employees.length === 0) {
-
-            container.innerHTML =
-                "<p>No employees found.</p>";
-
+            container.innerHTML = "<p>No employees found.</p>";
             return;
         }
 
         container.innerHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Employee ID</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Hire Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
 
-            <table>
-
-                <thead>
-
+            <tbody>
+                ${employees.map(employee => `
                     <tr>
-                        <th>Employee ID</th>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                        <th>Hire Date</th>
-                        <th>Action</th>
+                        <td>${employee.employeeId ?? "N/A"}</td>
+                        <td>${employee.firstName ?? "N/A"}</td>
+                        <td>${employee.lastName ?? "N/A"}</td>
+                        <td>${employee.email ?? "N/A"}</td>
+                        <td>${employee.phone ?? "N/A"}</td>
+                        <td>${employee.hireDate ?? "N/A"}</td>
+
+                        <td>
+                            <button
+                                class="btn"
+                                onclick="viewEmployee(${employee.employeeId})">
+                                View
+                            </button>
+
+                            <button
+                                class="btn"
+                                onclick="editEmployee(${employee.employeeId})">
+                                Edit
+                            </button>
+                        </td>
                     </tr>
-
-                </thead>
-
-                <tbody>
-
-                    ${employees.map(employee => `
-
-                        <tr>
-
-                            <td>
-                                ${employee.employeeId ?? "N/A"}
-                            </td>
-
-                            <td>
-                                ${employee.firstName || "N/A"}
-                            </td>
-
-                            <td>
-                                ${employee.lastName || "N/A"}
-                            </td>
-
-                            <td>
-                                ${employee.email || "N/A"}
-                            </td>
-
-                            <td>
-                                ${employee.phone || "N/A"}
-                            </td>
-
-                            <td>
-                                ${employee.hireDate ?? "N/A"}
-                            </td>
-
-                            <td>
-
-                                <button
-                                    class="btn"
-                                    onclick="viewEmployee(${employee.employeeId})">
-                                    View
-                                </button>
-
-                            </td>
-
-                        </tr>
-
-                    `).join("")}
-
-                </tbody>
-
-            </table>
-        `;
+                `).join("")}
+            </tbody>
+        </table>
+    `;
     }
 
 
     // ==========================================
-    // LOAD ALL EMPLOYEES
+    // LOAD EMPLOYEES ASSIGNED TO CURRENT HR
     // ==========================================
 
-    function loadEmployees() {
+    async function getCurrentHR() {
 
-        document.getElementById("employees").innerHTML =
-            "<p class='loading'>Loading employees...</p>";
+        const response = await fetch("/employees/me");
 
-        fetch('/employees')
-            .then(response => {
+        if (!response.ok) {
+            throw new Error("Unable to identify the logged-in HR");
+        }
 
-                if (!response.ok) {
-                    throw new Error("Failed to load employees");
-                }
+        return await response.json();
+    }
 
-                return response.json();
-            })
 
-            .then(employees => {
+    async function loadEmployees() {
 
-                displayEmployees(employees);
+        try {
 
-            })
+            const [employeesResponse, currentHR] = await Promise.all([
+                fetch("/employees"),
+                getCurrentHR()
+            ]);
 
-            .catch(error => {
+            if (!employeesResponse.ok) {
+                throw new Error("Failed to load employees");
+            }
 
-                document.getElementById("employees").innerHTML =
-                    "<p class='error-message'>Unable to load employees.</p>";
+            const employees = await employeesResponse.json();
 
-                console.error(error);
-            });
+            const filteredEmployees = employees.filter(
+                employee =>
+                    Number(employee.hrId) === Number(currentHR.employeeId)
+            );
+
+            displayEmployees(filteredEmployees);
+
+        } catch (error) {
+
+            console.error(error);
+
+            document.getElementById("employees").innerHTML =
+                "<p class='error-message'>Failed to load employees.</p>";
+        }
     }
 
 
     // ==========================================
-    // SEARCH EMPLOYEES
+    // SEARCH EMPLOYEES ASSIGNED TO CURRENT HR
     // ==========================================
 
-    function searchEmployees() {
+    async function searchEmployees() {
 
-        const name =
-            document.getElementById("searchName").value.trim();
+        const name = document.getElementById("searchName").value.trim();
 
-        if (name === "") {
-
-            loadEmployees();
+        if (!name) {
+            await loadEmployees();
             return;
         }
 
         document.getElementById("employees").innerHTML =
             "<p class='loading'>Searching...</p>";
 
-        fetch(`/employees/search?name=${encodeURIComponent(name)}`)
-            .then(response => {
+        try {
 
-                if (!response.ok) {
-                    throw new Error("Search failed");
-                }
+            const [searchResponse, currentHR] = await Promise.all([
+                fetch(`/employees/search?name=${encodeURIComponent(name)}`),
+                getCurrentHR()
+            ]);
 
-                return response.json();
-            })
+            if (!searchResponse.ok) {
+                throw new Error("Search failed");
+            }
 
-            .then(employees => {
+            const employees = await searchResponse.json();
 
-                displayEmployees(employees);
+            const filteredEmployees = employees.filter(
+                employee =>
+                    Number(employee.hrId) === Number(currentHR.employeeId)
+            );
 
-            })
+            displayEmployees(filteredEmployees);
 
-            .catch(error => {
+        } catch (error) {
 
-                document.getElementById("employees").innerHTML =
-                    "<p class='error-message'>Unable to search employees.</p>";
+            document.getElementById("employees").innerHTML =
+                "<p class='error-message'>Unable to search employees.</p>";
 
-                console.error(error);
-            });
+            console.error(error);
+        }
     }
 
 
     // ==========================================
     // VIEW EMPLOYEE
     // ==========================================
-    function viewEmployee(employeeId) {
 
-        window.location.href =
-            `/hr/employees/${employeeId}`;
+    function viewEmployee(employeeId) {
+        window.location.href = `/hr/employees/${employeeId}`;
     }
+
+
+    // ==========================================
+    // LOAD FORM DROPDOWN OPTIONS
+    // ==========================================
+
+    let formOptionsPromise = null;
+
+    async function loadFormOptions() {
+
+        if (formOptionsPromise) {
+            return await formOptionsPromise;
+        }
+
+        formOptionsPromise = (async function () {
+
+            const [
+                departmentResponse,
+                designationResponse,
+                employeesResponse,
+                currentHR
+            ] = await Promise.all([
+                fetch("/departments"),
+                fetch("/designations"),
+                fetch("/employees"),
+                getCurrentHR()
+            ]);
+
+            if (
+                !departmentResponse.ok ||
+                !designationResponse.ok ||
+                !employeesResponse.ok
+            ) {
+                throw new Error("Failed to load form options");
+            }
+
+            const departments = await departmentResponse.json();
+            const designations = await designationResponse.json();
+            const employees = await employeesResponse.json();
+
+            // DEPARTMENT DROPDOWN
+            document.getElementById("departmentId").innerHTML =
+                '<option value="">Select Department</option>' +
+                departments.map(department => `
+                <option value="${department.departmentId}">
+                    ${department.departmentId} - ${department.departmentName}
+                </option>
+            `).join("");
+
+            // DESIGNATION DROPDOWN
+            document.getElementById("designationId").innerHTML =
+                '<option value="">Select Designation</option>' +
+                designations.map(designation => `
+                <option value="${designation.designationId}">
+                    ${designation.designationId} - ${designation.designationTitle}
+                </option>
+            `).join("");
+
+            // MANAGER DROPDOWN
+            // Optional: leave as None if the employee has no manager.
+            // This filters by designation title containing "manager".
+            const managers = employees.filter(employee =>
+                employee.hrId === currentHR.employeeId &&
+                employee.designation?.designationTitle
+                    ?.toLowerCase()
+                    .includes("manager")
+            );
+
+            document.getElementById("managerId").innerHTML =
+                '<option value="">None</option>' +
+                managers.map(manager => `
+                <option value="${manager.employeeId}">
+                    ${manager.employeeId} - ${manager.firstName} ${manager.lastName}
+                </option>
+            `).join("");
+
+            // CURRENT HR: SHOW NAME, STORE ID
+            document.getElementById("hrId").value =
+                currentHR.employeeId;
+
+            document.getElementById("hrName").value =
+                `${currentHR.employeeId} - ${currentHR.firstName} ${currentHR.lastName}`;
+
+        })().catch(error => {
+
+            formOptionsPromise = null;
+            throw error;
+
+        });
+
+        return await formOptionsPromise;
+    }
+
+
+    // ==========================================
+    // SHOW ADD FORM
+    // ==========================================
+
+    async function showAddForm() {
+
+        try {
+
+            await loadFormOptions();
+
+            document.getElementById("employeeForm").reset();
+            document.getElementById("employeeId").value = "";
+
+            // Reset HR to the logged-in HR after resetting the form.
+            const currentHR = await getCurrentHR();
+
+            document.getElementById("hrId").value =
+                currentHR.employeeId;
+
+            document.getElementById("hrName").value =
+                `${currentHR.employeeId} - ${currentHR.firstName} ${currentHR.lastName}`;
+
+            document.getElementById("formTitle").textContent =
+                "Add Employee";
+
+            document.getElementById("formMessage").textContent = "";
+
+            document.getElementById("employeeFormCard").style.display =
+                "block";
+
+            document.getElementById("employeeFormCard").scrollIntoView({
+                behavior: "smooth"
+            });
+
+        } catch (error) {
+
+            console.error(error);
+            alert("Unable to load the employee form options.");
+        }
+    }
+
+
+    // ==========================================
+    // HIDE FORM
+    // ==========================================
+
+    function hideEmployeeForm() {
+
+        document.getElementById("employeeFormCard").style.display =
+            "none";
+    }
+
+
+    // ==========================================
+    // EDIT EMPLOYEE
+    // ==========================================
+
+    async function editEmployee(employeeId) {
+
+        try {
+
+            await loadFormOptions();
+
+            const response = await fetch(`/employees/${employeeId}`);
+
+            if (!response.ok) {
+                throw new Error("Failed to load employee details");
+            }
+
+            const employee = await response.json();
+
+            document.getElementById("employeeId").value =
+                employee.employeeId ?? "";
+
+            document.getElementById("firstName").value =
+                employee.firstName ?? "";
+
+            document.getElementById("lastName").value =
+                employee.lastName ?? "";
+
+            document.getElementById("email").value =
+                employee.email ?? "";
+
+            document.getElementById("phone").value =
+                employee.phone ?? "";
+
+            document.getElementById("dateOfBirth").value =
+                employee.dateOfBirth ?? "";
+
+            document.getElementById("hireDate").value =
+                employee.hireDate ?? "";
+
+            document.getElementById("address").value =
+                employee.address ?? "";
+
+            document.getElementById("departmentId").value =
+                employee.department?.departmentId ?? "";
+
+            document.getElementById("designationId").value =
+                employee.designation?.designationId ?? "";
+
+            document.getElementById("managerId").value =
+                employee.managerId ?? "";
+
+            // HR is the logged-in HR who manages this page.
+            const currentHR = await getCurrentHR();
+
+            document.getElementById("hrId").value =
+                currentHR.employeeId;
+
+            document.getElementById("hrName").value =
+                `${currentHR.employeeId} - ${currentHR.firstName} ${currentHR.lastName}`;
+
+            document.getElementById("formTitle").textContent =
+                "Edit Employee";
+
+            document.getElementById("formMessage").textContent = "";
+
+            document.getElementById("employeeFormCard").style.display =
+                "block";
+
+            document.getElementById("employeeFormCard").scrollIntoView({
+                behavior: "smooth"
+            });
+
+        } catch (error) {
+
+            alert("Unable to load employee details.");
+            console.error(error);
+        }
+    }
+
+
+    // ==========================================
+    // ADD / UPDATE EMPLOYEE
+    // ==========================================
+
+    document.getElementById("employeeForm").addEventListener(
+        "submit",
+        async function(event) {
+
+            event.preventDefault();
+
+            const employeeId =
+                document.getElementById("employeeId").value;
+
+            const departmentId =
+                document.getElementById("departmentId").value;
+
+            const designationId =
+                document.getElementById("designationId").value;
+
+            const managerId =
+                document.getElementById("managerId").value;
+
+            const hrId =
+                document.getElementById("hrId").value;
+
+            const employee = {
+
+                firstName:
+                    document.getElementById("firstName").value.trim(),
+
+                lastName:
+                    document.getElementById("lastName").value.trim(),
+
+                email:
+                    document.getElementById("email").value.trim(),
+
+                phone:
+                    document.getElementById("phone").value.trim() || null,
+
+                dateOfBirth:
+                    document.getElementById("dateOfBirth").value || null,
+
+                hireDate:
+                document.getElementById("hireDate").value,
+
+                address:
+                    document.getElementById("address").value.trim() || null,
+
+                department: departmentId
+                    ? { departmentId: Number(departmentId) }
+                    : null,
+
+                designation: designationId
+                    ? { designationId: Number(designationId) }
+                    : null,
+
+                managerId: managerId
+                    ? Number(managerId)
+                    : null,
+
+                hrId: hrId
+                    ? Number(hrId)
+                    : null
+            };
+
+            const url = employeeId
+                ? `/employees/${employeeId}`
+                : "/employees";
+
+            const method = employeeId ? "PUT" : "POST";
+
+            const message = document.getElementById("formMessage");
+
+            try {
+
+                message.textContent = "Saving employee...";
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(employee)
+                });
+
+                if (!response.ok) {
+
+                    const errorText = await response.text();
+
+                    throw new Error(
+                        errorText || "Failed to save employee"
+                    );
+                }
+
+                alert(
+                    employeeId
+                        ? "Employee updated successfully."
+                        : "Employee added successfully."
+                );
+
+                hideEmployeeForm();
+                await loadEmployees();
+
+            } catch (error) {
+
+                message.textContent =
+                    "Unable to save employee. " + error.message;
+
+                console.error(error);
+            }
+        }
+    );
 
 
     // ==========================================

@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -13,97 +12,7 @@
 
     <h1>Department Management</h1>
 
-
-    <!-- =========================
-         ADD DEPARTMENT
-         ========================= -->
-
-    <div class="card">
-
-        <h2>Add Department</h2>
-
-        <form id="departmentForm">
-
-            <label>Department Name</label>
-
-            <input
-                    type="text"
-                    id="departmentName"
-                    placeholder="Enter department name"
-                    required>
-
-            <br><br>
-
-            <label>Location</label>
-
-            <input
-                    type="text"
-                    id="location"
-                    placeholder="Enter location">
-
-            <br><br>
-
-            <label>Description</label>
-
-            <textarea
-                    id="description"
-                    rows="3"
-                    placeholder="Enter department description">
-            </textarea>
-
-            <br><br>
-
-            <button
-                    type="submit"
-                    class="btn">
-                Add Department
-            </button>
-
-        </form>
-
-        <p id="addMessage"></p>
-
-    </div>
-
-
-    <br>
-
-
-    <!-- =========================
-         SEARCH
-         ========================= -->
-
-    <div class="card">
-
-        <h2>Search Departments</h2>
-
-        <input
-                type="text"
-                id="searchName"
-                placeholder="Enter department name">
-
-        <button
-                class="btn"
-                onclick="searchDepartments()">
-            Search
-        </button>
-
-        <button
-                class="btn"
-                onclick="loadDepartments()">
-            Show All
-        </button>
-
-    </div>
-
-
-    <br>
-
-
-    <!-- =========================
-         DEPARTMENT LIST
-         ========================= -->
-
+    <!-- DEPARTMENT LIST -->
     <div class="card">
 
         <h2>Departments</h2>
@@ -111,31 +20,20 @@
         <table>
 
             <thead>
-
             <tr>
-
                 <th>Department ID</th>
-
                 <th>Department Name</th>
-
                 <th>Location</th>
-
                 <th>Description</th>
-
-                <th>Actions</th>
-
             </tr>
-
             </thead>
 
             <tbody id="departmentTable">
 
             <tr>
-
-                <td colspan="5">
+                <td colspan="4">
                     Loading departments...
                 </td>
-
             </tr>
 
             </tbody>
@@ -144,18 +42,13 @@
 
     </div>
 
-
     <br>
 
-
-    <a
-            class="back-link"
-            href="/hr-dashboard">
+    <a class="back-link" href="/hr-dashboard">
         ← Back to HR Dashboard
     </a>
 
 </div>
-
 
 <script>
 
@@ -170,36 +63,25 @@
             .then(response => {
 
                 if (!response.ok) {
-
-                    throw new Error(
-                        "Failed to load departments"
-                    );
+                    throw new Error("Failed to load departments");
                 }
 
                 return response.json();
             })
 
             .then(departments => {
-
                 displayDepartments(departments);
-
             })
 
             .catch(error => {
 
-                document.getElementById(
-                    "departmentTable"
-                ).innerHTML = `
-
-                    <tr>
-
-                        <td colspan="5">
-                            Unable to load departments.
-                        </td>
-
-                    </tr>
-
-                `;
+                document.getElementById("departmentTable").innerHTML = `
+                <tr>
+                    <td colspan="4">
+                        Unable to load departments.
+                    </td>
+                </tr>
+            `;
 
                 console.error(error);
             });
@@ -212,310 +94,38 @@
 
     function displayDepartments(departments) {
 
-        const table =
-            document.getElementById(
-                "departmentTable"
-            );
+        const table = document.getElementById("departmentTable");
 
         table.innerHTML = "";
-
 
         if (!departments || departments.length === 0) {
 
             table.innerHTML = `
-
-                <tr>
-
-                    <td colspan="5">
-                        No departments found.
-                    </td>
-
-                </tr>
-
-            `;
+            <tr>
+                <td colspan="4">
+                    No departments found.
+                </td>
+            </tr>
+        `;
 
             return;
         }
 
-
         departments.forEach(department => {
 
-            const row =
-                document.createElement("tr");
-
+            const row = document.createElement("tr");
 
             row.innerHTML = `
-
-                <td>
-                    ${department.departmentId ?? "N/A"}
-                </td>
-
-                <td>
-                    ${department.departmentName ?? "N/A"}
-                </td>
-
-                <td>
-                    ${department.location ?? "N/A"}
-                </td>
-
-                <td>
-                    ${department.description ?? "N/A"}
-                </td>
-
-                <td>
-
-                    <button
-                            class="btn"
-                            onclick="viewDepartment(
-                                ${department.departmentId}
-                            )">
-                        View
-                    </button>
-
-                    <button
-                            class="btn"
-                            onclick="editDepartment(
-                                ${department.departmentId}
-                            )">
-                        Edit
-                    </button>
-
-                    <button
-                            class="btn"
-                            onclick="deleteDepartment(
-                                ${department.departmentId}
-                            )">
-                        Delete
-                    </button>
-
-                </td>
-
-            `;
+            <td>${department.departmentId ?? "N/A"}</td>
+            <td>${department.departmentName ?? "N/A"}</td>
+            <td>${department.location ?? "N/A"}</td>
+            <td>${department.description ?? "N/A"}</td>
+        `;
 
             table.appendChild(row);
 
         });
-
     }
-
-
-    // ==========================================
-    // SEARCH DEPARTMENTS
-    // ==========================================
-
-    function searchDepartments() {
-
-        const name =
-            document.getElementById(
-                "searchName"
-            ).value.trim();
-
-
-        if (!name) {
-
-            loadDepartments();
-
-            return;
-        }
-
-
-        fetch(
-            `/departments/search?name=${encodeURIComponent(name)}`
-        )
-
-            .then(response => {
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        "Failed to search departments"
-                    );
-                }
-
-                return response.json();
-            })
-
-            .then(departments => {
-
-                displayDepartments(departments);
-
-            })
-
-            .catch(error => {
-
-                console.error(error);
-
-                alert(
-                    "Unable to search departments."
-                );
-            });
-    }
-
-
-    // ==========================================
-    // VIEW DEPARTMENT
-    // ==========================================
-
-    function viewDepartment(departmentId) {
-
-        window.location.href =
-            `/hr/departments/${departmentId}`;
-    }
-
-
-    // ==========================================
-    // EDIT DEPARTMENT
-    // ==========================================
-
-    function editDepartment(departmentId) {
-
-        window.location.href =
-            `/hr/departments/${departmentId}/edit`;
-    }
-
-
-    // ==========================================
-    // DELETE DEPARTMENT
-    // ==========================================
-
-    function deleteDepartment(departmentId) {
-
-        const confirmed =
-            confirm(
-                "Are you sure you want to delete this department?"
-            );
-
-
-        if (!confirmed) {
-            return;
-        }
-
-
-        fetch(
-            `/departments/${departmentId}`,
-            {
-                method: "DELETE"
-            }
-        )
-
-            .then(response => {
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        "Failed to delete department"
-                    );
-                }
-
-                return response.text();
-            })
-
-            .then(message => {
-
-                alert(message);
-
-                loadDepartments();
-
-            })
-
-            .catch(error => {
-
-                console.error(error);
-
-                alert(
-                    "Unable to delete department."
-                );
-            });
-    }
-
-
-    // ==========================================
-    // ADD DEPARTMENT
-    // ==========================================
-
-    document.getElementById(
-        "departmentForm"
-    ).addEventListener(
-        "submit",
-        function(event) {
-
-            event.preventDefault();
-
-
-            const department = {
-
-                departmentName:
-                document.getElementById(
-                    "departmentName"
-                ).value,
-
-                location:
-                document.getElementById(
-                    "location"
-                ).value,
-
-                description:
-                document.getElementById(
-                    "description"
-                ).value
-
-            };
-
-
-            fetch(
-                "/departments",
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body:
-                        JSON.stringify(department)
-                }
-            )
-
-                .then(response => {
-
-                    if (!response.ok) {
-
-                        throw new Error(
-                            "Failed to create department"
-                        );
-                    }
-
-                    return response.json();
-                })
-
-                .then(createdDepartment => {
-
-                    document.getElementById(
-                        "addMessage"
-                    ).innerText =
-                        "Department added successfully.";
-
-                    document.getElementById(
-                        "departmentForm"
-                    ).reset();
-
-                    loadDepartments();
-
-                })
-
-                .catch(error => {
-
-                    document.getElementById(
-                        "addMessage"
-                    ).innerText =
-                        "Failed to add department.";
-
-                    console.error(error);
-                });
-
-        }
-    );
 
 
     // ==========================================
@@ -527,5 +137,4 @@
 </script>
 
 </body>
-
 </html>

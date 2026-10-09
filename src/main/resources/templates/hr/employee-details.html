@@ -1,279 +1,101 @@
 <!DOCTYPE html>
-
-<html xmlns:th="http://www.thymeleaf.org">
-
+<html lang="en">
 <head>
-    <title>Employee Details - StaffSync</title>
-    <link rel="stylesheet" th:href="@{/style.css}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Details</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
-
 <body>
 
 <div class="container">
 
     <h1>Employee Details</h1>
 
-    <div class="card" id="employee">
-
-        <p class="loading">
-            Loading employee details...
-        </p>
-
+    <div id="employeeDetails">
+        Loading employee details...
     </div>
 
-    <br>
+    <p> <a href="/hr/employees">← Back to Employees</a> </p>
 
-    <button class="btn" onclick="editEmployee()">
-        Edit Employee
-    </button>
-
-    <br><br>
-
-    <a class="back-link" href="/hr/employees">
-        ← Back to Employees
-    </a>
-
-    <br><br>
-
-    <a class="back-link" href="/hr-dashboard">
-        ← Back to HR Dashboard
-    </a>
+    <p>
+        <a href="/hr-dashboard">← Back to HR Dashboard</a>
+    </p>
 
 </div>
 
-
 <script>
+    const employeeId = window.location.pathname.split("/").pop();
 
-    // ==========================================
-    // GET EMPLOYEE ID FROM URL
-    // ==========================================
+    async function loadEmployeeDetails() {
+        const details = document.getElementById("employeeDetails");
 
-    const pathParts =
-        window.location.pathname.split("/");
-
-    const employeeId =
-        pathParts[pathParts.length - 1];
-
-
-    // ==========================================
-    // EDIT EMPLOYEE
-    // ==========================================
-
-    function editEmployee() {
-
-        window.location.href =
-            `/hr/employees/${employeeId}/edit`;
-    }
-
-
-    // ==========================================
-    // LOAD EMPLOYEE
-    // ==========================================
-
-    fetch(`/employees/${employeeId}`)
-        .then(response => {
+        try {
+            const response = await fetch(`/employees/${employeeId}`);
 
             if (!response.ok) {
-
-                throw new Error(
-                    "Failed to load employee"
-                );
+                throw new Error("Failed to load employee details");
             }
 
-            return response.json();
-        })
+            const employee = await response.json();
 
-        .then(employee => {
+            const departmentName =
+                employee.department?.departmentName ?? "Not assigned";
 
-            const container =
-                document.getElementById("employee");
+            const designationName =
+                employee.designation?.designationTitle ?? "Not assigned";
 
+            async function getEmployeeName(id) {
+                if (id == null) {
+                    return "Not assigned";
+                }
 
-            // ==========================================
-            // PROFILE PHOTO
-            // ==========================================
+                try {
+                    const response = await fetch(`/employees/${id}`);
 
-            const photoHtml =
-                employee.profilePhoto
+                    if (!response.ok) {
+                        return "Not available";
+                    }
 
-                    ? `
-                        <div class="profile-photo-container">
+                    const person = await response.json();
 
-                            <img
-                                src="${employee.profilePhoto}"
-                                alt="Profile Photo"
-                                class="profile-photo">
+                    return `${person.firstName ?? ""} ${person.lastName ?? ""}`.trim()
+                        || "Not available";
+                } catch {
+                    return "Not available";
+                }
+            }
 
-                        </div>
-                      `
+            const managerName = await getEmployeeName(employee.managerId);
+            const hrName = await getEmployeeName(employee.hrId);
 
-                    : `
-                        <p>
-                            No profile photo uploaded.
-                        </p>
-                      `;
+            details.innerHTML = `
+    <div class="card">
+        <h2>${employee.firstName ?? ""} ${employee.lastName ?? ""}</h2>
 
+        <p><strong>Employee ID:</strong> ${employee.employeeId}</p>
+        <p><strong>First Name:</strong> ${employee.firstName ?? "Not available"}</p>
+        <p><strong>Last Name:</strong> ${employee.lastName ?? "Not available"}</p>
+        <p><strong>Email:</strong> ${employee.email ?? "Not available"}</p>
+        <p><strong>Phone:</strong> ${employee.phone ?? "Not available"}</p>
+        <p><strong>Date of Birth:</strong> ${employee.dateOfBirth ?? "Not available"}</p>
+        <p><strong>Hire Date:</strong> ${employee.hireDate ?? "Not available"}</p>
+        <p><strong>Address:</strong> ${employee.address ?? "Not available"}</p>
+        <p><strong>Department:</strong> ${departmentName}</p>
+        <p><strong>Designation:</strong> ${designationName}</p>
+        <p><strong>Manager:</strong> ${managerName}</p>
+        <p><strong>HR:</strong> ${hrName}</p>
+    </div>
+`;
 
-            // ==========================================
-            // EMPLOYEE DETAILS
-            // ==========================================
-
-            container.innerHTML = `
-
-                ${photoHtml}
-
-
-                <div class="profile-row">
-                    <span class="profile-label">
-                        Employee ID
-                    </span>
-
-                    <span>
-                        ${employee.employeeId ?? "N/A"}
-                    </span>
-                </div>
-
-
-                <div class="profile-row">
-                    <span class="profile-label">
-                        First Name
-                    </span>
-
-                    <span>
-                        ${employee.firstName || "N/A"}
-                    </span>
-                </div>
-
-
-                <div class="profile-row">
-                    <span class="profile-label">
-                        Last Name
-                    </span>
-
-                    <span>
-                        ${employee.lastName || "N/A"}
-                    </span>
-                </div>
-
-
-                <div class="profile-row">
-                    <span class="profile-label">
-                        Email
-                    </span>
-
-                    <span>
-                        ${employee.email || "N/A"}
-                    </span>
-                </div>
-
-
-                <div class="profile-row">
-                    <span class="profile-label">
-                        Phone
-                    </span>
-
-                    <span>
-                        ${employee.phone || "N/A"}
-                    </span>
-                </div>
-
-
-                <div class="profile-row">
-                    <span class="profile-label">
-                        Date of Birth
-                    </span>
-
-                    <span>
-                        ${employee.dateOfBirth ?? "N/A"}
-                    </span>
-                </div>
-
-
-                <div class="profile-row">
-                    <span class="profile-label">
-                        Hire Date
-                    </span>
-
-                    <span>
-                        ${employee.hireDate ?? "N/A"}
-                    </span>
-                </div>
-
-
-                <div class="profile-row">
-                    <span class="profile-label">
-                        Address
-                    </span>
-
-                    <span>
-                        ${employee.address ?? "N/A"}
-                    </span>
-                </div>
-
-
-                <div class="profile-row">
-                    <span class="profile-label">
-                        Designation ID
-                    </span>
-
-                    <span>
-                        ${employee.designationId ?? "Not assigned"}
-                    </span>
-                </div>
-
-
-                <div class="profile-row">
-                    <span class="profile-label">
-                        Team ID
-                    </span>
-
-                    <span>
-                        ${employee.teamId ?? "Not assigned"}
-                    </span>
-                </div>
-
-
-                <div class="profile-row">
-                    <span class="profile-label">
-                        Manager ID
-                    </span>
-
-                    <span>
-                        ${employee.managerId ?? "Not assigned"}
-                    </span>
-                </div>
-
-
-                <div class="profile-row">
-                    <span class="profile-label">
-                        HR ID
-                    </span>
-
-                    <span>
-                        ${employee.hrId ?? "Not assigned"}
-                    </span>
-                </div>
-
-            `;
-
-        })
-
-
-        // ==========================================
-        // ERROR HANDLING
-        // ==========================================
-
-        .catch(error => {
-
-            document.getElementById("employee").innerHTML =
-                "<p class='error-message'>Unable to load employee details.</p>";
-
+        } catch (error) {
+            details.innerHTML = "<p>Unable to load employee details.</p>";
             console.error(error);
+        }
+    }
 
-        });
-
+    loadEmployeeDetails();
 </script>
 
 </body>
-
 </html>

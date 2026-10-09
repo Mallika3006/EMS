@@ -32,4 +32,6 @@ public class EmployeeResponseDTO {
     private Long hrId;
 
     private String profilePhoto;
+
+    private String designationName;
 }

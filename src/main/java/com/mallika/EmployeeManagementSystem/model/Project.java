@@ -27,6 +27,9 @@ public class Project {
 
     private LocalDate endDate;
 
+    @Column(name = "manager_id")
+    private Integer managerId;
+
 
     // =========================
     // TASKS

@@ -171,4 +171,30 @@ public class ProjectService {
                 managerId
         );
     }
+
+    // GET UNASSIGNED PROJECTS OF LOGGED-IN MANAGER
+    public List<Project> getUnassignedProjectsByManager(
+            String username) {
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found: " + username
+                        ));
+
+        if (user.getEmployee() == null ||
+                user.getEmployee().getEmployeeId() == null) {
+
+            throw new ResourceNotFoundException(
+                    "Employee not assigned to this user"
+            );
+        }
+
+        Integer managerId =
+                user.getEmployee().getEmployeeId();
+
+        return projectRepository.getUnassignedProjectsByManagerId(
+                managerId
+        );
+    }
 }

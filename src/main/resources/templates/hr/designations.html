@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -13,100 +12,7 @@
 
     <h1>Designation Management</h1>
 
-
-    <!-- =========================
-         ADD DESIGNATION
-         ========================= -->
-
-    <div class="card">
-
-        <h2>Add Designation</h2>
-
-        <form id="designationForm">
-
-            <label>Designation Title</label>
-
-            <input
-                    type="text"
-                    id="designationTitle"
-                    placeholder="Enter designation title"
-                    required>
-
-            <br><br>
-
-            <label>Minimum Salary</label>
-
-            <input
-                    type="number"
-                    id="minSalary"
-                    placeholder="Enter minimum salary"
-                    step="0.01"
-                    min="0">
-
-            <br><br>
-
-            <label>Maximum Salary</label>
-
-            <input
-                    type="number"
-                    id="maxSalary"
-                    placeholder="Enter maximum salary"
-                    step="0.01"
-                    min="0">
-
-            <br><br>
-
-            <button
-                    type="submit"
-                    class="btn">
-                Add Designation
-            </button>
-
-        </form>
-
-        <p id="addMessage"></p>
-
-    </div>
-
-
-    <br>
-
-
-    <!-- =========================
-         SEARCH
-         ========================= -->
-
-    <div class="card">
-
-        <h2>Search Designations</h2>
-
-        <input
-                type="text"
-                id="searchTitle"
-                placeholder="Enter designation title">
-
-        <button
-                class="btn"
-                onclick="searchDesignations()">
-            Search
-        </button>
-
-        <button
-                class="btn"
-                onclick="loadDesignations()">
-            Show All
-        </button>
-
-    </div>
-
-
-    <br>
-
-
-    <!-- =========================
-         DESIGNATION LIST
-         ========================= -->
-
+    <!-- DESIGNATION LIST -->
     <div class="card">
 
         <h2>Designations</h2>
@@ -114,31 +20,20 @@
         <table>
 
             <thead>
-
             <tr>
-
                 <th>Designation ID</th>
-
                 <th>Title</th>
-
                 <th>Minimum Salary</th>
-
                 <th>Maximum Salary</th>
-
-                <th>Actions</th>
-
             </tr>
-
             </thead>
 
             <tbody id="designationTable">
 
             <tr>
-
-                <td colspan="5">
+                <td colspan="4">
                     Loading designations...
                 </td>
-
             </tr>
 
             </tbody>
@@ -147,18 +42,13 @@
 
     </div>
 
-
     <br>
 
-
-    <a
-            class="back-link"
-            href="/hr-dashboard">
+    <a class="back-link" href="/hr-dashboard">
         ← Back to HR Dashboard
     </a>
 
 </div>
-
 
 <script>
 
@@ -173,41 +63,27 @@
             .then(response => {
 
                 if (!response.ok) {
-
-                    throw new Error(
-                        "Failed to load designations"
-                    );
+                    throw new Error("Failed to load designations");
                 }
 
                 return response.json();
             })
 
             .then(designations => {
-
-                displayDesignations(
-                    designations
-                );
-
+                displayDesignations(designations);
             })
 
             .catch(error => {
 
-                document.getElementById(
-                    "designationTable"
-                ).innerHTML = `
-
-                    <tr>
-
-                        <td colspan="5">
-                            Unable to load designations.
-                        </td>
-
-                    </tr>
-
-                `;
+                document.getElementById("designationTable").innerHTML = `
+                <tr>
+                    <td colspan="4">
+                        Unable to load designations.
+                    </td>
+                </tr>
+            `;
 
                 console.error(error);
-
             });
     }
 
@@ -216,335 +92,40 @@
     // DISPLAY DESIGNATIONS
     // ==========================================
 
-    function displayDesignations(
-        designations
-    ) {
+    function displayDesignations(designations) {
 
-        const table =
-            document.getElementById(
-                "designationTable"
-            );
+        const table = document.getElementById("designationTable");
 
         table.innerHTML = "";
 
-
-        if (
-            !designations ||
-            designations.length === 0
-        ) {
+        if (!designations || designations.length === 0) {
 
             table.innerHTML = `
-
-                <tr>
-
-                    <td colspan="5">
-                        No designations found.
-                    </td>
-
-                </tr>
-
-            `;
+            <tr>
+                <td colspan="4">
+                    No designations found.
+                </td>
+            </tr>
+        `;
 
             return;
         }
 
-
         designations.forEach(designation => {
 
-            const row =
-                document.createElement("tr");
-
+            const row = document.createElement("tr");
 
             row.innerHTML = `
-
-                <td>
-                    ${designation.designationId ?? "N/A"}
-                </td>
-
-                <td>
-                    ${designation.designationTitle ?? "N/A"}
-                </td>
-
-                <td>
-                    ${designation.minSalary ?? "N/A"}
-                </td>
-
-                <td>
-                    ${designation.maxSalary ?? "N/A"}
-                </td>
-
-                <td>
-
-                    <button
-                            class="btn"
-                            onclick="viewDesignation(
-                                ${designation.designationId}
-                            )">
-                        View
-                    </button>
-
-                    <button
-                            class="btn"
-                            onclick="editDesignation(
-                                ${designation.designationId}
-                            )">
-                        Edit
-                    </button>
-
-                    <button
-                            class="btn"
-                            onclick="deleteDesignation(
-                                ${designation.designationId}
-                            )">
-                        Delete
-                    </button>
-
-                </td>
-
-            `;
+            <td>${designation.designationId ?? "N/A"}</td>
+            <td>${designation.designationTitle ?? "N/A"}</td>
+            <td>${designation.minSalary ?? "N/A"}</td>
+            <td>${designation.maxSalary ?? "N/A"}</td>
+        `;
 
             table.appendChild(row);
 
         });
-
     }
-
-
-    // ==========================================
-    // SEARCH DESIGNATIONS
-    // ==========================================
-
-    function searchDesignations() {
-
-        const title =
-            document.getElementById(
-                "searchTitle"
-            ).value.trim();
-
-
-        if (!title) {
-
-            loadDesignations();
-
-            return;
-        }
-
-
-        fetch(
-            `/designations/search?title=${encodeURIComponent(title)}`
-        )
-
-            .then(response => {
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        "Failed to search designations"
-                    );
-                }
-
-                return response.json();
-            })
-
-            .then(designations => {
-
-                displayDesignations(
-                    designations
-                );
-
-            })
-
-            .catch(error => {
-
-                console.error(error);
-
-                alert(
-                    "Unable to search designations."
-                );
-
-            });
-    }
-
-
-    // ==========================================
-    // VIEW DESIGNATION
-    // ==========================================
-
-    function viewDesignation(
-        designationId
-    ) {
-
-        window.location.href =
-            `/hr/designations/${designationId}`;
-    }
-
-
-    // ==========================================
-    // EDIT DESIGNATION
-    // ==========================================
-
-    function editDesignation(
-        designationId
-    ) {
-
-        window.location.href =
-            `/hr/designations/${designationId}/edit`;
-    }
-
-
-    // ==========================================
-    // DELETE DESIGNATION
-    // ==========================================
-
-    function deleteDesignation(
-        designationId
-    ) {
-
-        const confirmed =
-            confirm(
-                "Are you sure you want to delete this designation?"
-            );
-
-
-        if (!confirmed) {
-            return;
-        }
-
-
-        fetch(
-            `/designations/${designationId}`,
-            {
-                method: "DELETE"
-            }
-        )
-
-            .then(response => {
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        "Failed to delete designation"
-                    );
-                }
-
-                return response.text();
-            })
-
-            .then(message => {
-
-                alert(message);
-
-                loadDesignations();
-
-            })
-
-            .catch(error => {
-
-                console.error(error);
-
-                alert(
-                    "Unable to delete designation."
-                );
-
-            });
-    }
-
-
-    // ==========================================
-    // ADD DESIGNATION
-    // ==========================================
-
-    document.getElementById(
-        "designationForm"
-    ).addEventListener(
-        "submit",
-        function(event) {
-
-            event.preventDefault();
-
-
-            const designation = {
-
-                designationTitle:
-                document.getElementById(
-                    "designationTitle"
-                ).value,
-
-                minSalary:
-                    document.getElementById(
-                        "minSalary"
-                    ).value
-                    || null,
-
-                maxSalary:
-                    document.getElementById(
-                        "maxSalary"
-                    ).value
-                    || null
-
-            };
-
-
-            fetch(
-                "/designations",
-                {
-                    method: "POST",
-
-                    headers: {
-
-                        "Content-Type":
-                            "application/json"
-
-                    },
-
-                    body:
-                        JSON.stringify(
-                            designation
-                        )
-                }
-            )
-
-                .then(response => {
-
-                    if (!response.ok) {
-
-                        throw new Error(
-                            "Failed to create designation"
-                        );
-                    }
-
-                    return response.json();
-
-                })
-
-                .then(createdDesignation => {
-
-                    document.getElementById(
-                        "addMessage"
-                    ).innerText =
-                        "Designation added successfully.";
-
-                    document.getElementById(
-                        "designationForm"
-                    ).reset();
-
-                    loadDesignations();
-
-                })
-
-                .catch(error => {
-
-                    document.getElementById(
-                        "addMessage"
-                    ).innerText =
-                        "Failed to add designation.";
-
-                    console.error(error);
-
-                });
-
-        }
-    );
 
 
     // ==========================================
@@ -556,5 +137,4 @@
 </script>
 
 </body>
-
 </html>

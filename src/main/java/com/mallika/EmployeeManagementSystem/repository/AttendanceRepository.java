@@ -607,6 +607,34 @@ public class AttendanceRepository {
         return attendanceList;
     }
 
+    public List<Attendance> getAttendanceByHr(Integer hrId) {
+
+        List<Attendance> attendanceList = new ArrayList<>();
+
+        String sql = "{call get_attendance_by_hr(?)}";
+
+        try (
+                Connection connection = dataSource.getConnection();
+                CallableStatement statement =
+                        connection.prepareCall(sql)
+        ) {
+            statement.setInt(1, hrId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    attendanceList.add(mapAttendance(resultSet));
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Error fetching attendance by HR", e
+            );
+        }
+
+        return attendanceList;
+    }
+
 
     // =========================================================
     // MAP RESULT SET

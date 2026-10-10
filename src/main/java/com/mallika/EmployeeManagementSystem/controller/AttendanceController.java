@@ -175,4 +175,16 @@ public class AttendanceController {
                 HttpStatus.CREATED
         );
     }
+
+    // =========================================================
+    // HR - ATTENDANCE OF ASSIGNED EMPLOYEES
+    // =========================================================
+
+    @GetMapping("/hr")
+    public ResponseEntity<List<Attendance>> getHrEmployeeAttendance() {
+
+        return ResponseEntity.ok(
+                attendanceService.getHrEmployeeAttendance()
+        );
+    }
 }

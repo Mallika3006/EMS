@@ -430,4 +430,117 @@ public class LeaveService {
                 status.toUpperCase()
         );
     }
+
+    // =========================================================
+// GET LOGGED-IN HR'S EMPLOYEE LEAVES
+// =========================================================
+
+    public List<Leave> getHrLeaves() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        String username = authentication.getName();
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found: " + username
+                        ));
+
+        if (user.getEmployee() == null ||
+                user.getEmployee().getEmployeeId() == null) {
+
+            throw new ResourceNotFoundException(
+                    "HR employee profile not found"
+            );
+        }
+
+        Integer hrId = user.getEmployee().getEmployeeId();
+
+        return leaveRepository.getLeavesByHr(hrId);
+    }
+
+
+// =========================================================
+// DELETE LEAVE BELONGING TO LOGGED-IN HR'S EMPLOYEE
+// =========================================================
+
+    public void deleteHrLeave(Integer leaveId) {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        String username = authentication.getName();
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found: " + username
+                        ));
+
+        if (user.getEmployee() == null ||
+                user.getEmployee().getEmployeeId() == null) {
+
+            throw new ResourceNotFoundException(
+                    "HR employee profile not found"
+            );
+        }
+
+        Integer hrId = user.getEmployee().getEmployeeId();
+
+        boolean deleted =
+                leaveRepository.deleteLeaveByHr(leaveId, hrId);
+
+        if (!deleted) {
+            throw new ResourceNotFoundException(
+                    "Leave not found or employee is not assigned to this HR"
+            );
+        }
+    }
+
+    // =========================================================
+// HR - APPROVE / REJECT LEAVE
+// =========================================================
+
+    public Leave updateHrLeaveStatus(
+            Integer leaveId,
+            String status) {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        String username = authentication.getName();
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found: " + username
+                        ));
+
+        if (user.getEmployee() == null ||
+                user.getEmployee().getEmployeeId() == null) {
+
+            throw new ResourceNotFoundException(
+                    "HR employee profile not found"
+            );
+        }
+
+        Integer hrId = user.getEmployee().getEmployeeId();
+
+        if (status == null ||
+                (!"APPROVED".equalsIgnoreCase(status) &&
+                        !"REJECTED".equalsIgnoreCase(status))) {
+
+            throw new IllegalArgumentException(
+                    "Status must be APPROVED or REJECTED"
+            );
+        }
+
+        return leaveRepository.updateHrLeaveStatus(
+                leaveId,
+                hrId,
+                status.toUpperCase()
+        );
+    }
 }

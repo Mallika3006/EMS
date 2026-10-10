@@ -324,4 +324,34 @@ public class AttendanceService {
         return attendanceRepository
                 .createAttendance(attendance);
     }
+
+    // =========================================================
+// HR - GET ATTENDANCE OF ASSIGNED EMPLOYEES
+// =========================================================
+
+    public List<Attendance> getHrEmployeeAttendance() {
+
+        Authentication authentication =
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
+
+        String username = authentication.getName();
+
+        User user = userRepository
+                .findByUsername(username)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found")
+                );
+
+        if (user.getEmployee() == null) {
+            throw new ResourceNotFoundException(
+                    "HR employee profile not found"
+            );
+        }
+
+        Integer hrId = user.getEmployee().getEmployeeId();
+
+        return attendanceRepository.getAttendanceByHr(hrId);
+    }
 }

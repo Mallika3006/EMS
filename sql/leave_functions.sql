@@ -399,3 +399,77 @@ ORDER BY l.leave_id DESC;
 
 END;
 $$;
+
+-- =========================================================
+-- GET LEAVES FOR EMPLOYEES ASSIGNED TO AN HR
+-- =========================================================
+
+CREATE OR REPLACE FUNCTION get_leaves_by_hr(
+    p_hr_id INTEGER
+)
+RETURNS SETOF leaves
+LANGUAGE plpgsql
+AS $$
+BEGIN
+RETURN QUERY
+SELECT l.*
+FROM leaves l
+         JOIN employees e
+              ON l.employee_id = e.employee_id
+WHERE e.hr_id = p_hr_id
+ORDER BY l.from_date DESC, l.leave_id;
+END;
+$$;
+
+
+-- =========================================================
+-- DELETE LEAVE ONLY IF EMPLOYEE BELONGS TO THIS HR
+-- =========================================================
+
+CREATE OR REPLACE FUNCTION delete_leave_by_hr(
+    p_leave_id INTEGER,
+    p_hr_id INTEGER
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+AS $$
+DECLARE
+deleted_count INTEGER;
+BEGIN
+DELETE FROM leaves l
+    USING employees e
+WHERE l.employee_id = e.employee_id
+  AND l.leave_id = p_leave_id
+  AND e.hr_id = p_hr_id;
+
+GET DIAGNOSTICS deleted_count = ROW_COUNT;
+
+RETURN deleted_count > 0;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION update_hr_leave_status(
+    p_leave_id INTEGER,
+    p_hr_id INTEGER,
+    p_status VARCHAR
+)
+RETURNS SETOF leaves
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF UPPER(p_status) NOT IN ('APPROVED', 'REJECTED') THEN
+        RAISE EXCEPTION
+            'Status must be APPROVED or REJECTED';
+END IF;
+
+RETURN QUERY
+UPDATE leaves AS l
+SET status = UPPER(p_status)
+    FROM employees AS e
+WHERE l.employee_id = e.employee_id
+  AND l.leave_id = p_leave_id
+  AND e.hr_id = p_hr_id
+  AND UPPER(l.status) = 'PENDING'
+    RETURNING l.*;
+END;
+$$;

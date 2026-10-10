@@ -706,4 +706,103 @@ public class LeaveRepository {
 
         return leaves;
     }
+
+    // =========================================================
+// GET LEAVES BY HR
+// =========================================================
+
+    public List<Leave> getLeavesByHr(Integer hrId) {
+
+        List<Leave> leaves = new ArrayList<>();
+
+        String sql = "SELECT * FROM get_leaves_by_hr(?)";
+
+        try (Connection connection = dataSource.getConnection();
+             CallableStatement statement = connection.prepareCall(sql)) {
+
+            statement.setInt(1, hrId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+
+                while (resultSet.next()) {
+                    leaves.add(mapLeave(resultSet));
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Error fetching HR employee leaves", e);
+        }
+
+        return leaves;
+    }
+
+
+// =========================================================
+// DELETE LEAVE BY HR
+// =========================================================
+
+    public boolean deleteLeaveByHr(Integer leaveId, Integer hrId) {
+
+        String sql = "SELECT delete_leave_by_hr(?, ?)";
+
+        try (Connection connection = dataSource.getConnection();
+             CallableStatement statement = connection.prepareCall(sql)) {
+
+            statement.setInt(1, leaveId);
+            statement.setInt(2, hrId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+
+                if (resultSet.next()) {
+                    return resultSet.getBoolean(1);
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Error deleting HR employee leave", e);
+        }
+
+        return false;
+    }
+
+    // =========================================================
+// UPDATE HR LEAVE STATUS
+// =========================================================
+
+    public Leave updateHrLeaveStatus(
+            Integer leaveId,
+            Integer hrId,
+            String status) {
+
+        String sql =
+                "SELECT * FROM update_hr_leave_status(?, ?, ?)";
+
+        try (Connection connection = dataSource.getConnection();
+             CallableStatement statement =
+                     connection.prepareCall(sql)) {
+
+            statement.setInt(1, leaveId);
+            statement.setInt(2, hrId);
+            statement.setString(3, status);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+
+                if (resultSet.next()) {
+                    return mapLeave(resultSet);
+                }
+            }
+
+        } catch (SQLException e) {
+
+            throw new RuntimeException(
+                    "Error updating HR leave status",
+                    e
+            );
+        }
+
+        throw new RuntimeException(
+                "Leave request not found, not pending, " +
+                        "or not assigned to this HR"
+        );
+    }
 }

@@ -568,4 +568,26 @@ public class EmployeeController {
                 employeeService.getEmployeesByHr(hrId)
         );
     }
+
+
+    // =========================
+    // GET LOGGED-IN HR'S EMPLOYEES
+    // =========================
+
+    @GetMapping("/hr/my-employees")
+    public ResponseEntity<List<Employee>> getMyHrEmployees(
+            Authentication authentication) {
+
+        String username = authentication.getName();
+
+        Employee hr = employeeService.getMyProfile(username);
+
+        List<Employee> employees =
+                employeeService.getEmployeesByHr(
+                        hr.getEmployeeId()
+                );
+
+        return ResponseEntity.ok(employees);
+    }
+
 }

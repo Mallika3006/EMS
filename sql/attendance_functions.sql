@@ -272,3 +272,20 @@ ORDER BY a.att_date DESC;
 
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION get_attendance_by_hr(
+    p_hr_id INTEGER
+)
+RETURNS SETOF attendance
+LANGUAGE plpgsql
+AS $$
+BEGIN
+RETURN QUERY
+SELECT a.*
+FROM attendance a
+         JOIN employees e
+              ON a.employee_id = e.employee_id
+WHERE e.hr_id = p_hr_id
+ORDER BY a.att_date DESC, a.attendance_id;
+END;
+$$;

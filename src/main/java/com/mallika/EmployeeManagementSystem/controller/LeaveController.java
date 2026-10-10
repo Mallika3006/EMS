@@ -189,4 +189,48 @@ public class LeaveController {
                 )
         );
     }
+
+    // =========================================================
+// HR - GET ASSIGNED EMPLOYEES' LEAVES
+// =========================================================
+
+    @GetMapping("/hr")
+    public ResponseEntity<List<Leave>> getHrLeaves() {
+
+        return ResponseEntity.ok(
+                leaveService.getHrLeaves()
+        );
+    }
+
+
+// =========================================================
+// HR - DELETE ASSIGNED EMPLOYEE'S LEAVE
+// =========================================================
+
+    @DeleteMapping("/hr/{id}")
+    public ResponseEntity<String> deleteHrLeave(
+            @PathVariable Integer id) {
+
+        leaveService.deleteHrLeave(id);
+
+        return ResponseEntity.ok(
+                "Leave deleted successfully"
+        );
+    }
+
+    // =========================================================
+// HR - APPROVE / REJECT LEAVE
+// =========================================================
+
+    @PatchMapping("/hr/{id}/status")
+    public ResponseEntity<Leave> updateHrLeaveStatus(
+            @PathVariable Integer id,
+            @RequestBody java.util.Map<String, String> request) {
+
+        String status = request.get("status");
+
+        return ResponseEntity.ok(
+                leaveService.updateHrLeaveStatus(id, status)
+        );
+    }
 }

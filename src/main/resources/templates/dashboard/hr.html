@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HR Dashboard - StaffSync</title>
     <link rel="stylesheet" th:href="@{/style.css}">
 </head>
@@ -13,122 +14,62 @@
 
     <h1>HR Dashboard</h1>
 
-    <p>
-        Welcome to StaffSync HR Management
-    </p>
-
     <!-- MY INFORMATION -->
-
     <div class="card">
-
         <h2>My Information</h2>
 
         <div class="dashboard-links">
-
-            <a href="/hr/profile">
-                My Profile
-            </a>
-
-            <a href="/hr/attendance">
-                My Attendance
-            </a>
-
-            <a href="/hr/leaves">
-                My Leaves
-            </a>
-
-            <a href="/hr/payroll">
-                My Payroll
-            </a>
-
+            <a href="/hr/profile">My Profile</a> <br>
+            <a href="/hr/attendance">My Attendance</a> <br>
+            <a href="/hr/leaves">My Leaves</a> <br>
+            <a href="/hr/payroll">My Payroll</a>
         </div>
-
     </div>
 
     <!-- EMPLOYEE MANAGEMENT -->
-
     <div class="card">
-
         <h2>Employee Management</h2>
 
         <div class="dashboard-links">
-
-            <a href="/hr/employees">
-                Employees
-            </a>
-
+            <a href="/hr/employees">Employees</a>
         </div>
-
     </div>
 
     <!-- ORGANIZATION MANAGEMENT -->
-
     <div class="card">
-
         <h2>Organization Management</h2>
 
         <div class="dashboard-links">
-
-            <a href="/hr/departments">
-                Departments
-            </a>
-
-            <a href="/hr/designations">
-                Designations
-            </a>
-
+            <a href="/hr/departments">Departments</a> <br>
+            <a href="/hr/designations">Designations</a>
         </div>
-
     </div>
 
     <!-- ATTENDANCE & LEAVE MANAGEMENT -->
-
     <div class="card">
-
         <h2>Attendance & Leave Management</h2>
 
         <div class="dashboard-links">
-
-            <a href="/hr/employee-attendance">
-                Employee Attendance
-            </a>
-
-            <a href="/hr/employee-leaves">
-                Employee Leaves
-            </a>
-
+            <a href="/hr/employee-attendance">Employee Attendance</a> <br>
+            <a href="/hr/employee-leaves">Employee Leaves</a> <br>
         </div>
-
     </div>
 
     <!-- PAYROLL MANAGEMENT -->
-
     <div class="card">
-
         <h2>Payroll Management</h2>
 
         <div class="dashboard-links">
-
-            <a href="/hr/employee-payroll">
-                Employee Payroll
-            </a>
-
+            <a href="/hr/employee-payroll">Employee Payroll</a>
         </div>
-
     </div>
 
     <!-- LOGOUT -->
-
     <div class="card">
-
-        <a class="logout-link" href="/logout">
-            Logout
-        </a>
-
+        <a class="logout-link" href="/logout">Logout</a>
     </div>
 
 </div>
 
 </body>
-
 </html>

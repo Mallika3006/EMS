@@ -55,7 +55,7 @@
             <th>Leave ID</th>
 
             <th>Employee ID</th>
-
+            <th>Employee Name</th>
             <th>From Date</th>
 
             <th>To Date</th>
@@ -163,8 +163,13 @@
                     </td>
 
 
+                    <td>${leave.employee?.employeeId ?? "-"}</td>
+
                     <td>
-                        ${leave.employee?.employeeId ?? "-"}
+                        ${[
+                                        leave.employee?.firstName,
+                                        leave.employee?.lastName
+                                    ].filter(Boolean).join(" ") || "-"}
                     </td>
 
 

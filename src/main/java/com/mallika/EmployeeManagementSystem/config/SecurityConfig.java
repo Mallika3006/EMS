@@ -111,6 +111,12 @@ public class SecurityConfig {
                         .requestMatchers("/attendance/manager/team")
                         .hasRole("MANAGER")
 
+                        // Manager adds attendance for team members
+                        .requestMatchers(
+                                        HttpMethod.POST,
+                                        "/attendance/manager"
+                                ).hasRole("MANAGER")
+
                         // Own payroll
                         .requestMatchers("/payrolls/me")
                         .hasAnyRole("EMPLOYEE", "HR", "MANAGER")

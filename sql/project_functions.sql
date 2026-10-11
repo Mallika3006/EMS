@@ -346,24 +346,27 @@ ORDER BY p.project_id DESC;
 END;
 $function$;
 
+
+DROP FUNCTION IF EXISTS public.get_projects_by_employee(INTEGER);
+
 CREATE OR REPLACE FUNCTION public.get_projects_by_employee(
-    p_employee_id INTEGER
+    p_employee_id INTEGER,
+    p_company_id BIGINT
 )
-RETURNS SETOF projects
+RETURNS SETOF public.projects
 LANGUAGE plpgsql
 AS $$
 BEGIN
 RETURN QUERY
-SELECT p.*
-FROM projects p
-         JOIN employee_project ep
+SELECT DISTINCT p.*
+FROM public.projects p
+         JOIN public.employee_project ep
               ON ep.project_id = p.project_id
-         JOIN employees e
+         JOIN public.employees e
               ON e.employee_id = ep.employee_id
-         JOIN users u
-              ON u.employee_id = e.employee_id
-                  AND u.company_id = e.company_id
-                  AND u.is_active = TRUE
-WHERE ep.employee_id = p_employee_id;
+WHERE ep.employee_id = p_employee_id
+  AND p.company_id = p_company_id
+  AND e.company_id = p_company_id
+ORDER BY p.project_id;
 END;
 $$;

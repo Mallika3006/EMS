@@ -667,15 +667,18 @@ public class LeaveRepository {
         );
 
         // Employee relationship
-        int employeeId =
-                rs.getInt("employee_id");
+        int employeeId = rs.getInt("employee_id");
 
         if (!rs.wasNull()) {
-
-            Employee employee =
-                    new Employee();
+            Employee employee = new Employee();
 
             employee.setEmployeeId(employeeId);
+            employee.setFirstName(
+                    rs.getString("employee_first_name")
+            );
+            employee.setLastName(
+                    rs.getString("employee_last_name")
+            );
 
             leave.setEmployee(employee);
         }

@@ -329,7 +329,9 @@ END;
 $$;
 
 
-CREATE OR REPLACE FUNCTION get_manager_leave_requests(
+DROP FUNCTION IF EXISTS public.get_manager_leave_requests(INTEGER);
+
+CREATE OR REPLACE FUNCTION public.get_manager_leave_requests(
     p_manager_id INTEGER
 )
 RETURNS TABLE (
@@ -338,31 +340,32 @@ RETURNS TABLE (
     to_date DATE,
     reason VARCHAR,
     status VARCHAR,
-    employee_id INTEGER
+    employee_id INTEGER,
+    employee_first_name VARCHAR,
+    employee_last_name VARCHAR
 )
 LANGUAGE plpgsql
 AS $$
 BEGIN
-
 RETURN QUERY
-
 SELECT
     l.leave_id,
     l.from_date,
     l.to_date,
     l.reason,
     l.status,
-    l.employee_id
-
-FROM leaves l
-
-         JOIN employees e
-              ON l.employee_id = e.employee_id
-
+    l.employee_id,
+    e.first_name::VARCHAR,
+    e.last_name::VARCHAR
+FROM public.leaves l
+         JOIN public.employees e
+              ON e.employee_id = l.employee_id
+         JOIN public.users u
+              ON u.employee_id = e.employee_id
+                  AND u.company_id = e.company_id
+                  AND u.is_active = TRUE
 WHERE e.manager_id = p_manager_id
-
 ORDER BY l.leave_id DESC;
-
 END;
 $$;
 

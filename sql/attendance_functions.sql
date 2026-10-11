@@ -254,23 +254,41 @@ $$;
 -- GET TEAM ATTENDANCE BY MANAGER
 -- =========================================================
 
-CREATE OR REPLACE FUNCTION get_team_attendance(
+CREATE OR REPLACE FUNCTION public.get_team_attendance(
     p_manager_id INTEGER
 )
-RETURNS SETOF attendance
+RETURNS TABLE (
+    attendance_id INTEGER,
+    att_date DATE,
+    status VARCHAR,
+    check_in_time TIME,
+    check_out_time TIME,
+    employee_id INTEGER,
+    employee_first_name VARCHAR,
+    employee_last_name VARCHAR
+)
 LANGUAGE plpgsql
 AS $$
 BEGIN
-RETURN QUERY
-SELECT a.*
-FROM attendance a
-         JOIN employees e
-              ON a.employee_id = e.employee_id
-         JOIN users u
-              ON u.employee_id = e.employee_id
-                  AND u.is_active = TRUE
-WHERE e.manager_id = p_manager_id
-ORDER BY a.att_date DESC;
+    RETURN QUERY
+    SELECT
+        a.attendance_id,
+        a.att_date,
+        a.status::VARCHAR,
+        a.check_in_time,
+        a.check_out_time,
+        a.employee_id,
+        e.first_name::VARCHAR,
+        e.last_name::VARCHAR
+    FROM public.attendance a
+    JOIN public.employees e
+        ON e.employee_id = a.employee_id
+    JOIN public.users u
+        ON u.employee_id = e.employee_id
+       AND u.company_id = e.company_id
+       AND u.is_active = TRUE
+    WHERE e.manager_id = p_manager_id
+    ORDER BY a.att_date DESC, a.attendance_id DESC;
 END;
 $$;
 

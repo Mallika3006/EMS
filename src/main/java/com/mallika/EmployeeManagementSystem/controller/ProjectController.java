@@ -78,4 +78,14 @@ public class ProjectController {
                 projectService.getProjectsByManager(
                         authentication.getName()));
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<List<Project>> getMyProjects(
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                projectService.getMyProjects(
+                        authentication.getName()));
+    }
+
 }

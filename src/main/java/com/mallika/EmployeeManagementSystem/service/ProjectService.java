@@ -92,4 +92,24 @@ public class ProjectService {
                 user.getEmployee().getEmployeeId(),
                 user.getCompanyId());
     }
+
+    public List<Project> getMyProjects(String username) {
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found: " + username));
+
+        if (user.getCompanyId() == null
+                || user.getEmployee() == null
+                || user.getEmployee().getEmployeeId() == null) {
+            throw new IllegalStateException(
+                    "User must have a company and employee assigned");
+        }
+
+        return projectRepository.getProjectsByEmployee(
+                user.getEmployee().getEmployeeId(),
+                user.getCompanyId());
+    }
+
 }

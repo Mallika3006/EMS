@@ -143,15 +143,11 @@
         <tr>
 
             <th>Attendance ID</th>
-
             <th>Employee ID</th>
-
+            <th>Employee Name</th>
             <th>Date</th>
-
             <th>Status</th>
-
             <th>Check In</th>
-
             <th>Check Out</th>
 
         </tr>
@@ -304,11 +300,14 @@
                     </td>
 
                     <td>
-                        ${
-                    record.employee
-                        ? record.employee.employeeId
-                        : ""
-                }
+                        ${record.employee?.employeeId ?? "-"}
+                    </td>
+
+                    <td>
+                        ${[
+                                        record.employee?.firstName,
+                                        record.employee?.lastName
+                                    ].filter(Boolean).join(" ") || "-"}
                     </td>
 
                     <td>

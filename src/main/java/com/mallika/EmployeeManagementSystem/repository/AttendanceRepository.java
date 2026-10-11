@@ -681,15 +681,22 @@ public class AttendanceRepository {
             );
         }
 
-        int employeeId =
-                rs.getInt("employee_id");
+        int employeeId = rs.getInt("employee_id");
 
         if (!rs.wasNull()) {
-
-            Employee employee =
-                    new Employee();
-
+            Employee employee = new Employee();
             employee.setEmployeeId(employeeId);
+
+            try {
+                employee.setFirstName(
+                        rs.getString("employee_first_name")
+                );
+                employee.setLastName(
+                        rs.getString("employee_last_name")
+                );
+            } catch (SQLException ignored) {
+                // Other attendance functions return only employee_id.
+            }
 
             attendance.setEmployee(employee);
         }

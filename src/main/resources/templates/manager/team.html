@@ -77,8 +77,8 @@
                             <th>Last Name</th>
                             <th>Email</th>
                             <th>Phone</th>
-                            <th>Department ID</th>
-                            <th>Designation ID</th>
+                            <th>Department</th>
+                            <th>Designation</th>
                         </tr>
                     </thead>
 
@@ -87,11 +87,11 @@
 
             employees.forEach(employee => {
 
-                const departmentId =
-                    employee.department?.departmentId ?? "-";
+                const departmentName =
+                    employee.department?.departmentName ?? "-";
 
-                const designationId =
-                    employee.designation?.designationId ?? "-";
+                const designationName =
+                    employee.designation?.designationTitle ?? "-";
 
                 html += `
                     <tr>
@@ -100,8 +100,8 @@
                         <td>${employee.lastName ?? "-"}</td>
                         <td>${employee.email ?? "-"}</td>
                         <td>${employee.phone ?? "-"}</td>
-                        <td>${departmentId}</td>
-                        <td>${designationId}</td>
+                        <td>${departmentName}</td>
+                        <td>${designationName}</td>
                     </tr>
                 `;
             });

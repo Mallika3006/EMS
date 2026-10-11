@@ -22,6 +22,9 @@ public class User {
 
     private Boolean isActive;
 
+    @Column(name = "company_id")
+    private Long companyId;
+
     @OneToOne
     @JoinColumn(name = "employee_id", unique = true)
     private Employee employee;

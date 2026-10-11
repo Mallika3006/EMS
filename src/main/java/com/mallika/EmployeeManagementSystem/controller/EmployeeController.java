@@ -1,5 +1,6 @@
 package com.mallika.EmployeeManagementSystem.controller;
 
+import com.mallika.EmployeeManagementSystem.dto.EmployeeCreateDTO;
 import com.mallika.EmployeeManagementSystem.dto.EmployeeProfileDTO;
 import com.mallika.EmployeeManagementSystem.dto.EmployeeResponseDTO;
 import com.mallika.EmployeeManagementSystem.dto.EmployeeUpdateDTO;
@@ -7,6 +8,7 @@ import com.mallika.EmployeeManagementSystem.model.Employee;
 import com.mallika.EmployeeManagementSystem.service.EmployeeService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,15 +32,14 @@ public class EmployeeController {
 
     @PostMapping
     public ResponseEntity<Employee> createEmployee(
-            @RequestBody Employee employee) {
+            @RequestBody EmployeeCreateDTO dto) {
 
         Employee savedEmployee =
-                employeeService.createEmployee(employee);
+                employeeService.createEmployee(dto);
 
         return new ResponseEntity<>(
                 savedEmployee,
-                HttpStatus.CREATED
-        );
+                HttpStatus.CREATED);
     }
 
 
@@ -202,6 +203,67 @@ public class EmployeeController {
         return ResponseEntity.ok(
                 employeeService.getEmployeeById(id)
         );
+    }
+
+    @GetMapping("/{id}/details")
+    public ResponseEntity<EmployeeResponseDTO> getEmployeeDetails(
+            @PathVariable Integer id) {
+
+        Employee employee = employeeService.getEmployeeById(id);
+
+        EmployeeResponseDTO dto = new EmployeeResponseDTO();
+
+        dto.setEmployeeId(employee.getEmployeeId().longValue());
+        dto.setFirstName(employee.getFirstName());
+        dto.setLastName(employee.getLastName());
+        dto.setEmail(employee.getEmail());
+        dto.setPhone(employee.getPhone());
+
+        // Department
+        if (employee.getDepartment() != null) {
+            dto.setDepartmentId(
+                    employee.getDepartment().getDepartmentId().longValue()
+            );
+            dto.setDepartmentName(
+                    employee.getDepartment().getDepartmentName()
+            );
+        }
+
+        // Designation
+        if (employee.getDesignation() != null) {
+            dto.setDesignationId(
+                    employee.getDesignation().getDesignationId().longValue()
+            );
+            dto.setDesignationName(
+                    employee.getDesignation().getDesignationTitle()
+            );
+        }
+
+        // Manager
+        if (employee.getManagerId() != null) {
+            Employee manager = employeeService.getEmployeeById(
+                    employee.getManagerId()
+            );
+
+            dto.setManagerId(employee.getManagerId().longValue());
+            dto.setManagerName(
+                    manager.getFirstName() + " " + manager.getLastName()
+            );
+        }
+
+        // HR
+        if (employee.getHrId() != null) {
+            Employee hr = employeeService.getEmployeeById(
+                    employee.getHrId()
+            );
+
+            dto.setHrId(employee.getHrId().longValue());
+            dto.setHrName(
+                    hr.getFirstName() + " " + hr.getLastName()
+            );
+        }
+
+        return ResponseEntity.ok(dto);
     }
 
 
@@ -588,6 +650,43 @@ public class EmployeeController {
                 );
 
         return ResponseEntity.ok(employees);
+    }
+
+    // GET MANAGERS FOR DROPDOWN
+    @GetMapping("/managers")
+    public ResponseEntity<List<Employee>> getManagers() {
+
+        return ResponseEntity.ok(
+                employeeService.getEmployeesByRole(3)
+        );
+    }
+
+    // GET HR EMPLOYEES FOR DROPDOWN
+    @GetMapping("/hr-options")
+    public ResponseEntity<List<Employee>> getHrOptions() {
+
+        return ResponseEntity.ok(
+                employeeService.getEmployeesByRole(2)
+        );
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> updateEmployeeStatus(
+            @PathVariable Integer id,
+            @RequestParam boolean active) {
+
+        boolean updated = employeeService.setEmployeeActiveStatus(id, active);
+
+        if (!updated) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String message = active
+                ? "Employee activated successfully"
+                : "Employee deactivated successfully";
+
+        return ResponseEntity.ok(message);
     }
 
 }

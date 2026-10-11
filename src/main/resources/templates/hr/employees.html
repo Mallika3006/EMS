@@ -139,52 +139,52 @@
         }
 
         container.innerHTML = `
-        <table>
-            <thead>
-                <tr>
-                    <th>Employee ID</th>
-                    <th>First Name</th>
-                    <th>Last Name</th>
-                    <th>Email</th>
-                    <th>Phone</th>
-                    <th>Hire Date</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                ${employees.map(employee => `
+            <table>
+                <thead>
                     <tr>
-                        <td>${employee.employeeId ?? "N/A"}</td>
-                        <td>${employee.firstName ?? "N/A"}</td>
-                        <td>${employee.lastName ?? "N/A"}</td>
-                        <td>${employee.email ?? "N/A"}</td>
-                        <td>${employee.phone ?? "N/A"}</td>
-                        <td>${employee.hireDate ?? "N/A"}</td>
-
-                        <td>
-                            <button
-                                class="btn"
-                                onclick="viewEmployee(${employee.employeeId})">
-                                View
-                            </button>
-
-                            <button
-                                class="btn"
-                                onclick="editEmployee(${employee.employeeId})">
-                                Edit
-                            </button>
-                        </td>
+                        <th>Employee ID</th>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Hire Date</th>
+                        <th>Actions</th>
                     </tr>
-                `).join("")}
-            </tbody>
-        </table>
-    `;
+                </thead>
+
+                <tbody>
+                    ${employees.map(employee => `
+                        <tr>
+                            <td>${employee.employeeId ?? "N/A"}</td>
+                            <td>${employee.firstName ?? "N/A"}</td>
+                            <td>${employee.lastName ?? "N/A"}</td>
+                            <td>${employee.email ?? "N/A"}</td>
+                            <td>${employee.phone ?? "N/A"}</td>
+                            <td>${employee.hireDate ?? "N/A"}</td>
+
+                            <td>
+                                <button
+                                    class="btn"
+                                    onclick="viewEmployee(${employee.employeeId})">
+                                    View
+                                </button>
+
+                                <button
+                                    class="btn"
+                                    onclick="editEmployee(${employee.employeeId})">
+                                    Edit
+                                </button>
+                            </td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        `;
     }
 
 
     // ==========================================
-    // LOAD EMPLOYEES ASSIGNED TO CURRENT HR
+    // GET LOGGED-IN HR
     // ==========================================
 
     async function getCurrentHR() {
@@ -199,80 +199,88 @@
     }
 
 
+    // ==========================================
+    // LOAD ACTIVE EMPLOYEES ASSIGNED TO CURRENT HR
+    // ==========================================
+
     async function loadEmployees() {
+
+        const container = document.getElementById("employees");
+
+        container.innerHTML =
+            "<p class='loading'>Loading employees...</p>";
 
         try {
 
-            const [employeesResponse, currentHR] = await Promise.all([
-                fetch("/employees"),
-                getCurrentHR()
-            ]);
+            // HR-specific endpoint uses get_employees_by_hr().
+            // Its SQL function must filter u.is_active = TRUE.
+            const response = await fetch("/employees/hr/my-employees");
 
-            if (!employeesResponse.ok) {
-                throw new Error("Failed to load employees");
+            if (!response.ok) {
+                throw new Error("Failed to load HR employees");
             }
 
-            const employees = await employeesResponse.json();
+            const employees = await response.json();
 
-            const filteredEmployees = employees.filter(
-                employee =>
-                    Number(employee.hrId) === Number(currentHR.employeeId)
-            );
-
-            displayEmployees(filteredEmployees);
+            displayEmployees(employees);
 
         } catch (error) {
 
             console.error(error);
 
-            document.getElementById("employees").innerHTML =
+            container.innerHTML =
                 "<p class='error-message'>Failed to load employees.</p>";
         }
     }
 
 
     // ==========================================
-    // SEARCH EMPLOYEES ASSIGNED TO CURRENT HR
+    // SEARCH ACTIVE EMPLOYEES ASSIGNED TO CURRENT HR
     // ==========================================
 
     async function searchEmployees() {
 
-        const name = document.getElementById("searchName").value.trim();
+        const name = document.getElementById("searchName")
+            .value.trim().toLowerCase();
 
         if (!name) {
             await loadEmployees();
             return;
         }
 
-        document.getElementById("employees").innerHTML =
+        const container = document.getElementById("employees");
+
+        container.innerHTML =
             "<p class='loading'>Searching...</p>";
 
         try {
 
-            const [searchResponse, currentHR] = await Promise.all([
-                fetch(`/employees/search?name=${encodeURIComponent(name)}`),
-                getCurrentHR()
-            ]);
+            // Search within the HR's active employee list.
+            const response = await fetch("/employees/hr/my-employees");
 
-            if (!searchResponse.ok) {
-                throw new Error("Search failed");
+            if (!response.ok) {
+                throw new Error("Failed to search employees");
             }
 
-            const employees = await searchResponse.json();
+            const employees = await response.json();
 
-            const filteredEmployees = employees.filter(
-                employee =>
-                    Number(employee.hrId) === Number(currentHR.employeeId)
-            );
+            const filteredEmployees = employees.filter(employee => {
+
+                const fullName =
+                    `${employee.firstName ?? ""} ${employee.lastName ?? ""}`
+                        .toLowerCase();
+
+                return fullName.includes(name);
+            });
 
             displayEmployees(filteredEmployees);
 
         } catch (error) {
 
-            document.getElementById("employees").innerHTML =
-                "<p class='error-message'>Unable to search employees.</p>";
-
             console.error(error);
+
+            container.innerHTML =
+                "<p class='error-message'>Unable to search employees.</p>";
         }
     }
 
@@ -303,64 +311,56 @@
             const [
                 departmentResponse,
                 designationResponse,
-                employeesResponse,
+                managersResponse,
                 currentHR
             ] = await Promise.all([
                 fetch("/departments"),
                 fetch("/designations"),
-                fetch("/employees"),
+                fetch("/employees/managers"),
                 getCurrentHR()
             ]);
 
             if (
                 !departmentResponse.ok ||
                 !designationResponse.ok ||
-                !employeesResponse.ok
+                !managersResponse.ok
             ) {
                 throw new Error("Failed to load form options");
             }
 
             const departments = await departmentResponse.json();
             const designations = await designationResponse.json();
-            const employees = await employeesResponse.json();
+            const managers = await managersResponse.json();
 
             // DEPARTMENT DROPDOWN
             document.getElementById("departmentId").innerHTML =
                 '<option value="">Select Department</option>' +
                 departments.map(department => `
-                <option value="${department.departmentId}">
-                    ${department.departmentId} - ${department.departmentName}
-                </option>
-            `).join("");
+                    <option value="${department.departmentId}">
+                        ${department.departmentId} - ${department.departmentName}
+                    </option>
+                `).join("");
 
             // DESIGNATION DROPDOWN
             document.getElementById("designationId").innerHTML =
                 '<option value="">Select Designation</option>' +
                 designations.map(designation => `
-                <option value="${designation.designationId}">
-                    ${designation.designationId} - ${designation.designationTitle}
-                </option>
-            `).join("");
+                    <option value="${designation.designationId}">
+                        ${designation.designationId} - ${designation.designationTitle}
+                    </option>
+                `).join("");
 
             // MANAGER DROPDOWN
-            // Optional: leave as None if the employee has no manager.
-            // This filters by designation title containing "manager".
-            const managers = employees.filter(employee =>
-                employee.hrId === currentHR.employeeId &&
-                employee.designation?.designationTitle
-                    ?.toLowerCase()
-                    .includes("manager")
-            );
-
+            // Uses the managers endpoint, which returns active Manager-role users.
             document.getElementById("managerId").innerHTML =
                 '<option value="">None</option>' +
                 managers.map(manager => `
-                <option value="${manager.employeeId}">
-                    ${manager.employeeId} - ${manager.firstName} ${manager.lastName}
-                </option>
-            `).join("");
+                    <option value="${manager.employeeId}">
+                        ${manager.employeeId} - ${manager.firstName} ${manager.lastName}
+                    </option>
+                `).join("");
 
-            // CURRENT HR: SHOW NAME, STORE ID
+            // CURRENT HR
             document.getElementById("hrId").value =
                 currentHR.employeeId;
 
@@ -391,7 +391,6 @@
             document.getElementById("employeeForm").reset();
             document.getElementById("employeeId").value = "";
 
-            // Reset HR to the logged-in HR after resetting the form.
             const currentHR = await getCurrentHR();
 
             document.getElementById("hrId").value =
@@ -482,7 +481,7 @@
             document.getElementById("managerId").value =
                 employee.managerId ?? "";
 
-            // HR is the logged-in HR who manages this page.
+            // Keep the assigned HR as the currently logged-in HR.
             const currentHR = await getCurrentHR();
 
             document.getElementById("hrId").value =
@@ -517,7 +516,7 @@
 
     document.getElementById("employeeForm").addEventListener(
         "submit",
-        async function(event) {
+        async function (event) {
 
             event.preventDefault();
 

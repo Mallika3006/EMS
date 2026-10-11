@@ -1,13 +1,81 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Admin Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Employee Management System</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
 </head>
 <body>
 
-<h1>Admin Dashboard</h1>
+<div class="dashboard-container">
 
-<p>Welcome to StaffSync Admin Panel!</p>
+    <header>
+        <h1>Employee Management System</h1>
+        <h2>Admin Dashboard</h2>
+        <p>Welcome to Employee Management System Admin Panel!</p>
+    </header>
+
+    <main>
+        <h2>Management Modules</h2>
+
+        <div class="dashboard-grid">
+
+            <div class="dashboard-card">
+                <h3>Employees</h3>
+                <a th:href="@{/admin/employees}">Manage Employees</a>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Users</h3>
+                <a th:href="@{/users}">Manage Users</a>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Departments</h3>
+                <a th:href="@{/departments}">Manage Departments</a>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Designations</h3>
+                <a th:href="@{/designations}">Manage Designations</a>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Attendance</h3>
+                <a th:href="@{/attendance}">Manage Attendance</a>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Leaves</h3>
+                <a th:href="@{/leaves}">Manage Leaves</a>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Payroll</h3>
+                <a th:href="@{/payrolls}">Manage Payroll</a>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Projects</h3>
+                <a th:href="@{/projects}">Manage Projects</a>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Tasks</h3>
+                <a th:href="@{/tasks}">Manage Tasks</a>
+            </div>
+
+        </div>
+    </main>
+
+    <footer style="text-align: center; margin-top: 30px; padding: 20px;">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit">Logout</button>
+        </form>
+    </footer>
+
+</div>
 
 </body>
 </html>

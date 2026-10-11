@@ -2,19 +2,25 @@
 -- EMPLOYEE SQL FUNCTIONS
 -- ============================================
 
-
--- 1. GET ALL EMPLOYEES
-CREATE OR REPLACE FUNCTION get_all_employees()
+CREATE OR REPLACE FUNCTION public.get_all_employees(p_company_id bigint)
 RETURNS SETOF employees
 LANGUAGE plpgsql
-AS $$
+AS $function$
 BEGIN
-    RETURN QUERY
-    SELECT *
-    FROM employees;
+RETURN QUERY
+SELECT e.*
+FROM employees e
+WHERE e.company_id = p_company_id
+  AND NOT EXISTS (
+    SELECT 1
+    FROM users u
+             JOIN roles r ON r.role_id = u.role_id
+    WHERE u.employee_id = e.employee_id
+      AND u.company_id = p_company_id
+      AND UPPER(r.role_name) = 'ADMIN'
+);
 END;
-$$;
-
+$function$;
 
 -- 2. GET EMPLOYEE BY ID
 CREATE OR REPLACE FUNCTION get_employee_by_id(
@@ -231,3 +237,107 @@ WHERE e.employee_id = p_employee_id;
 
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION create_employee_with_user(
+    p_first_name VARCHAR,
+    p_last_name VARCHAR,
+    p_email VARCHAR,
+    p_phone VARCHAR,
+    p_date_of_birth DATE,
+    p_hire_date DATE,
+    p_address VARCHAR,
+    p_department_id INTEGER,
+    p_designation_id INTEGER,
+    p_manager_id INTEGER,
+    p_hr_id INTEGER,
+    p_username VARCHAR,
+    p_password VARCHAR,
+    p_role_id INTEGER
+)
+RETURNS SETOF employees
+LANGUAGE plpgsql
+AS $$
+DECLARE
+v_employee employees%ROWTYPE;
+BEGIN
+    -- Create employee
+INSERT INTO employees (
+    first_name,
+    last_name,
+    email,
+    phone,
+    date_of_birth,
+    hire_date,
+    address,
+    department_id,
+    designation_id,
+    manager_id,
+    hr_id
+)
+VALUES (
+           p_first_name,
+           p_last_name,
+           p_email,
+           p_phone,
+           p_date_of_birth,
+           p_hire_date,
+           p_address,
+           p_department_id,
+           p_designation_id,
+           p_manager_id,
+           p_hr_id
+       )
+    RETURNING * INTO v_employee;
+
+-- Create the associated login account
+PERFORM *
+    FROM create_user(
+        p_username,
+        p_password,
+        TRUE,
+        v_employee.employee_id,
+        p_role_id
+    );
+
+RETURN NEXT v_employee;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_employees_by_hr(p_hr_id integer)
+RETURNS SETOF employees
+LANGUAGE plpgsql
+AS $function$
+BEGIN
+RETURN QUERY
+SELECT e.*
+FROM public.employees e
+WHERE e.hr_id = p_hr_id
+  AND EXISTS (
+    SELECT 1
+    FROM public.users u
+    WHERE u.employee_id = e.employee_id
+      AND u.company_id = e.company_id
+      AND u.is_active = TRUE
+);
+END;
+$function$;
+
+
+CREATE OR REPLACE FUNCTION public.get_employees_by_manager(p_manager_id integer)
+RETURNS SETOF employees
+LANGUAGE plpgsql
+AS $function$
+BEGIN
+RETURN QUERY
+SELECT e.*
+FROM public.employees e
+WHERE e.manager_id = p_manager_id
+  AND EXISTS (
+    SELECT 1
+    FROM public.users u
+    WHERE u.employee_id = e.employee_id
+      AND u.company_id = e.company_id
+      AND u.is_active = TRUE
+);
+END;
+$function$;

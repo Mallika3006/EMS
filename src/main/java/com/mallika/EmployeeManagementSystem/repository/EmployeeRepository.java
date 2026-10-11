@@ -1,5 +1,6 @@
 package com.mallika.EmployeeManagementSystem.repository;
 
+import com.mallika.EmployeeManagementSystem.dto.EmployeeCreateDTO;
 import com.mallika.EmployeeManagementSystem.dto.EmployeeProfileDTO;
 import com.mallika.EmployeeManagementSystem.dto.EmployeeUpdateDTO;
 import com.mallika.EmployeeManagementSystem.exception.ResourceNotFoundException;
@@ -9,10 +10,7 @@ import org.springframework.stereotype.Repository;
 import com.mallika.EmployeeManagementSystem.model.Designation;
 
 import javax.sql.DataSource;
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -31,31 +29,29 @@ public class EmployeeRepository {
     // GET ALL EMPLOYEES
     // =========================
 
-    public List<Employee> getAllEmployees() {
+    public List<Employee> getAllEmployees(Long companyId) {
 
+        String sql = "SELECT * FROM get_all_employees(?)";
         List<Employee> employees = new ArrayList<>();
 
-        String sql = "{call get_all_employees()}";
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-        try (
-                Connection connection = dataSource.getConnection();
-                CallableStatement statement =
-                        connection.prepareCall(sql);
-                ResultSet resultSet = statement.executeQuery()
-        ) {
+            statement.setLong(1, companyId);
 
-            while (resultSet.next()) {
-                employees.add(mapEmployee(resultSet));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    employees.add(mapEmployee(resultSet));
+                }
             }
 
-        } catch (SQLException e) {
+            return employees;
 
+        } catch (SQLException e) {
             throw new RuntimeException(
-                    "Error fetching employees", e
+                    "Error fetching employees: " + e.getMessage(), e
             );
         }
-
-        return employees;
     }
 
 
@@ -969,5 +965,69 @@ public class EmployeeRepository {
         }
 
         return Optional.empty();
+    }
+
+    public Employee createEmployeeWithUser(
+            EmployeeCreateDTO dto,
+            String encodedPassword) {
+
+        String sql = "SELECT * FROM create_employee_with_user(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try (Connection connection = dataSource.getConnection();
+             CallableStatement statement = connection.prepareCall(sql)) {
+
+            statement.setString(1, dto.getFirstName());
+            statement.setString(2, dto.getLastName());
+            statement.setString(3, dto.getEmail());
+
+            statement.setString(4, dto.getPhone());
+
+            if (dto.getDateOfBirth() != null) {
+                statement.setDate(5, java.sql.Date.valueOf(dto.getDateOfBirth()));
+            } else {
+                statement.setNull(5, Types.DATE);
+            }
+
+            if (dto.getHireDate() != null) {
+                statement.setDate(6, java.sql.Date.valueOf(dto.getHireDate()));
+            } else {
+                statement.setNull(6, Types.DATE);
+            }
+
+            statement.setString(7, dto.getAddress());
+
+            setNullableInteger(statement, 8, dto.getDepartmentId());
+            setNullableInteger(statement, 9, dto.getDesignationId());
+            setNullableInteger(statement, 10, dto.getManagerId());
+            setNullableInteger(statement, 11, dto.getHrId());
+
+            statement.setString(12, dto.getUsername());
+            statement.setString(13, encodedPassword);
+            statement.setInt(14, dto.getRoleId());
+
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return mapEmployee(rs);
+                }
+            }
+
+            throw new RuntimeException("Failed to create employee");
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Error creating employee: " + e.getMessage(), e);
+        }
+    }
+
+    private void setNullableInteger(
+            PreparedStatement statement,
+            int index,
+            Integer value) throws SQLException {
+
+        if (value != null) {
+            statement.setInt(index, value);
+        } else {
+            statement.setNull(index, Types.INTEGER);
+        }
     }
 }

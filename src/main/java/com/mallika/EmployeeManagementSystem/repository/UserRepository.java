@@ -457,6 +457,15 @@ public class UserRepository {
                 rs.getBoolean("is_active")
         );
 
+        // Company ID
+        long companyId = rs.getLong("company_id");
+
+        if (rs.wasNull()) {
+            user.setCompanyId(null);
+        } else {
+            user.setCompanyId(companyId);
+        }
+
         // Employee relationship
         int employeeId = rs.getInt("employee_id");
 
@@ -476,5 +485,28 @@ public class UserRepository {
         }
 
         return user;
+    }
+
+    public boolean setUserActiveStatus(Integer employeeId, boolean isActive, Long companyId) {
+        String sql = "SELECT public.set_user_active_status(?, ?, ?)";
+
+        try (Connection connection = dataSource.getConnection();
+             CallableStatement statement = connection.prepareCall(sql)) {
+
+            statement.setInt(1, employeeId);
+            statement.setBoolean(2, isActive);
+            statement.setLong(3, companyId);
+
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getBoolean(1);
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to update employee active status", e);
+        }
+
+        return false;
     }
 }

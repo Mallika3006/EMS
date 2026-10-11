@@ -2,6 +2,10 @@ package com.mallika.EmployeeManagementSystem.controller;
 
 import com.mallika.EmployeeManagementSystem.dto.LoginRequest;
 import com.mallika.EmployeeManagementSystem.service.JwtService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -32,10 +36,8 @@ public class LoginController {
     @GetMapping("/admin-login")
     public String adminLoginPage() {
         System.out.println(">>> ADMIN LOGIN PAGE REACHED");
-
         return "login/admin-login";
     }
-
 
     // ==========================================
     // USER LOGIN PAGE
@@ -47,7 +49,6 @@ public class LoginController {
         return "login/user-login";
     }
 
-
     // ==========================================
     // AUTHENTICATE USER
     // ==========================================
@@ -55,8 +56,10 @@ public class LoginController {
     @PostMapping("/login")
     @ResponseBody
     public Map<String, String> login(
-            @RequestBody LoginRequest request) {
+            @RequestBody LoginRequest request,
+            HttpServletResponse response) {
 
+        // Authenticate username and password
         Authentication authentication =
                 authenticationManager.authenticate(
                         new UsernamePasswordAuthenticationToken(
@@ -68,17 +71,41 @@ public class LoginController {
         UserDetails userDetails =
                 (UserDetails) authentication.getPrincipal();
 
+        // Generate JWT
         String token =
                 jwtService.generateToken(
                         userDetails.getUsername()
                 );
 
+        // Get the authenticated user's role
         String role =
                 userDetails.getAuthorities()
                         .iterator()
                         .next()
                         .getAuthority();
 
+        // Create JWT cookie
+        ResponseCookie jwtCookie = ResponseCookie
+                .from("jwt", token)
+                .httpOnly(true)
+                .secure(false) // Set true when deployed over HTTPS
+                .path("/")
+                .maxAge(60 * 60)
+                .sameSite("Lax")
+                .build();
+
+        // Send cookie to browser
+        response.addHeader(
+                HttpHeaders.SET_COOKIE,
+                jwtCookie.toString()
+        );
+
+        System.out.println(">>> LOGIN SUCCESSFUL: "
+                + userDetails.getUsername());
+
+        System.out.println(">>> USER ROLE: " + role);
+
+        // Return token and role to existing frontend
         return Map.of(
                 "token", token,
                 "role", role

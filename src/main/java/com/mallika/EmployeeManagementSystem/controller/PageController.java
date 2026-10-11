@@ -296,4 +296,16 @@ public class PageController {
     public String hrEmployeePayroll() {
         return "hr/employee-payroll";
     }
+
+// ADMIN - EMPLOYEE MANAGEMENT
+
+    @GetMapping("/admin/employees")
+    public String adminEmployees() {
+        return "admin/employees";
+    }
+
+    @GetMapping("/admin/employees/add")
+    public String showAddEmployeePage() {
+        return "admin/add-employee";
+    }
 }

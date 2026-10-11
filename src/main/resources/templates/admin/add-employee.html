@@ -1,0 +1,359 @@
+
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Employee | Employee Management System</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+
+<body>
+<div class="dashboard-container">
+    <header>
+        <h1>Employee Management System</h1>
+        <h2>Add Employee</h2>
+        <p>Enter employee and login details.</p>
+    </header>
+
+    <main>
+        <p id="message" role="status"></p>
+
+        <form id="employeeForm">
+            <h3>Personal Details</h3>
+
+            <label for="firstName">First Name</label>
+            <input type="text" id="firstName" required>
+
+            <label for="lastName">Last Name</label>
+            <input type="text" id="lastName" required>
+
+            <label for="email">Email</label>
+            <input type="email" id="email" required>
+
+            <label for="phone">Phone</label>
+            <input type="text" id="phone">
+
+            <label for="dateOfBirth">Date of Birth</label>
+            <input type="date" id="dateOfBirth">
+
+            <label for="hireDate">Hire Date</label>
+            <input type="date" id="hireDate" required>
+
+            <label for="address">Address</label>
+            <textarea id="address"></textarea>
+
+            <h3>Work Details</h3>
+
+            <label for="departmentId">Department</label>
+            <select id="departmentId" required>
+                <option value="">Loading departments...</option>
+            </select>
+
+            <label for="designationId">Designation</label>
+            <select id="designationId" required>
+                <option value="">Loading designations...</option>
+            </select>
+
+            <label for="managerId">Manager (optional)</label>
+            <select id="managerId">
+                <option value="">No Manager</option>
+            </select>
+
+            <label for="hrId">HR (optional)</label>
+            <select id="hrId">
+                <option value="">No HR</option>
+            </select>
+
+            <h3>Login Details</h3>
+
+            <label for="username">Username</label>
+            <input type="text" id="username" required>
+
+            <label for="password">Password</label>
+            <input type="password" id="password" minlength="8" required>
+
+            <label for="roleId">Role</label>
+            <select id="roleId" required>
+                <option value="">Select Role</option>
+                <option value="2">HR</option>
+                <option value="3">Manager</option>
+                <option value="4">Employee</option>
+            </select>
+
+            <br><br>
+            <button type="submit">Create Employee</button>
+            <button type="button"
+                    onclick="window.location.href='/admin-dashboard'">
+                Cancel
+            </button>
+        </form>
+    </main>
+</div>
+
+<script>
+    (() => {
+        const form = document.getElementById("employeeForm");
+        const message = document.getElementById("message");
+
+        const API = {
+            departments: "/departments",
+            designations: "/designations",
+            employees: "/employees",
+            createEmployee: "/employees"
+        };
+
+        function getHeaders() {
+            const headers = {
+                "Content-Type": "application/json"
+            };
+
+            const token = localStorage.getItem("token");
+            if (token) {
+                headers["Authorization"] = "Bearer " + token;
+            }
+
+            return headers;
+        }
+
+        async function getRecords(url) {
+            const response = await fetch(url, {
+                method: "GET",
+                headers: getHeaders(),
+                credentials: "same-origin"
+            });
+
+            if (!response.ok) {
+                throw new Error(url + " returned HTTP " + response.status);
+            }
+
+            const result = await response.json();
+
+            if (Array.isArray(result)) {
+                return result;
+            }
+
+            if (result && Array.isArray(result.content)) {
+                return result.content;
+            }
+
+            throw new Error("Unexpected JSON response from " + url);
+        }
+
+        function populateDropdown(selectId, records, idField, nameField,
+                                  placeholder) {
+            const select = document.getElementById(selectId);
+            select.replaceChildren();
+
+            const firstOption = document.createElement("option");
+            firstOption.value = "";
+            firstOption.textContent = placeholder;
+            select.appendChild(firstOption);
+
+            records.forEach(record => {
+                const id = record[idField];
+                const name = record[nameField];
+
+                if (id == null || name == null || name === "") {
+                    return;
+                }
+
+                const option = document.createElement("option");
+                option.value = String(id);
+                option.textContent = name + " (ID: " + id + ")";
+                select.appendChild(option);
+            });
+
+            if (select.options.length === 1) {
+                firstOption.textContent = "No records available";
+            }
+        }
+
+        async function loadDepartments() {
+            const records = await getRecords(API.departments);
+
+            populateDropdown(
+                "departmentId",
+                records,
+                "departmentId",
+                "departmentName",
+                "Select Department"
+            );
+        }
+
+        async function loadDesignations() {
+            const records = await getRecords(API.designations);
+
+            populateDropdown(
+                "designationId",
+                records,
+                "designationId",
+                "designationTitle",
+                "Select Designation"
+            );
+        }
+
+        function getEmployeeName(employee) {
+            return [
+                employee.firstName || "",
+                employee.lastName || ""
+            ].join(" ").trim();
+        }
+
+        function populateEmployeeDropdown(selectId, employees, placeholder) {
+            const select = document.getElementById(selectId);
+            select.replaceChildren();
+
+            const firstOption = document.createElement("option");
+            firstOption.value = "";
+            firstOption.textContent = placeholder;
+            select.appendChild(firstOption);
+
+            employees.forEach(employee => {
+                const id = employee.employeeId;
+                const name = getEmployeeName(employee);
+
+                if (id == null || !name) {
+                    return;
+                }
+
+                const option = document.createElement("option");
+                option.value = String(id);
+                option.textContent = name + " (ID: " + id + ")";
+                select.appendChild(option);
+            });
+        }
+
+        async function loadManagersAndHR() {
+            try {
+                const [managers, hrs] = await Promise.all([
+                    getRecords("/employees/managers"),
+                    getRecords("/employees/hr-options")
+                ]);
+
+                populateEmployeeDropdown(
+                    "managerId",
+                    managers,
+                    "Select Manager"
+                );
+
+                populateEmployeeDropdown(
+                    "hrId",
+                    hrs,
+                    "Select HR"
+                );
+
+            } catch (error) {
+                showMessage(
+                    "Failed to load Manager and HR options.",
+                    true
+                );
+                console.error(error);
+            }
+        }
+
+        async function loadDropdowns() {
+            message.textContent = "Loading dropdown options...";
+            message.style.color = "black";
+
+            const results = await Promise.allSettled([
+                loadDepartments(),
+                loadDesignations(),
+                loadManagersAndHR()
+            ]);
+
+            const errors = [];
+
+            results.forEach((result, index) => {
+                if (result.status === "rejected") {
+                    console.error("Dropdown loading failed:", result.reason);
+                    errors.push(result.reason.message);
+                }
+            });
+
+            if (errors.length) {
+                message.textContent = "Some dropdowns failed to load: " +
+                    errors.join(" | ");
+                message.style.color = "red";
+            } else {
+                message.textContent = "";
+            }
+        }
+
+        form.addEventListener("submit", async event => {
+            event.preventDefault();
+
+            const numberOrNull = id => {
+                const value = document.getElementById(id).value;
+                return value ? Number(value) : null;
+            };
+
+            const data = {
+                firstName: document.getElementById("firstName").value.trim(),
+                lastName: document.getElementById("lastName").value.trim(),
+                email: document.getElementById("email").value.trim(),
+                phone: document.getElementById("phone").value.trim() || null,
+                dateOfBirth: document.getElementById("dateOfBirth").value || null,
+                hireDate: document.getElementById("hireDate").value,
+                address: document.getElementById("address").value.trim() || null,
+                departmentId: numberOrNull("departmentId"),
+                designationId: numberOrNull("designationId"),
+                managerId: numberOrNull("managerId"),
+                hrId: numberOrNull("hrId"),
+                username: document.getElementById("username").value.trim(),
+                password: document.getElementById("password").value,
+                roleId: numberOrNull("roleId")
+            };
+
+            message.textContent = "Creating employee...";
+            message.style.color = "black";
+
+            try {
+                const response = await fetch(API.createEmployee, {
+                    method: "POST",
+                    headers: getHeaders(),
+                    credentials: "same-origin",
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(
+                        "Creation failed (HTTP " + response.status + "): " +
+                        errorText
+                    );
+                }
+
+                const responseText = await response.text();
+                let employee = {};
+
+                if (responseText) {
+                    try {
+                        employee = JSON.parse(responseText);
+                    } catch {
+                        employee = {};
+                    }
+                }
+
+                message.textContent = "Employee created successfully." +
+                    (employee.employeeId != null
+                        ? " Employee ID: " + employee.employeeId
+                        : "");
+                message.style.color = "green";
+
+                form.reset();
+                await loadDropdowns();
+
+            } catch (error) {
+                message.textContent = error.message;
+                message.style.color = "red";
+                console.error(error);
+            }
+        });
+
+        loadDropdowns();
+    })();
+</script>
+</body>
+</html>

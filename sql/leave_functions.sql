@@ -328,40 +328,6 @@ ORDER BY l.leave_id;
 END;
 $$;
 
--- =========================================================
--- UPDATE MANAGER LEAVE STATUS
--- =========================================================
-
-CREATE OR REPLACE FUNCTION update_manager_leave_status(
-    p_leave_id INTEGER,
-    p_manager_id INTEGER,
-    p_status VARCHAR
-)
-RETURNS SETOF leaves
-LANGUAGE plpgsql
-AS $$
-BEGIN
-
-    -- Only APPROVED or REJECTED are allowed
-    IF UPPER(p_status) NOT IN ('APPROVED', 'REJECTED') THEN
-        RAISE EXCEPTION 'Invalid leave status';
-END IF;
-
-RETURN QUERY
-UPDATE leaves l
-SET status = UPPER(p_status)
-WHERE l.leave_id = p_leave_id
-  AND l.status = 'PENDING'
-  AND EXISTS (
-    SELECT 1
-    FROM employees e
-    WHERE e.employee_id = l.employee_id
-      AND e.manager_id = p_manager_id
-)
-    RETURNING l.*;
-
-END;
-$$;
 
 CREATE OR REPLACE FUNCTION get_manager_leave_requests(
     p_manager_id INTEGER
@@ -404,22 +370,124 @@ $$;
 -- GET LEAVES FOR EMPLOYEES ASSIGNED TO AN HR
 -- =========================================================
 
-CREATE OR REPLACE FUNCTION get_leaves_by_hr(
-    p_hr_id INTEGER
-)
+-- 1. HR: View leave requests of active employees only
+CREATE OR REPLACE FUNCTION public.get_leaves_by_hr(p_hr_id integer)
 RETURNS SETOF leaves
 LANGUAGE plpgsql
-AS $$
+AS $function$
 BEGIN
 RETURN QUERY
 SELECT l.*
 FROM leaves l
          JOIN employees e
               ON l.employee_id = e.employee_id
+         JOIN users u
+              ON u.employee_id = e.employee_id
+                  AND u.company_id = e.company_id
+                  AND u.is_active = TRUE
 WHERE e.hr_id = p_hr_id
 ORDER BY l.from_date DESC, l.leave_id;
 END;
-$$;
+$function$;
+
+
+-- 2. Manager: View leave requests of active employees only
+CREATE OR REPLACE FUNCTION public.get_manager_leave_requests(p_manager_id integer)
+RETURNS TABLE(
+    leave_id integer,
+    from_date date,
+    to_date date,
+    reason character varying,
+    status character varying,
+    employee_id integer
+)
+LANGUAGE plpgsql
+AS $function$
+BEGIN
+RETURN QUERY
+SELECT
+    l.leave_id,
+    l.from_date,
+    l.to_date,
+    l.reason,
+    l.status,
+    l.employee_id
+FROM leaves l
+         JOIN employees e
+              ON l.employee_id = e.employee_id
+         JOIN users u
+              ON u.employee_id = e.employee_id
+                  AND u.company_id = e.company_id
+                  AND u.is_active = TRUE
+WHERE e.manager_id = p_manager_id
+ORDER BY l.leave_id DESC;
+END;
+$function$;
+
+
+-- 3. HR: Approve/reject only active employees' pending leave requests
+CREATE OR REPLACE FUNCTION public.update_hr_leave_status(
+    p_leave_id integer,
+    p_hr_id integer,
+    p_status character varying
+)
+RETURNS SETOF leaves
+LANGUAGE plpgsql
+AS $function$
+BEGIN
+    IF UPPER(p_status) NOT IN ('APPROVED', 'REJECTED') THEN
+        RAISE EXCEPTION 'Status must be APPROVED or REJECTED';
+END IF;
+
+RETURN QUERY
+UPDATE leaves AS l
+SET status = UPPER(p_status)
+    FROM employees AS e
+    JOIN users AS u
+ON u.employee_id = e.employee_id
+    AND u.company_id = e.company_id
+    AND u.is_active = TRUE
+WHERE l.employee_id = e.employee_id
+  AND l.leave_id = p_leave_id
+  AND e.hr_id = p_hr_id
+  AND UPPER(l.status) = 'PENDING'
+    RETURNING l.*;
+END;
+$function$;
+
+
+-- 4. Manager: Approve/reject only active employees' pending leave requests
+CREATE OR REPLACE FUNCTION public.update_manager_leave_status(
+    p_leave_id integer,
+    p_manager_id integer,
+    p_status character varying
+)
+RETURNS SETOF leaves
+LANGUAGE plpgsql
+AS $function$
+BEGIN
+    IF UPPER(p_status) NOT IN ('APPROVED', 'REJECTED') THEN
+        RAISE EXCEPTION 'Invalid leave status';
+END IF;
+
+RETURN QUERY
+UPDATE leaves l
+SET status = UPPER(p_status)
+WHERE l.leave_id = p_leave_id
+  AND UPPER(l.status) = 'PENDING'
+  AND EXISTS (
+    SELECT 1
+    FROM employees e
+             JOIN users u
+                  ON u.employee_id = e.employee_id
+                      AND u.company_id = e.company_id
+                      AND u.is_active = TRUE
+    WHERE e.employee_id = l.employee_id
+      AND e.manager_id = p_manager_id
+)
+    RETURNING l.*;
+END;
+$function$;
 
 
 -- =========================================================

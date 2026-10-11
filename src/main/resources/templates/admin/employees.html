@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Employees | Employee Management System</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+
+<div class="dashboard-container">
+
+    <header>
+        <h1>Employee Management System</h1>
+        <h2>Manage Employees</h2>
+        <p>View and manage employee records.</p>
+    </header>
+
+    <main>
+        <p id="message"></p>
+
+        <div>
+            <input type="text" id="searchName"
+                   placeholder="Search employee by name">
+
+            <button type="button" onclick="searchEmployees()">
+                Search
+            </button>
+
+            <button type="button" onclick="loadEmployees()">
+                View All
+            </button>
+
+
+            <button type="button" onclick="openAddEmployeePage()">
+                Add Employee
+            </button>
+
+        </div>
+
+        <br>
+
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="employeeTable">
+                <tr>
+                    <td colspan="6">Loading employees...</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <br>
+
+        <button type="button"
+                onclick="window.location.href='/admin-dashboard'">
+            Back to Dashboard
+        </button>
+    </main>
+
+</div>
+
+<script>
+    const API = "/employees";
+
+    function getHeaders() {
+        const token = localStorage.getItem("token");
+
+        const headers = {
+            "Content-Type": "application/json"
+        };
+
+        if (token) {
+            headers["Authorization"] = "Bearer " + token;
+        }
+
+        return headers;
+    }
+
+    function showMessage(message, isError = false) {
+        const element = document.getElementById("message");
+        element.textContent = message;
+        element.style.color = isError ? "red" : "green";
+    }
+
+    async function loadEmployees() {
+        document.getElementById("searchName").value = "";
+        await fetchEmployees(API);
+    }
+
+    async function searchEmployees() {
+        const name = document.getElementById("searchName")
+            .value.trim();
+
+        if (!name) {
+            showMessage("Enter a name to search.", true);
+            return;
+        }
+
+        await fetchEmployees(
+            API + "/search?name=" + encodeURIComponent(name)
+        );
+    }
+
+    async function fetchEmployees(url) {
+        const table = document.getElementById("employeeTable");
+        table.innerHTML =
+            '<tr><td colspan="6">Loading...</td></tr>';
+
+        try {
+            const response = await fetch(url, {
+                method: "GET",
+                headers: getHeaders(),
+                credentials: "same-origin"
+            });
+
+            if (!response.ok) {
+                throw new Error(
+                    "Unable to load employees. HTTP " + response.status
+                );
+            }
+
+            const employees = await response.json();
+
+            table.innerHTML = "";
+
+            if (!employees.length) {
+                table.innerHTML =
+                    '<tr><td colspan="6">No employees found.</td></tr>';
+                showMessage("No matching employees.");
+                return;
+            }
+
+            employees.forEach(employee => {
+                const row = document.createElement("tr");
+
+                const values = [
+                    employee.employeeId,
+                    employee.firstName,
+                    employee.lastName,
+                    employee.email,
+                    employee.phone
+                ];
+
+                values.forEach(value => {
+                    const cell = document.createElement("td");
+                    cell.textContent = value ?? "-";
+                    row.appendChild(cell);
+                });
+
+                const actions = document.createElement("td");
+
+                const viewButton = document.createElement("button");
+                viewButton.textContent = "View";
+                viewButton.onclick = () =>
+                    viewEmployee(employee.employeeId);
+
+                const deleteButton = document.createElement("button");
+                deleteButton.textContent = "Delete";
+                deleteButton.style.marginLeft = "5px";
+                deleteButton.onclick = () =>
+                    deleteEmployee(employee.employeeId);
+
+                actions.appendChild(viewButton);
+                actions.appendChild(deleteButton);
+                row.appendChild(actions);
+
+                table.appendChild(row);
+            });
+
+            showMessage("Employee records loaded successfully.");
+
+        } catch (error) {
+            table.innerHTML =
+                '<tr><td colspan="6">Could not load employees.</td></tr>';
+            showMessage(error.message, true);
+        }
+    }
+
+    async function viewEmployee(id) {
+        try {
+            const response = await fetch(API + "/" + id + "/details", {                headers: getHeaders(),
+                credentials: "same-origin"
+            });
+
+            if (!response.ok) {
+                throw new Error("Unable to load employee details.");
+            }
+
+            const employee = await response.json();
+
+            alert(
+                "Employee ID: " + (employee.employeeId ?? "-") +
+                "\nFirst Name: " + (employee.firstName ?? "-") +
+                "\nLast Name: " + (employee.lastName ?? "-") +
+                "\nEmail: " + (employee.email ?? "-") +
+                "\nPhone: " + (employee.phone ?? "-") +
+
+                "\nDepartment ID: " + (employee.departmentId ?? "-") +
+                "\nDepartment Name: " + (employee.departmentName ?? "-") +
+
+                "\nDesignation ID: " + (employee.designationId ?? "-") +
+                "\nDesignation Name: " + (employee.designationName ?? "-") +
+
+                "\nManager ID: " + (employee.managerId ?? "-") +
+                "\nManager Name: " + (employee.managerName ?? "-") +
+
+                "\nHR ID: " + (employee.hrId ?? "-") +
+                "\nHR Name: " + (employee.hrName ?? "-")
+            );
+
+        } catch (error) {
+            showMessage(error.message, true);
+        }
+    }
+
+    async function deleteEmployee(id) {
+        if (!confirm("Are you sure you want to delete employee " + id + "?")) {
+            return;
+        }
+
+        try {
+            const response = await fetch(API + "/" + id, {
+                method: "DELETE",
+                headers: getHeaders(),
+                credentials: "same-origin"
+            });
+
+            if (!response.ok) {
+                throw new Error(
+                    "Unable to delete employee. HTTP " + response.status
+                );
+            }
+
+            showMessage("Employee deleted successfully.");
+            await loadEmployees();
+
+        } catch (error) {
+            showMessage(error.message, true);
+        }
+    }
+
+
+    async function openAddEmployeePage() {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            showMessage("Please log in again.", true);
+            return;
+        }
+
+        try {
+            const response = await fetch("/admin/employees/add", {
+                method: "GET",
+                headers: {
+                    "Authorization": "Bearer " + token
+                },
+                credentials: "same-origin"
+            });
+
+            if (!response.ok) {
+                throw new Error("Unable to open Add Employee page. HTTP " + response.status);
+            }
+
+            const html = await response.text();
+
+            document.open();
+            document.write(html);
+            document.close();
+
+        } catch (error) {
+            showMessage(error.message, true);
+        }
+    }
+
+
+    loadEmployees();
+</script>
+
+</body>
+</html>

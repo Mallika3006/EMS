@@ -34,4 +34,10 @@ public class EmployeeResponseDTO {
     private String profilePhoto;
 
     private String designationName;
+
+    private String departmentName;
+
+    private String managerName;
+
+    private String hrName;
 }

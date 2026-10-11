@@ -7,6 +7,8 @@ import com.mallika.EmployeeManagementSystem.model.Employee;
 import com.mallika.EmployeeManagementSystem.model.User;
 import com.mallika.EmployeeManagementSystem.repository.EmployeeRepository;
 import com.mallika.EmployeeManagementSystem.repository.UserRepository;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,21 +16,27 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import com.mallika.EmployeeManagementSystem.dto.EmployeeCreateDTO;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 public class EmployeeService {
 
     private final EmployeeRepository employeeRepository;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public EmployeeService(
             EmployeeRepository employeeRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder) {
 
         this.employeeRepository = employeeRepository;
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
 
@@ -36,12 +44,29 @@ public class EmployeeService {
     // CREATE
     // =========================
 
-    public Employee createEmployee(Employee employee) {
+    public Employee createEmployee(EmployeeCreateDTO dto) {
 
-        // Will be converted to CallableStatement later.
-        throw new UnsupportedOperationException(
-                "Create employee will be converted to stored procedure"
-        );
+        if (dto.getFirstName() == null || dto.getFirstName().isBlank()
+                || dto.getLastName() == null || dto.getLastName().isBlank()
+                || dto.getEmail() == null || dto.getEmail().isBlank()
+                || dto.getUsername() == null || dto.getUsername().isBlank()
+                || dto.getPassword() == null || dto.getPassword().isBlank()
+                || dto.getRoleId() == null) {
+
+            throw new IllegalArgumentException(
+                    "Required employee and login fields must be provided");
+        }
+
+        if (dto.getRoleId() < 1 || dto.getRoleId() > 4) {
+            throw new IllegalArgumentException("Invalid role ID");
+        }
+
+        String encodedPassword =
+                passwordEncoder.encode(dto.getPassword());
+
+        return employeeRepository.createEmployeeWithUser(
+                dto,
+                encodedPassword);
     }
 
 
@@ -51,9 +76,32 @@ public class EmployeeService {
 
     public List<Employee> getAllEmployees() {
 
-        return employeeRepository.getAllEmployees();
-    }
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
 
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication.getName().equals("anonymousUser")) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "User is not authenticated"
+            );
+        }
+
+        String username = authentication.getName();
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new RuntimeException("Logged-in user not found"));
+
+        Long companyId = user.getCompanyId();
+
+        if (companyId == null) {
+            throw new RuntimeException(
+                    "Company ID is missing for the logged-in user");
+        }
+
+        return employeeRepository.getAllEmployees(companyId);
+    }
 
     // =========================
     // GET BY ID
@@ -424,5 +472,67 @@ public class EmployeeService {
                                         + employeeId
                         )
                 );
+    }
+
+    // =========================
+// GET EMPLOYEES BY ROLE
+// =========================
+
+
+    public List<Employee> getEmployeesByRole(Integer roleId) {
+
+        if (roleId == null || (roleId != 2 && roleId != 3)) {
+            throw new IllegalArgumentException(
+                    "Only HR and Manager roles are allowed"
+            );
+        }
+
+        List<User> users =
+                userRepository.findByRoleRoleIdAndIsActive(roleId, true);
+
+        List<Employee> employees = new ArrayList<>();
+
+        for (User user : users) {
+
+            if (user.getEmployee() == null) {
+                continue;
+            }
+
+            Integer employeeId = user.getEmployee().getEmployeeId();
+
+            employeeRepository.getEmployeeById(employeeId)
+                    .ifPresent(employees::add);
+        }
+
+        return employees;
+    }
+
+    public boolean setEmployeeActiveStatus(
+            Integer employeeId,
+            boolean isActive) {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication.getName().equals("anonymousUser")) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "User is not authenticated");
+        }
+
+        User loggedInUser = userRepository
+                .findByUsername(authentication.getName())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Logged-in user not found"));
+
+        if (loggedInUser.getCompanyId() == null) {
+            throw new IllegalStateException("Company ID is missing");
+        }
+
+        return userRepository.setUserActiveStatus(
+                employeeId,
+                isActive,
+                loggedInUser.getCompanyId());
     }
 }

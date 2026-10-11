@@ -2,7 +2,7 @@
 -- 1. CREATE TASK
 -- =========================================================
 
-CREATE OR REPLACE FUNCTION create_task(
+CREATE OR REPLACE FUNCTION public.create_task(
     p_task_name VARCHAR,
     p_description VARCHAR,
     p_priority VARCHAR,
@@ -10,14 +10,38 @@ CREATE OR REPLACE FUNCTION create_task(
     p_start_date DATE,
     p_due_date DATE,
     p_project_id INTEGER,
-    p_assigned_to INTEGER
+    p_assigned_to INTEGER,
+    p_company_id BIGINT
 )
-RETURNS SETOF tasks
+RETURNS SETOF public.tasks
 LANGUAGE plpgsql
 AS $$
+DECLARE
+v_task_id INTEGER;
 BEGIN
+    IF p_company_id IS NULL THEN
+        RAISE EXCEPTION 'Company ID is required';
+END IF;
 
-INSERT INTO tasks (
+    IF p_project_id IS NOT NULL AND NOT EXISTS (
+        SELECT 1
+        FROM public.projects
+        WHERE project_id = p_project_id
+          AND company_id = p_company_id
+    ) THEN
+        RAISE EXCEPTION 'Project does not belong to this company';
+END IF;
+
+    IF p_assigned_to IS NOT NULL AND NOT EXISTS (
+        SELECT 1
+        FROM public.employees
+        WHERE employee_id = p_assigned_to
+          AND company_id = p_company_id
+    ) THEN
+        RAISE EXCEPTION 'Employee does not belong to this company';
+END IF;
+
+INSERT INTO public.tasks (
     task_name,
     description,
     priority,
@@ -25,7 +49,8 @@ INSERT INTO tasks (
     start_date,
     due_date,
     project_id,
-    assigned_to
+    assigned_to,
+    company_id
 )
 VALUES (
            p_task_name,
@@ -35,19 +60,17 @@ VALUES (
            p_start_date,
            p_due_date,
            p_project_id,
-           p_assigned_to
-       );
+           p_assigned_to,
+           p_company_id
+       )
+    RETURNING task_id INTO v_task_id;
 
 RETURN QUERY
 SELECT *
-FROM tasks
-WHERE task_id = currval(
-        pg_get_serial_sequence('tasks', 'task_id')
-                );
-
+FROM public.tasks
+WHERE task_id = v_task_id;
 END;
 $$;
-
 
 -- =========================================================
 -- 2. GET ALL TASKS
@@ -72,22 +95,17 @@ $$;
 -- 3. GET TASK BY ID
 -- =========================================================
 
-CREATE OR REPLACE FUNCTION get_task_by_id(
-    p_task_id INTEGER
-)
-RETURNS SETOF tasks
+CREATE OR REPLACE FUNCTION public.get_task_by_id(p_task_id INTEGER)
+RETURNS SETOF public.tasks
 LANGUAGE plpgsql
 AS $$
 BEGIN
-
 RETURN QUERY
 SELECT *
-FROM tasks
+FROM public.tasks
 WHERE task_id = p_task_id;
-
 END;
 $$;
-
 
 -- =========================================================
 -- 4. UPDATE TASK

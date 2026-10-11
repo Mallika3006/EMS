@@ -23,14 +23,15 @@ public class TaskController {
     // CREATE
     @PostMapping
     public ResponseEntity<Task> createTask(
-            @RequestBody Task task) {
+            @RequestBody Task task,
+            Authentication authentication) {
 
-        return new ResponseEntity<>(
-                taskService.createTask(task),
-                HttpStatus.CREATED
-        );
+        Task created = taskService.createTask(
+                task,
+                authentication.getName());
+
+        return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
-
     // GET ALL
     @GetMapping
     public ResponseEntity<List<Task>> getAllTasks() {
@@ -66,19 +67,21 @@ public class TaskController {
     @PutMapping("/{id}")
     public ResponseEntity<Task> updateTask(
             @PathVariable Integer id,
-            @RequestBody Task task) {
+            @RequestBody Task task,
+            Authentication authentication) {
 
         return ResponseEntity.ok(
-                taskService.updateTask(id, task)
+                taskService.updateTask(id, task, authentication.getName())
         );
     }
 
     // DELETE
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTask(
-            @PathVariable Integer id) {
+            @PathVariable Integer id,
+            Authentication authentication) {
 
-        taskService.deleteTask(id);
+        taskService.deleteTask(id, authentication.getName());
 
         return ResponseEntity.noContent().build();
     }

@@ -28,14 +28,12 @@ public class TaskRepository {
     // CREATE
     // =========================================================
 
-    public Task createTask(Task task) {
+    public Task createTask(Task task, Long companyId) {
 
-        String sql =
-                "SELECT * FROM create_task(?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "SELECT * FROM create_task(?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement =
-                     connection.prepareCall(sql)) {
+             CallableStatement statement = connection.prepareCall(sql)) {
 
             statement.setString(1, task.getTaskName());
             statement.setString(2, task.getDescription());
@@ -43,80 +41,45 @@ public class TaskRepository {
             statement.setString(4, task.getStatus());
 
             if (task.getStartDate() != null) {
-                statement.setDate(
-                        5,
-                        Date.valueOf(task.getStartDate())
-                );
+                statement.setDate(5, Date.valueOf(task.getStartDate()));
             } else {
-                statement.setNull(
-                        5,
-                        java.sql.Types.DATE
-                );
+                statement.setNull(5, java.sql.Types.DATE);
             }
 
             if (task.getDueDate() != null) {
-                statement.setDate(
-                        6,
-                        Date.valueOf(task.getDueDate())
-                );
+                statement.setDate(6, Date.valueOf(task.getDueDate()));
             } else {
-                statement.setNull(
-                        6,
-                        java.sql.Types.DATE
-                );
+                statement.setNull(6, java.sql.Types.DATE);
             }
 
-            if (task.getProject() != null) {
-
-                statement.setInt(
-                        7,
-                        task.getProject().getProjectId()
-                );
-
+            if (task.getProject() != null
+                    && task.getProject().getProjectId() != null) {
+                statement.setInt(7, task.getProject().getProjectId());
             } else {
-
-                statement.setNull(
-                        7,
-                        java.sql.Types.INTEGER
-                );
+                statement.setNull(7, java.sql.Types.INTEGER);
             }
 
-            if (task.getAssignedTo() != null) {
-
-                statement.setInt(
-                        8,
-                        task.getAssignedTo().getEmployeeId()
-                );
-
+            if (task.getAssignedTo() != null
+                    && task.getAssignedTo().getEmployeeId() != null) {
+                statement.setInt(8, task.getAssignedTo().getEmployeeId());
             } else {
-
-                statement.setNull(
-                        8,
-                        java.sql.Types.INTEGER
-                );
+                statement.setNull(8, java.sql.Types.INTEGER);
             }
 
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
+            statement.setLong(9, companyId);
 
+            try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
                     return mapTask(resultSet);
                 }
             }
 
         } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error creating task",
-                    e
-            );
+            throw new RuntimeException("Error creating task", e);
         }
 
-        throw new RuntimeException(
-                "Task could not be created"
-        );
+        throw new RuntimeException("Task could not be created");
     }
-
 
     // =========================================================
     // GET ALL
@@ -203,166 +166,82 @@ public class TaskRepository {
     // UPDATE
     // =========================================================
 
-    public Task updateTask(
-            Integer id,
-            Task taskDetails) {
+    public Task updateTask(Integer id, Task taskDetails, Long companyId) {
 
-        String sql =
-                "SELECT * FROM update_task(?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "SELECT * FROM update_task(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection connection =
-                     dataSource.getConnection();
-
-             CallableStatement statement =
-                     connection.prepareCall(sql)) {
+        try (Connection connection = dataSource.getConnection();
+             CallableStatement statement = connection.prepareCall(sql)) {
 
             statement.setInt(1, id);
-
-            statement.setString(
-                    2,
-                    taskDetails.getTaskName()
-            );
-
-            statement.setString(
-                    3,
-                    taskDetails.getDescription()
-            );
-
-            statement.setString(
-                    4,
-                    taskDetails.getPriority()
-            );
-
-            statement.setString(
-                    5,
-                    taskDetails.getStatus()
-            );
+            statement.setString(2, taskDetails.getTaskName());
+            statement.setString(3, taskDetails.getDescription());
+            statement.setString(4, taskDetails.getPriority());
+            statement.setString(5, taskDetails.getStatus());
 
             if (taskDetails.getStartDate() != null) {
-
-                statement.setDate(
-                        6,
-                        Date.valueOf(
-                                taskDetails.getStartDate()
-                        )
-                );
-
+                statement.setDate(6, Date.valueOf(taskDetails.getStartDate()));
             } else {
-
-                statement.setNull(
-                        6,
-                        java.sql.Types.DATE
-                );
+                statement.setNull(6, java.sql.Types.DATE);
             }
 
             if (taskDetails.getDueDate() != null) {
-
-                statement.setDate(
-                        7,
-                        Date.valueOf(
-                                taskDetails.getDueDate()
-                        )
-                );
-
+                statement.setDate(7, Date.valueOf(taskDetails.getDueDate()));
             } else {
-
-                statement.setNull(
-                        7,
-                        java.sql.Types.DATE
-                );
+                statement.setNull(7, java.sql.Types.DATE);
             }
 
-            if (taskDetails.getProject() != null) {
-
-                statement.setInt(
-                        8,
-                        taskDetails
-                                .getProject()
-                                .getProjectId()
-                );
-
+            if (taskDetails.getProject() != null
+                    && taskDetails.getProject().getProjectId() != null) {
+                statement.setInt(8, taskDetails.getProject().getProjectId());
             } else {
-
-                statement.setNull(
-                        8,
-                        java.sql.Types.INTEGER
-                );
+                statement.setNull(8, java.sql.Types.INTEGER);
             }
 
-            if (taskDetails.getAssignedTo() != null) {
-
-                statement.setInt(
-                        9,
-                        taskDetails
-                                .getAssignedTo()
-                                .getEmployeeId()
-                );
-
+            if (taskDetails.getAssignedTo() != null
+                    && taskDetails.getAssignedTo().getEmployeeId() != null) {
+                statement.setInt(9, taskDetails.getAssignedTo().getEmployeeId());
             } else {
-
-                statement.setNull(
-                        9,
-                        java.sql.Types.INTEGER
-                );
+                statement.setNull(9, java.sql.Types.INTEGER);
             }
 
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
+            statement.setLong(10, companyId);
 
-                if (resultSet.next()) {
-
-                    return mapTask(resultSet);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return mapTask(rs);
                 }
             }
 
         } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error updating task with id: "
-                            + id,
-                    e
-            );
+            throw new RuntimeException("Error updating task with id: " + id, e);
         }
 
-        throw new RuntimeException(
-                "Task not found with id: " + id
-        );
+        throw new RuntimeException("Task not found with id: " + id);
     }
-
 
     // =========================================================
     // DELETE
     // =========================================================
 
-    public boolean deleteTask(Integer id) {
+    public boolean deleteTask(Integer id, Long companyId) {
 
-        String sql =
-                "SELECT delete_task(?)";
+        String sql = "SELECT delete_task(?, ?)";
 
-        try (Connection connection =
-                     dataSource.getConnection();
-
-             CallableStatement statement =
-                     connection.prepareCall(sql)) {
+        try (Connection connection = dataSource.getConnection();
+             CallableStatement statement = connection.prepareCall(sql)) {
 
             statement.setInt(1, id);
+            statement.setLong(2, companyId);
 
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
-
-                if (resultSet.next()) {
-
-                    return resultSet.getBoolean(1);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getBoolean(1);
                 }
             }
 
         } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error deleting task with id: "
-                            + id,
-                    e
-            );
+            throw new RuntimeException("Error deleting task with id: " + id, e);
         }
 
         return false;

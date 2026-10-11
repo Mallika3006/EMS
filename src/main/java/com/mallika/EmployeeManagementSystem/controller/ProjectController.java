@@ -69,4 +69,13 @@ public class ProjectController {
 
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/manager/team")
+    public ResponseEntity<List<Project>> getManagerTeamProjects(
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                projectService.getProjectsByManager(
+                        authentication.getName()));
+    }
 }

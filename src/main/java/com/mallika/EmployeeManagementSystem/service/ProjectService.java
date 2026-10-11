@@ -74,4 +74,22 @@ public class ProjectService {
                     "Project not found with id: " + id);
         }
     }
+
+    public List<Project> getProjectsByManager(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found: " + username));
+
+        if (user.getCompanyId() == null
+                || user.getEmployee() == null
+                || user.getEmployee().getEmployeeId() == null) {
+            throw new IllegalStateException(
+                    "User must have a company and employee assigned");
+        }
+
+        return projectRepository.getProjectsByManager(
+                user.getEmployee().getEmployeeId(),
+                user.getCompanyId());
+    }
 }

@@ -285,28 +285,21 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION public.get_projects_by_manager(
-    p_manager_id INTEGER
+    p_manager_id integer,
+    p_company_id bigint
 )
-RETURNS TABLE (
-    project_id INTEGER,
-    project_name VARCHAR,
-    start_date DATE,
-    end_date DATE
-)
+RETURNS SETOF projects
 LANGUAGE plpgsql
-AS $$
+AS $function$
 BEGIN
 RETURN QUERY
-SELECT
-    p.project_id,
-    p.project_name,
-    p.start_date,
-    p.end_date
-FROM projects p
+SELECT p.*
+FROM public.projects p
 WHERE p.manager_id = p_manager_id
-ORDER BY p.project_id DESC;
+  AND p.company_id = p_company_id
+ORDER BY p.project_id;
 END;
-$$;
+$function$;
 
 CREATE OR REPLACE FUNCTION get_unassigned_projects()
 RETURNS SETOF projects

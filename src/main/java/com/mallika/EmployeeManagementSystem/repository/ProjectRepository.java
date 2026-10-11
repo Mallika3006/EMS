@@ -176,4 +176,46 @@ public class ProjectRepository {
 
         return project;
     }
+
+    public List<Project> getProjectsByManager(Integer managerId, Long companyId) {
+        String sql = "SELECT * FROM get_projects_by_manager(?, ?)";
+        List<Project> projects = new ArrayList<>();
+
+        try (Connection con = dataSource.getConnection();
+             CallableStatement st = con.prepareCall(sql)) {
+
+            st.setInt(1, managerId);
+            st.setLong(2, companyId);
+
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) {
+                    Project project = new Project();
+
+                    project.setProjectId(rs.getInt("project_id"));
+                    project.setProjectName(rs.getString("project_name"));
+
+                    java.sql.Date startDate = rs.getDate("start_date");
+                    if (startDate != null) {
+                        project.setStartDate(startDate.toLocalDate());
+                    }
+
+                    java.sql.Date endDate = rs.getDate("end_date");
+                    if (endDate != null) {
+                        project.setEndDate(endDate.toLocalDate());
+                    }
+
+                    int assignedManagerId = rs.getInt("manager_id");
+                    project.setManagerId(
+                            rs.wasNull() ? null : assignedManagerId);
+
+                    projects.add(project);
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Error fetching manager projects", e);
+        }
+
+        return projects;
+    }
 }

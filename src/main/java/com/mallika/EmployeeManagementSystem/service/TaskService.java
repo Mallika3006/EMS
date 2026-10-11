@@ -28,8 +28,19 @@ public class TaskService {
     // CREATE
     // =========================================================
 
-    public Task createTask(Task task) {
-        return taskRepository.createTask(task);
+    public Task createTask(Task task, String username) {
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found: " + username));
+
+        if (user.getCompanyId() == null) {
+            throw new IllegalStateException(
+                    "No company is assigned to this user");
+        }
+
+        return taskRepository.createTask(task, user.getCompanyId());
     }
 
 
@@ -60,14 +71,19 @@ public class TaskService {
     // UPDATE
     // =========================================================
 
-    public Task updateTask(
-            Integer id,
-            Task taskDetails) {
+    public Task updateTask(Integer id, Task taskDetails, String username) {
 
-        return taskRepository.updateTask(
-                id,
-                taskDetails
-        );
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found: " + username));
+
+        Long companyId = user.getCompanyId();
+
+        if (companyId == null) {
+            throw new IllegalStateException("User has no company assigned");
+        }
+
+        return taskRepository.updateTask(id, taskDetails, companyId);
     }
 
 
@@ -75,10 +91,19 @@ public class TaskService {
     // DELETE
     // =========================================================
 
-    public void deleteTask(Integer id) {
+    public void deleteTask(Integer id, String username) {
 
-        boolean deleted =
-                taskRepository.deleteTask(id);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found: " + username));
+
+        Long companyId = user.getCompanyId();
+
+        if (companyId == null) {
+            throw new IllegalStateException("User has no company assigned");
+        }
+
+        boolean deleted = taskRepository.deleteTask(id, companyId);
 
         if (!deleted) {
             throw new ResourceNotFoundException(
@@ -86,7 +111,6 @@ public class TaskService {
             );
         }
     }
-
 
     // =========================================================
     // SEARCH BY TASK NAME

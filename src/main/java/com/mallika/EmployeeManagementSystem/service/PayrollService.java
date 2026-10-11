@@ -216,4 +216,21 @@ public class PayrollService {
                         employeeId
                 );
     }
+
+    public List<Payroll> getPayrollsForCurrentHr() {
+        String username = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("HR user not found"));
+
+        if (user.getEmployee() == null) {
+            throw new RuntimeException("HR employee profile not found");
+        }
+
+        Integer hrId = user.getEmployee().getEmployeeId();
+
+        return payrollRepository.getPayrollsByHr(hrId);
+    }
 }

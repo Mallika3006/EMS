@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -110,6 +109,7 @@
         </table>
     </div>
 </div>
+
 <div>
     <a href="/hr-dashboard">
         <button type="button">Back to Dashboard</button>
@@ -120,6 +120,9 @@
 
 <script>
     const api = "/payrolls";
+
+    // Payroll records loaded from the HR-specific endpoint
+    let hrPayrolls = [];
 
     // Automatically calculate net salary
     function calculateNetSalary() {
@@ -135,7 +138,7 @@
         document.getElementById(id).addEventListener("input", calculateNetSalary);
     });
 
-    // ADD OR UPDATE
+    // ADD OR UPDATE PAYROLL
     document.getElementById("payrollForm").addEventListener("submit", async function (event) {
         event.preventDefault();
 
@@ -144,27 +147,49 @@
         const basic = Number(document.getElementById("basicSalary").value);
         const allowances = Number(document.getElementById("allowances").value);
         const deductions = Number(document.getElementById("deductions").value);
+        const payMonth = document.getElementById("formPayMonth").value.trim();
         const netSalary = basic + allowances - deductions;
+
+        if (!employeeId) {
+            alert("Please select an employee.");
+            return;
+        }
 
         if (netSalary < 0) {
             alert("Deductions cannot exceed basic salary plus allowances.");
             return;
         }
 
+        if (!payMonth) {
+            alert("Please enter the pay month.");
+            return;
+        }
+
+        // Only allow editing records currently present in this HR's scoped list.
+        if (id && !hrPayrolls.some(p => String(p.payrollId) === String(id))) {
+            alert("You cannot edit this payroll record from this HR account.");
+            return;
+        }
+
+        // Only allow selecting an employee currently returned by the HR employee endpoint.
+        const employeeIsAssigned = Array.from(
+            document.getElementById("formEmployeeId").options
+        ).some(option => option.value === String(employeeId));
+
+        if (!employeeIsAssigned) {
+            alert("Please select an employee assigned to you.");
+            return;
+        }
+
         const payroll = {
             employee: { employeeId: employeeId },
-            payMonth: document.getElementById("formPayMonth").value.trim(),
+            payMonth: payMonth,
             basicSalary: basic,
             allowances: allowances,
             deductions: deductions,
             netSalary: netSalary,
             paymentDate: document.getElementById("formPaymentDate").value || null
         };
-
-        if (!payroll.payMonth) {
-            alert("Please enter the pay month.");
-            return;
-        }
 
         try {
             const response = await fetch(
@@ -182,67 +207,94 @@
 
             alert(id ? "Payroll updated successfully." : "Payroll added successfully.");
             resetForm();
-            loadPayrolls();
+            await loadPayrolls();
         } catch (error) {
             console.error(error);
             alert("Unable to save payroll. Check the backend logs.");
         }
     });
 
-    // LOAD ALL PAYROLLS
+    // LOAD PAYROLLS FOR ACTIVE EMPLOYEES ASSIGNED TO THE CURRENT HR
     async function loadPayrolls() {
         try {
-            const response = await fetch(api);
-            if (!response.ok) throw new Error("Failed to load payrolls");
+            const response = await fetch("/payrolls/hr/my-employees");
 
-            displayPayrolls(await response.json());
+            if (!response.ok) {
+                throw new Error("Failed to load HR payrolls");
+            }
+
+            hrPayrolls = await response.json();
+            displayPayrolls(hrPayrolls);
         } catch (error) {
             console.error(error);
             alert("Failed to load payroll records.");
         }
     }
 
-    async function searchPayrolls(url) {
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error("Search failed");
-
-            displayPayrolls(await response.json());
-        } catch (error) {
-            console.error(error);
-            alert("Failed to fetch payroll records.");
-        }
-    }
-
+    // SEARCH EMPLOYEE
     function searchByEmployee() {
-        const id = document.getElementById("employeeId").value;
-        if (!id) return alert("Please enter Employee ID");
-        searchPayrolls(`${api}/employee/${id}`);
-    }
+        const id = document.getElementById("employeeId").value.trim();
 
-    function searchByMonth() {
-        const month = document.getElementById("payMonth").value.trim();
-        if (!month) return alert("Please enter Pay Month");
-        searchPayrolls(`${api}/month?payMonth=${encodeURIComponent(month)}`);
-    }
-
-    function searchEmployeeMonth() {
-        const id = document.getElementById("employeeMonthId").value;
-        const month = document.getElementById("employeeMonth").value.trim();
-
-        if (!id || !month) {
-            return alert("Please enter Employee ID and Pay Month");
+        if (!id) {
+            alert("Please enter Employee ID");
+            return;
         }
 
-        searchPayrolls(
-            `${api}/employee/${id}/month?payMonth=${encodeURIComponent(month)}`
+        displayPayrolls(
+            hrPayrolls.filter(p =>
+                String(p.employee?.employeeId ?? p.employeeId ?? "") === id
+            )
         );
     }
 
+    // SEARCH BY MONTH
+    function searchByMonth() {
+        const month = document.getElementById("payMonth").value.trim();
+
+        if (!month) {
+            alert("Please enter Pay Month");
+            return;
+        }
+
+        displayPayrolls(
+            hrPayrolls.filter(p =>
+                String(p.payMonth ?? "").toLowerCase() === month.toLowerCase()
+            )
+        );
+    }
+
+    // SEARCH BY EMPLOYEE AND MONTH
+    function searchEmployeeMonth() {
+        const id = document.getElementById("employeeMonthId").value.trim();
+        const month = document.getElementById("employeeMonth").value.trim();
+
+        if (!id || !month) {
+            alert("Please enter Employee ID and Pay Month");
+            return;
+        }
+
+        displayPayrolls(
+            hrPayrolls.filter(p =>
+                String(p.employee?.employeeId ?? p.employeeId ?? "") === id &&
+                String(p.payMonth ?? "").toLowerCase() === month.toLowerCase()
+            )
+        );
+    }
+
+    // SEARCH BY PAYMENT DATE
     function searchByPaymentDate() {
         const date = document.getElementById("paymentDate").value;
-        if (!date) return alert("Please select Payment Date");
-        searchPayrolls(`${api}/payment-date?paymentDate=${date}`);
+
+        if (!date) {
+            alert("Please select Payment Date");
+            return;
+        }
+
+        displayPayrolls(
+            hrPayrolls.filter(p =>
+                String(p.paymentDate ?? "").slice(0, 10) === date
+            )
+        );
     }
 
     // DISPLAY PAYROLLS
@@ -251,7 +303,8 @@
         body.innerHTML = "";
 
         if (!payrolls || payrolls.length === 0) {
-            body.innerHTML = '<tr><td colspan="9">No payroll records found</td></tr>';
+            body.innerHTML =
+                '<tr><td colspan="9">No payroll records found</td></tr>';
             return;
         }
 
@@ -260,14 +313,14 @@
             const row = document.createElement("tr");
 
             [
-                p.payrollId,
+                p.payrollId ?? "-",
                 employeeId,
                 p.payMonth ?? "-",
                 p.basicSalary ?? "-",
                 p.allowances ?? "-",
                 p.deductions ?? "-",
                 p.netSalary ?? "-",
-                p.paymentDate ?? "-"
+                p.paymentDate ? String(p.paymentDate).slice(0, 10) : "-"
             ].forEach(value => {
                 const cell = document.createElement("td");
                 cell.textContent = value;
@@ -294,6 +347,12 @@
 
     // LOAD RECORD INTO FORM
     function editPayroll(p) {
+        if (!hrPayrolls.some(record =>
+            String(record.payrollId) === String(p.payrollId))) {
+            alert("You cannot edit this payroll record.");
+            return;
+        }
+
         document.getElementById("payrollId").value = p.payrollId;
         document.getElementById("formEmployeeId").value =
             p.employee?.employeeId ?? p.employeeId ?? "";
@@ -301,7 +360,8 @@
         document.getElementById("basicSalary").value = p.basicSalary ?? 0;
         document.getElementById("allowances").value = p.allowances ?? 0;
         document.getElementById("deductions").value = p.deductions ?? 0;
-        document.getElementById("formPaymentDate").value = p.paymentDate ?? "";
+        document.getElementById("formPaymentDate").value =
+            p.paymentDate ? String(p.paymentDate).slice(0, 10) : "";
 
         calculateNetSalary();
 
@@ -311,18 +371,28 @@
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    // DELETE
+    // DELETE PAYROLL
     async function deletePayroll(id) {
+        if (!hrPayrolls.some(p => String(p.payrollId) === String(id))) {
+            alert("You cannot delete this payroll record.");
+            return;
+        }
+
         if (!confirm("Are you sure you want to delete this payroll record?")) {
             return;
         }
 
         try {
-            const response = await fetch(`${api}/${id}`, { method: "DELETE" });
-            if (!response.ok) throw new Error(await response.text());
+            const response = await fetch(`${api}/${id}`, {
+                method: "DELETE"
+            });
+
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
 
             alert("Payroll deleted successfully.");
-            loadPayrolls();
+            await loadPayrolls();
         } catch (error) {
             console.error(error);
             alert("Failed to delete payroll record.");
@@ -338,6 +408,7 @@
         calculateNetSalary();
     }
 
+    // LOAD ACTIVE EMPLOYEES ASSIGNED TO THE CURRENT HR
     async function loadHrEmployees() {
         try {
             const response = await fetch("/employees/hr/my-employees");

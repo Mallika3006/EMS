@@ -259,3 +259,25 @@ BEGIN
 
 END;
 $$;
+
+
+CREATE OR REPLACE FUNCTION public.get_payrolls_by_hr(
+    p_hr_id INTEGER
+)
+RETURNS SETOF payroll
+LANGUAGE plpgsql
+AS $$
+BEGIN
+RETURN QUERY
+SELECT p.*
+FROM payroll p
+         JOIN employees e
+              ON p.employee_id = e.employee_id
+         JOIN users u
+              ON u.employee_id = e.employee_id
+                  AND u.company_id = e.company_id
+                  AND u.is_active = TRUE
+WHERE e.hr_id = p_hr_id
+ORDER BY p.payroll_id DESC;
+END;
+$$;

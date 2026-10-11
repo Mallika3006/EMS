@@ -261,15 +261,16 @@ RETURNS SETOF attendance
 LANGUAGE plpgsql
 AS $$
 BEGIN
-
 RETURN QUERY
 SELECT a.*
 FROM attendance a
          JOIN employees e
               ON a.employee_id = e.employee_id
+         JOIN users u
+              ON u.employee_id = e.employee_id
+                  AND u.is_active = TRUE
 WHERE e.manager_id = p_manager_id
 ORDER BY a.att_date DESC;
-
 END;
 $$;
 
@@ -285,6 +286,9 @@ SELECT a.*
 FROM attendance a
          JOIN employees e
               ON a.employee_id = e.employee_id
+         JOIN users u
+              ON u.employee_id = e.employee_id
+                  AND u.is_active = TRUE
 WHERE e.hr_id = p_hr_id
 ORDER BY a.att_date DESC, a.attendance_id;
 END;

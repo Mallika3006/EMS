@@ -600,4 +600,31 @@ public class PayrollRepository {
 
         return payroll;
     }
+
+
+    public List<Payroll> getPayrollsByHr(Integer hrId) {
+
+        List<Payroll> payrolls = new ArrayList<>();
+
+        String sql = "SELECT * FROM get_payrolls_by_hr(?)";
+
+        try (Connection connection = dataSource.getConnection();
+             CallableStatement statement = connection.prepareCall(sql)) {
+
+            statement.setInt(1, hrId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    payrolls.add(mapPayroll(resultSet));
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Error fetching HR employee payrolls", e);
+        }
+
+        return payrolls;
+    }
+
 }

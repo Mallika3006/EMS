@@ -141,4 +141,9 @@ public class PayrollController {
                 )
         );
     }
+
+    @GetMapping("/hr/my-employees")
+    public List<Payroll> getPayrollsForCurrentHr() {
+        return payrollService.getPayrollsForCurrentHr();
+    }
 }

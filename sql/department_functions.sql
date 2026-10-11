@@ -1,156 +1,175 @@
--- =========================================================
--- DEPARTMENT FUNCTIONS
--- =========================================================
 
-
--- 1. CREATE DEPARTMENT
-CREATE OR REPLACE FUNCTION create_department(
-    p_department_name VARCHAR,
-    p_location VARCHAR,
-    p_description VARCHAR
+-- 1. Create designation
+CREATE OR REPLACE FUNCTION public.create_designation(
+    p_title VARCHAR,
+    p_min_salary NUMERIC,
+    p_max_salary NUMERIC,
+    p_company_id BIGINT
 )
-RETURNS SETOF departments
-LANGUAGE plpgsql
-AS $$
-BEGIN
-INSERT INTO departments (
-    department_name,
-    location,
-    description
+RETURNS TABLE (
+    designation_id INTEGER,
+    designation_title VARCHAR,
+    min_salary NUMERIC,
+    max_salary NUMERIC
 )
-VALUES (
-           p_department_name,
-           p_location,
-           p_description
-       );
-
-RETURN QUERY
-SELECT *
-FROM departments
-WHERE department_id = currval(
-        pg_get_serial_sequence('departments', 'department_id')
-                      );
-END;
-$$;
-
-
--- 2. GET ALL DEPARTMENTS
-CREATE OR REPLACE FUNCTION get_all_departments()
-RETURNS SETOF departments
 LANGUAGE plpgsql
 AS $$
 BEGIN
 RETURN QUERY
-SELECT *
-FROM departments
-ORDER BY department_id;
+    INSERT INTO public.designation AS d (
+        designation_title, min_salary, max_salary, company_id
+    )
+    VALUES (
+        p_title, p_min_salary, p_max_salary, p_company_id
+    )
+    RETURNING d.designation_id, d.designation_title,
+              d.min_salary, d.max_salary;
 END;
 $$;
 
 
--- 3. GET DEPARTMENT BY ID
-CREATE OR REPLACE FUNCTION get_department_by_id(
-    p_department_id INTEGER
+-- 2. Get all designations for a company
+CREATE OR REPLACE FUNCTION public.get_all_designations(
+    p_company_id BIGINT
 )
-RETURNS SETOF departments
+RETURNS TABLE (
+    designation_id INTEGER,
+    designation_title VARCHAR,
+    min_salary NUMERIC,
+    max_salary NUMERIC
+)
+LANGUAGE sql
+AS $$
+SELECT d.designation_id, d.designation_title,
+       d.min_salary, d.max_salary
+FROM public.designation d
+WHERE d.company_id = p_company_id
+ORDER BY d.designation_id;
+$$;
+
+
+-- 3. Get designation by ID
+CREATE OR REPLACE FUNCTION public.get_designation_by_id(
+    p_id INTEGER,
+    p_company_id BIGINT
+)
+RETURNS TABLE (
+    designation_id INTEGER,
+    designation_title VARCHAR,
+    min_salary NUMERIC,
+    max_salary NUMERIC
+)
+LANGUAGE sql
+AS $$
+SELECT d.designation_id, d.designation_title,
+       d.min_salary, d.max_salary
+FROM public.designation d
+WHERE d.designation_id = p_id
+  AND d.company_id = p_company_id;
+$$;
+
+
+-- 4. Get designation by title
+CREATE OR REPLACE FUNCTION public.get_designation_by_title(
+    p_title VARCHAR,
+    p_company_id BIGINT
+)
+RETURNS TABLE (
+    designation_id INTEGER,
+    designation_title VARCHAR,
+    min_salary NUMERIC,
+    max_salary NUMERIC
+)
+LANGUAGE sql
+AS $$
+SELECT d.designation_id, d.designation_title,
+       d.min_salary, d.max_salary
+FROM public.designation d
+WHERE LOWER(d.designation_title) = LOWER(p_title)
+  AND d.company_id = p_company_id;
+$$;
+
+
+-- 5. Search designations by title
+CREATE OR REPLACE FUNCTION public.search_designations_by_title(
+    p_title VARCHAR,
+    p_company_id BIGINT
+)
+RETURNS TABLE (
+    designation_id INTEGER,
+    designation_title VARCHAR,
+    min_salary NUMERIC,
+    max_salary NUMERIC
+)
+LANGUAGE sql
+AS $$
+SELECT d.designation_id, d.designation_title,
+       d.min_salary, d.max_salary
+FROM public.designation d
+WHERE d.designation_title ILIKE '%' || p_title || '%'
+      AND d.company_id = p_company_id
+ORDER BY d.designation_id;
+$$;
+
+
+-- 6. Update designation within its company
+CREATE OR REPLACE FUNCTION public.update_designation(
+    p_id INTEGER,
+    p_title VARCHAR,
+    p_min_salary NUMERIC,
+    p_max_salary NUMERIC,
+    p_company_id BIGINT
+)
+RETURNS TABLE (
+    designation_id INTEGER,
+    designation_title VARCHAR,
+    min_salary NUMERIC,
+    max_salary NUMERIC
+)
 LANGUAGE plpgsql
 AS $$
 BEGIN
 RETURN QUERY
-SELECT *
-FROM departments
-WHERE department_id = p_department_id;
+UPDATE public.designation AS d
+SET designation_title = p_title,
+    min_salary = p_min_salary,
+    max_salary = p_max_salary
+WHERE d.designation_id = p_id
+  AND d.company_id = p_company_id
+    RETURNING d.designation_id, d.designation_title,
+              d.min_salary, d.max_salary;
 END;
 $$;
 
 
--- 4. UPDATE DEPARTMENT
-CREATE OR REPLACE FUNCTION update_department(
-    p_department_id INTEGER,
-    p_department_name VARCHAR,
-    p_location VARCHAR,
-    p_description VARCHAR
-)
-RETURNS SETOF departments
-LANGUAGE plpgsql
-AS $$
-BEGIN
-UPDATE departments
-SET
-    department_name = p_department_name,
-    location = p_location,
-    description = p_description
-WHERE department_id = p_department_id;
-
-RETURN QUERY
-SELECT *
-FROM departments
-WHERE department_id = p_department_id;
-END;
-$$;
-
-
--- 5. DELETE DEPARTMENT
-CREATE OR REPLACE FUNCTION delete_department(
-    p_department_id INTEGER
+-- 7. Delete designation within its company
+CREATE OR REPLACE FUNCTION public.delete_designation(
+    p_id INTEGER,
+    p_company_id BIGINT
 )
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 AS $$
 BEGIN
-DELETE FROM departments
-WHERE department_id = p_department_id;
+DELETE FROM public.designation
+WHERE designation_id = p_id
+  AND company_id = p_company_id;
 
 RETURN FOUND;
 END;
 $$;
 
 
--- 6. SEARCH DEPARTMENTS BY NAME
-CREATE OR REPLACE FUNCTION search_departments_by_name(
-    p_department_name VARCHAR
+-- 8. Get employees with this designation in the same company
+CREATE OR REPLACE FUNCTION public.get_employees_by_designation(
+    p_designation_id INTEGER,
+    p_company_id BIGINT
 )
-RETURNS SETOF departments
-LANGUAGE plpgsql
+RETURNS SETOF public.employees
+LANGUAGE sql
 AS $$
-BEGIN
-RETURN QUERY
-SELECT *
-FROM departments
-WHERE department_name ILIKE '%' || p_department_name || '%'
-ORDER BY department_id;
-END;
-$$;
-
-
--- 7. GET DEPARTMENT BY EXACT NAME
-CREATE OR REPLACE FUNCTION get_department_by_name(
-    p_department_name VARCHAR
-)
-RETURNS SETOF departments
-LANGUAGE plpgsql
-AS $$
-BEGIN
-RETURN QUERY
-SELECT *
-FROM departments
-WHERE LOWER(department_name) = LOWER(p_department_name);
-END;
-$$;
-
-
--- 8. SEARCH DEPARTMENTS BY LOCATION
-CREATE OR REPLACE FUNCTION search_departments_by_location(
-    p_location VARCHAR
-)
-RETURNS SETOF departments
-LANGUAGE plpgsql
-AS $$
-BEGIN
-RETURN QUERY
-SELECT *
-FROM departments
-WHERE location ILIKE '%' || p_location || '%'
-ORDER BY department_id;
-END;
+SELECT e.*
+FROM public.employees e
+WHERE e.designation_id = p_designation_id
+  AND e.company_id = p_company_id;
 $$;

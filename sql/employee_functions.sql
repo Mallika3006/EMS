@@ -128,21 +128,6 @@ WHERE employee_id = p_employee_id;
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION get_projects_by_employee(
-    p_employee_id INTEGER
-)
-RETURNS SETOF projects
-LANGUAGE plpgsql
-AS $$
-BEGIN
-RETURN QUERY
-SELECT p.*
-FROM projects p
-         JOIN employee_project ep
-              ON p.project_id = ep.project_id
-WHERE ep.employee_id = p_employee_id;
-END;
-$$;
 
 -- ============================================
 -- GET EMPLOYEE PROFILE DETAILS

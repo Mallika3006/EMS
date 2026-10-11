@@ -1,3 +1,4 @@
+
 package com.mallika.EmployeeManagementSystem.repository;
 
 import com.mallika.EmployeeManagementSystem.model.Designation;
@@ -20,224 +21,200 @@ public class DesignationRepository {
     }
 
     // CREATE
-    public Designation createDesignation(Designation designation) {
+    public Designation createDesignation(
+            Designation designation, Long companyId) {
 
-        String sql = "SELECT * FROM create_designation(?, ?, ?)";
+        String sql = "SELECT * FROM create_designation(?, ?, ?, ?)";
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setString(1, designation.getDesignationTitle());
             statement.setBigDecimal(2, designation.getMinSalary());
             statement.setBigDecimal(3, designation.getMaxSalary());
+            statement.setLong(4, companyId);
 
-            ResultSet rs = statement.executeQuery();
-
-            if (rs.next()) {
-                return mapDesignation(rs);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return mapDesignation(rs, companyId);
+                }
             }
 
             throw new RuntimeException("Failed to create designation");
 
         } catch (SQLException e) {
-            throw new RuntimeException(
-                    "Error creating designation: " + e.getMessage(), e
-            );
+            throw new RuntimeException("Error creating designation", e);
         }
     }
 
-
     // GET ALL
-    public List<Designation> getAllDesignations() {
+    public List<Designation> getAllDesignations(Long companyId) {
 
-        String sql = "SELECT * FROM get_all_designations()";
-
+        String sql = "SELECT * FROM get_all_designations(?)";
         List<Designation> designations = new ArrayList<>();
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql);
-             ResultSet rs = statement.executeQuery()) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            while (rs.next()) {
-                designations.add(mapDesignation(rs));
+            statement.setLong(1, companyId);
+
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    designations.add(mapDesignation(rs, companyId));
+                }
             }
 
             return designations;
 
         } catch (SQLException e) {
-            throw new RuntimeException(
-                    "Error fetching all designations: " + e.getMessage(), e
-            );
+            throw new RuntimeException("Error fetching designations", e);
         }
     }
 
-
     // GET BY ID
-    public Optional<Designation> getDesignationById(Integer id) {
+    public Optional<Designation> getDesignationById(
+            Integer id, Long companyId) {
 
-        String sql = "SELECT * FROM get_designation_by_id(?)";
+        String sql = "SELECT * FROM get_designation_by_id(?, ?)";
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setInt(1, id);
+            statement.setLong(2, companyId);
 
-            ResultSet rs = statement.executeQuery();
-
-            if (rs.next()) {
-                return Optional.of(mapDesignation(rs));
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapDesignation(rs, companyId));
+                }
             }
 
             return Optional.empty();
 
         } catch (SQLException e) {
-            throw new RuntimeException(
-                    "Error fetching designation by id: " + e.getMessage(), e
-            );
+            throw new RuntimeException("Error fetching designation by ID", e);
         }
     }
 
-
     // UPDATE
     public Designation updateDesignation(
-            Integer id,
-            Designation designation) {
+            Integer id, Designation designation, Long companyId) {
 
-        String sql = "SELECT * FROM update_designation(?, ?, ?, ?)";
+        String sql = "SELECT * FROM update_designation(?, ?, ?, ?, ?)";
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setInt(1, id);
             statement.setString(2, designation.getDesignationTitle());
             statement.setBigDecimal(3, designation.getMinSalary());
             statement.setBigDecimal(4, designation.getMaxSalary());
+            statement.setLong(5, companyId);
 
-            ResultSet rs = statement.executeQuery();
-
-            if (rs.next()) {
-                return mapDesignation(rs);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return mapDesignation(rs, companyId);
+                }
             }
 
             throw new RuntimeException(
-                    "Designation not found with id: " + id
-            );
+                    "Designation not found with ID: " + id);
 
         } catch (SQLException e) {
-            throw new RuntimeException(
-                    "Error updating designation: " + e.getMessage(), e
-            );
+            throw new RuntimeException("Error updating designation", e);
         }
     }
 
-
     // DELETE
-    public void deleteDesignation(Integer id) {
+    public void deleteDesignation(Integer id, Long companyId) {
 
-        String sql = "SELECT delete_designation(?)";
+        String sql = "SELECT delete_designation(?, ?)";
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setInt(1, id);
+            statement.setLong(2, companyId);
 
-            ResultSet rs = statement.executeQuery();
-
-            if (rs.next()) {
-
-                boolean deleted = rs.getBoolean(1);
-
-                if (!deleted) {
+            try (ResultSet rs = statement.executeQuery()) {
+                if (!rs.next() || !rs.getBoolean(1)) {
                     throw new RuntimeException(
-                            "Designation not found with id: " + id
-                    );
+                            "Designation not found with ID: " + id);
                 }
             }
 
         } catch (SQLException e) {
-            throw new RuntimeException(
-                    "Error deleting designation: " + e.getMessage(), e
-            );
+            throw new RuntimeException("Error deleting designation", e);
         }
     }
 
-
     // SEARCH BY TITLE
-    public List<Designation> searchByTitle(String title) {
+    public List<Designation> searchByTitle(
+            String title, Long companyId) {
 
-        String sql = "SELECT * FROM search_designations_by_title(?)";
-
+        String sql = "SELECT * FROM search_designations_by_title(?, ?)";
         List<Designation> designations = new ArrayList<>();
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setString(1, title);
+            statement.setLong(2, companyId);
 
-            ResultSet rs = statement.executeQuery();
-
-            while (rs.next()) {
-                designations.add(mapDesignation(rs));
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    designations.add(mapDesignation(rs, companyId));
+                }
             }
 
             return designations;
 
         } catch (SQLException e) {
-            throw new RuntimeException(
-                    "Error searching designations: " + e.getMessage(), e
-            );
+            throw new RuntimeException("Error searching designations", e);
         }
     }
 
-
     // GET BY EXACT TITLE
-    public Optional<Designation> getDesignationByTitle(String title) {
+    public Optional<Designation> getDesignationByTitle(
+            String title, Long companyId) {
 
-        String sql = "SELECT * FROM get_designation_by_title(?)";
+        String sql = "SELECT * FROM get_designation_by_title(?, ?)";
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setString(1, title);
+            statement.setLong(2, companyId);
 
-            ResultSet rs = statement.executeQuery();
-
-            if (rs.next()) {
-                return Optional.of(mapDesignation(rs));
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapDesignation(rs, companyId));
+                }
             }
 
             return Optional.empty();
 
         } catch (SQLException e) {
             throw new RuntimeException(
-                    "Error fetching designation by title: "
-                            + e.getMessage(), e
-            );
+                    "Error fetching designation by title", e);
         }
     }
 
-
     // MAPPER
-    private Designation mapDesignation(ResultSet rs) throws SQLException {
+    private Designation mapDesignation(
+            ResultSet rs, Long companyId) throws SQLException {
 
         Designation designation = new Designation();
 
-        designation.setDesignationId(
-                rs.getInt("designation_id")
-        );
+        designation.setDesignationId(rs.getInt("designation_id"));
+        designation.setDesignationTitle(rs.getString("designation_title"));
 
-        designation.setDesignationTitle(
-                rs.getString("designation_title")
-        );
-
-        BigDecimal minSalary =
-                rs.getBigDecimal("min_salary");
-
-        BigDecimal maxSalary =
-                rs.getBigDecimal("max_salary");
+        BigDecimal minSalary = rs.getBigDecimal("min_salary");
+        BigDecimal maxSalary = rs.getBigDecimal("max_salary");
 
         designation.setMinSalary(minSalary);
         designation.setMaxSalary(maxSalary);
+        designation.setCompanyId(companyId);
 
         return designation;
     }

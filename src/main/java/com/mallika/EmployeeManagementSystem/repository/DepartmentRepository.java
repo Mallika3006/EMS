@@ -1,3 +1,4 @@
+
 package com.mallika.EmployeeManagementSystem.repository;
 
 import com.mallika.EmployeeManagementSystem.model.Department;
@@ -19,19 +20,21 @@ public class DepartmentRepository {
     }
 
     // CREATE
-    public Department createDepartment(Department department) {
+    public Department createDepartment(
+            Department department,
+            Long companyId) {
 
-        String sql = "SELECT * FROM create_department(?, ?, ?)";
+        String sql = "SELECT * FROM create_department(?, ?, ?, ?)";
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setString(1, department.getDepartmentName());
             statement.setString(2, department.getLocation());
             statement.setString(3, department.getDescription());
+            statement.setLong(4, companyId);
 
             try (ResultSet rs = statement.executeQuery()) {
-
                 if (rs.next()) {
                     return mapDepartment(rs);
                 }
@@ -40,46 +43,48 @@ public class DepartmentRepository {
             return null;
 
         } catch (SQLException e) {
-            throw new RuntimeException(
-                    "Error creating department", e);
+            throw new RuntimeException("Error creating department", e);
         }
     }
 
-    // GET ALL
-    public List<Department> getAllDepartments() {
+    // GET ALL DEPARTMENTS FOR COMPANY
+    public List<Department> getAllDepartments(Long companyId) {
 
-        String sql = "SELECT * FROM get_all_departments()";
-
+        String sql = "SELECT * FROM get_all_departments(?)";
         List<Department> departments = new ArrayList<>();
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql);
-             ResultSet rs = statement.executeQuery()) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            while (rs.next()) {
-                departments.add(mapDepartment(rs));
+            statement.setLong(1, companyId);
+
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    departments.add(mapDepartment(rs));
+                }
             }
 
             return departments;
 
         } catch (SQLException e) {
-            throw new RuntimeException(
-                    "Error fetching departments", e);
+            throw new RuntimeException("Error fetching departments", e);
         }
     }
 
-    // GET BY ID
-    public Optional<Department> getDepartmentById(Integer id) {
+    // GET BY ID WITH COMPANY CHECK
+    public Optional<Department> getDepartmentById(
+            Integer id,
+            Long companyId) {
 
-        String sql = "SELECT * FROM get_department_by_id(?)";
+        String sql = "SELECT * FROM get_department_by_id(?, ?)";
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setInt(1, id);
+            statement.setLong(2, companyId);
 
             try (ResultSet rs = statement.executeQuery()) {
-
                 if (rs.next()) {
                     return Optional.of(mapDepartment(rs));
                 }
@@ -93,23 +98,24 @@ public class DepartmentRepository {
         }
     }
 
-    // UPDATE
+    // UPDATE WITH COMPANY CHECK
     public Department updateDepartment(
             Integer id,
-            Department department) {
+            Department department,
+            Long companyId) {
 
-        String sql = "SELECT * FROM update_department(?, ?, ?, ?)";
+        String sql = "SELECT * FROM update_department(?, ?, ?, ?, ?)";
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setInt(1, id);
             statement.setString(2, department.getDepartmentName());
             statement.setString(3, department.getLocation());
             statement.setString(4, department.getDescription());
+            statement.setLong(5, companyId);
 
             try (ResultSet rs = statement.executeQuery()) {
-
                 if (rs.next()) {
                     return mapDepartment(rs);
                 }
@@ -123,18 +129,18 @@ public class DepartmentRepository {
         }
     }
 
-    // DELETE
-    public boolean deleteDepartment(Integer id) {
+    // DELETE WITH COMPANY CHECK
+    public boolean deleteDepartment(Integer id, Long companyId) {
 
-        String sql = "SELECT delete_department(?)";
+        String sql = "SELECT delete_department(?, ?)";
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setInt(1, id);
+            statement.setLong(2, companyId);
 
             try (ResultSet rs = statement.executeQuery()) {
-
                 return rs.next() && rs.getBoolean(1);
             }
 
@@ -146,19 +152,19 @@ public class DepartmentRepository {
 
     // SEARCH BY NAME
     public List<Department> findByDepartmentNameContainingIgnoreCase(
-            String name) {
+            String name,
+            Long companyId) {
 
-        String sql = "SELECT * FROM search_departments_by_name(?)";
-
+        String sql = "SELECT * FROM search_departments_by_name(?, ?)";
         List<Department> departments = new ArrayList<>();
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setString(1, name);
+            statement.setLong(2, companyId);
 
             try (ResultSet rs = statement.executeQuery()) {
-
                 while (rs.next()) {
                     departments.add(mapDepartment(rs));
                 }
@@ -167,24 +173,24 @@ public class DepartmentRepository {
             return departments;
 
         } catch (SQLException e) {
-            throw new RuntimeException(
-                    "Error searching departments by name", e);
+            throw new RuntimeException("Error searching departments by name", e);
         }
     }
 
     // GET BY EXACT NAME
     public Optional<Department> findByDepartmentNameIgnoreCase(
-            String name) {
+            String name,
+            Long companyId) {
 
-        String sql = "SELECT * FROM get_department_by_name(?)";
+        String sql = "SELECT * FROM get_department_by_name(?, ?)";
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setString(1, name);
+            statement.setLong(2, companyId);
 
             try (ResultSet rs = statement.executeQuery()) {
-
                 if (rs.next()) {
                     return Optional.of(mapDepartment(rs));
                 }
@@ -193,27 +199,25 @@ public class DepartmentRepository {
             return Optional.empty();
 
         } catch (SQLException e) {
-            throw new RuntimeException(
-                    "Error fetching department by name", e);
+            throw new RuntimeException("Error fetching department by name", e);
         }
     }
 
     // SEARCH BY LOCATION
     public List<Department> findByLocationContainingIgnoreCase(
-            String location) {
+            String location,
+            Long companyId) {
 
-        String sql =
-                "SELECT * FROM search_departments_by_location(?)";
-
+        String sql = "SELECT * FROM search_departments_by_location(?, ?)";
         List<Department> departments = new ArrayList<>();
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setString(1, location);
+            statement.setLong(2, companyId);
 
             try (ResultSet rs = statement.executeQuery()) {
-
                 while (rs.next()) {
                     departments.add(mapDepartment(rs));
                 }
@@ -227,23 +231,18 @@ public class DepartmentRepository {
         }
     }
 
-    // MAPPER
-    private Department mapDepartment(ResultSet rs)
-            throws SQLException {
+    // MAP DATABASE RESULT
+    private Department mapDepartment(ResultSet rs) throws SQLException {
 
         Department department = new Department();
 
-        department.setDepartmentId(
-                rs.getInt("department_id"));
+        department.setDepartmentId(rs.getInt("department_id"));
+        department.setDepartmentName(rs.getString("department_name"));
+        department.setLocation(rs.getString("location"));
+        department.setDescription(rs.getString("description"));
 
-        department.setDepartmentName(
-                rs.getString("department_name"));
-
-        department.setLocation(
-                rs.getString("location"));
-
-        department.setDescription(
-                rs.getString("description"));
+        long companyId = rs.getLong("company_id");
+        department.setCompanyId(rs.wasNull() ? null : companyId);
 
         return department;
     }

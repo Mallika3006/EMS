@@ -443,22 +443,22 @@ RETURN QUERY EXECUTE
 END;
 $$;
 
-CREATE FUNCTION get_tasks_by_manager(
+CREATE OR REPLACE FUNCTION public.get_tasks_by_manager(
     p_manager_id INTEGER
 )
-    RETURNS TABLE (
-                      task_id INTEGER,
-                      task_name VARCHAR,
-                      description VARCHAR,
-                      priority VARCHAR,
-                      status VARCHAR,
-                      start_date DATE,
-                      due_date DATE,
-                      project_id INTEGER,
-                      project_name VARCHAR,
-                      assigned_to INTEGER
-                  )
-    LANGUAGE plpgsql
+RETURNS TABLE (
+    task_id INTEGER,
+    task_name VARCHAR,
+    description VARCHAR,
+    priority VARCHAR,
+    status VARCHAR,
+    start_date DATE,
+    due_date DATE,
+    project_id INTEGER,
+    project_name VARCHAR,
+    assigned_to INTEGER
+)
+LANGUAGE plpgsql
 AS $$
 BEGIN
 RETURN QUERY
@@ -478,6 +478,10 @@ FROM tasks t
                    ON t.project_id = p.project_id
          JOIN employees e
               ON t.assigned_to = e.employee_id
+         JOIN users u
+              ON u.employee_id = e.employee_id
+                  AND u.company_id = e.company_id
+                  AND u.is_active = TRUE
 WHERE e.manager_id = p_manager_id
 ORDER BY t.task_id DESC;
 END;

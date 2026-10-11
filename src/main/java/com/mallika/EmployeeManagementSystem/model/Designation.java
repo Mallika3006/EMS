@@ -1,3 +1,4 @@
+
 package com.mallika.EmployeeManagementSystem.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -23,6 +24,9 @@ public class Designation {
     private BigDecimal minSalary;
 
     private BigDecimal maxSalary;
+
+    @Column(name = "company_id")
+    private Long companyId;
 
     @OneToMany(mappedBy = "designation")
     @JsonIgnore

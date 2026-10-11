@@ -1,3 +1,4 @@
+
 package com.mallika.EmployeeManagementSystem.controller;
 
 import com.mallika.EmployeeManagementSystem.model.Project;
@@ -7,7 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -20,163 +20,53 @@ public class ProjectController {
         this.projectService = projectService;
     }
 
-    // CREATE
     @PostMapping
     public ResponseEntity<Project> createProject(
-            @RequestBody Project project) {
-
-        return new ResponseEntity<>(
-                projectService.createProject(project),
-                HttpStatus.CREATED
-        );
-    }
-
-    // GET ALL
-    @GetMapping
-    public ResponseEntity<List<Project>> getAllProjects() {
-
-        return ResponseEntity.ok(
-                projectService.getAllProjects()
-        );
-    }
-
-    @GetMapping("/me")
-    public ResponseEntity<List<Project>> getMyProjects(
+            @RequestBody Project project,
             Authentication authentication) {
 
-        String username = authentication.getName();
+        Project created = projectService.createProject(
+                project, authentication.getName());
 
-        return ResponseEntity.ok(
-                projectService.getMyProjects(username)
-        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    // GET BY ID
+    @GetMapping
+    public ResponseEntity<List<Project>> getAllProjects(
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                projectService.getAllProjects(authentication.getName()));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Project> getProjectById(
-            @PathVariable Integer id) {
+            @PathVariable Integer id,
+            Authentication authentication) {
 
         return ResponseEntity.ok(
-                projectService.getProjectById(id)
-        );
+                projectService.getProjectById(
+                        id, authentication.getName()));
     }
 
-    // UPDATE
     @PutMapping("/{id}")
     public ResponseEntity<Project> updateProject(
             @PathVariable Integer id,
-            @RequestBody Project project) {
+            @RequestBody Project project,
+            Authentication authentication) {
 
         return ResponseEntity.ok(
-                projectService.updateProject(id, project)
-        );
+                projectService.updateProject(
+                        id, project, authentication.getName()));
     }
 
-    // DELETE
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProject(
-            @PathVariable Integer id) {
+            @PathVariable Integer id,
+            Authentication authentication) {
 
-        projectService.deleteProject(id);
+        projectService.deleteProject(id, authentication.getName());
 
         return ResponseEntity.noContent().build();
-    }
-
-    // SEARCH BY NAME
-    @GetMapping("/search")
-    public ResponseEntity<List<Project>> searchByProjectName(
-            @RequestParam String name) {
-
-        return ResponseEntity.ok(
-                projectService.searchByProjectName(name)
-        );
-    }
-
-    // EXACT PROJECT NAME
-    @GetMapping("/name")
-    public ResponseEntity<List<Project>> getByExactProjectName(
-            @RequestParam String name) {
-
-        return ResponseEntity.ok(
-                projectService.getByExactProjectName(name)
-        );
-    }
-
-    // START DATE
-    @GetMapping("/start-date")
-    public ResponseEntity<List<Project>> getByStartDate(
-            @RequestParam LocalDate startDate) {
-
-        return ResponseEntity.ok(
-                projectService.getByStartDate(startDate)
-        );
-    }
-
-    // END DATE
-    @GetMapping("/end-date")
-    public ResponseEntity<List<Project>> getByEndDate(
-            @RequestParam LocalDate endDate) {
-
-        return ResponseEntity.ok(
-                projectService.getByEndDate(endDate)
-        );
-    }
-
-    // PROJECTS BETWEEN DATES
-    @GetMapping("/between")
-    public ResponseEntity<List<Project>> getProjectsBetweenDates(
-            @RequestParam LocalDate startDate,
-            @RequestParam LocalDate endDate) {
-
-        return ResponseEntity.ok(
-                projectService.getProjectsBetweenDates(
-                        startDate,
-                        endDate
-                )
-        );
-    }
-
-    // ONGOING PROJECTS
-    @GetMapping("/ongoing")
-    public ResponseEntity<List<Project>> getOngoingProjects() {
-
-        return ResponseEntity.ok(
-                projectService.getOngoingProjects()
-        );
-    }
-
-    // SORT
-    @GetMapping("/sort")
-    public ResponseEntity<List<Project>> sortProjects(
-            @RequestParam String field,
-            @RequestParam(defaultValue = "asc") String direction) {
-
-        return ResponseEntity.ok(
-                projectService.sortProjects(field, direction)
-        );
-    }
-
-    // GET MANAGER TEAM PROJECTS
-    @GetMapping("/manager/team")
-    public ResponseEntity<List<Project>> getTeamProjects(
-            Authentication authentication) {
-
-        String username = authentication.getName();
-
-        return ResponseEntity.ok(
-                projectService.getTeamProjects(username)
-        );
-    }
-
-    // GET UNASSIGNED PROJECTS FOR LOGGED-IN MANAGER
-    @GetMapping("/unassigned")
-    public ResponseEntity<List<Project>> getUnassignedProjects(
-            Authentication authentication) {
-
-        String username = authentication.getName();
-
-        return ResponseEntity.ok(
-                projectService.getUnassignedProjectsByManager(username)
-        );
     }
 }

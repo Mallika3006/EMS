@@ -1,7 +1,7 @@
+
 package com.mallika.EmployeeManagementSystem.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.mallika.EmployeeManagementSystem.model.Employee;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,10 +24,8 @@ public class Department {
 
     private String description;
 
-
-    // =========================
-    // EMPLOYEES
-    // =========================
+    @Column(name = "company_id")
+    private Long companyId;
 
     @OneToMany(mappedBy = "department")
     @JsonIgnore

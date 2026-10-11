@@ -352,3 +352,25 @@ ORDER BY p.project_id DESC;
 
 END;
 $function$;
+
+CREATE OR REPLACE FUNCTION public.get_projects_by_employee(
+    p_employee_id INTEGER
+)
+RETURNS SETOF projects
+LANGUAGE plpgsql
+AS $$
+BEGIN
+RETURN QUERY
+SELECT p.*
+FROM projects p
+         JOIN employee_project ep
+              ON ep.project_id = p.project_id
+         JOIN employees e
+              ON e.employee_id = ep.employee_id
+         JOIN users u
+              ON u.employee_id = e.employee_id
+                  AND u.company_id = e.company_id
+                  AND u.is_active = TRUE
+WHERE ep.employee_id = p_employee_id;
+END;
+$$;

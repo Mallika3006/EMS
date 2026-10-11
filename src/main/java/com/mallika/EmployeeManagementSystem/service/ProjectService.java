@@ -7,7 +7,6 @@ import com.mallika.EmployeeManagementSystem.repository.ProjectRepository;
 import com.mallika.EmployeeManagementSystem.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -19,182 +18,60 @@ public class ProjectService {
     public ProjectService(
             ProjectRepository projectRepository,
             UserRepository userRepository) {
-
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
     }
 
-    // CREATE
-    public Project createProject(Project project) {
-        return projectRepository.createProject(project);
-    }
-
-    // GET ALL
-    public List<Project> getAllProjects() {
-        return projectRepository.getAllProjects();
-    }
-
-    // GET BY ID
-    public Project getProjectById(Integer id) {
-
-        return projectRepository.getProjectById(id)
+    private Long getCompanyId(String username) {
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Project not found with id: " + id
-                        ));
+                                "User not found: " + username));
+
+        if (user.getCompanyId() == null) {
+            throw new IllegalStateException(
+                    "No company is assigned to this user");
+        }
+
+        return user.getCompanyId();
     }
 
-    // UPDATE
+    public Project createProject(Project project, String username) {
+        Long companyId = getCompanyId(username);
+        return projectRepository.createProject(project, companyId);
+    }
+
+    public List<Project> getAllProjects(String username) {
+        Long companyId = getCompanyId(username);
+        return projectRepository.getAllProjects(companyId);
+    }
+
+    public Project getProjectById(Integer id, String username) {
+        Long companyId = getCompanyId(username);
+
+        return projectRepository.getProjectById(id, companyId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Project not found with id: " + id));
+    }
+
     public Project updateProject(
-            Integer id,
-            Project projectDetails) {
+            Integer id, Project details, String username) {
+        Long companyId = getCompanyId(username);
 
         return projectRepository.updateProject(
-                id,
-                projectDetails
-        );
+                id, details, companyId);
     }
 
-    // DELETE
-    public void deleteProject(Integer id) {
+    public void deleteProject(Integer id, String username) {
+        Long companyId = getCompanyId(username);
 
-        boolean deleted = projectRepository.deleteProject(id);
+        boolean deleted =
+                projectRepository.deleteProject(id, companyId);
 
         if (!deleted) {
             throw new ResourceNotFoundException(
-                    "Project not found with id: " + id
-            );
+                    "Project not found with id: " + id);
         }
-    }
-
-    // SEARCH BY NAME
-    public List<Project> searchByProjectName(String projectName) {
-        return projectRepository.searchByProjectName(projectName);
-    }
-
-    // EXACT NAME
-    public List<Project> getByExactProjectName(
-            String projectName) {
-
-        return projectRepository.getProjectsByExactName(
-                projectName
-        );
-    }
-
-    // START DATE
-    public List<Project> getByStartDate(
-            LocalDate startDate) {
-
-        return projectRepository.getByStartDate(startDate);
-    }
-
-    // END DATE
-    public List<Project> getByEndDate(
-            LocalDate endDate) {
-
-        return projectRepository.getByEndDate(endDate);
-    }
-
-    // PROJECTS BETWEEN DATES
-    public List<Project> getProjectsBetweenDates(
-            LocalDate startDate,
-            LocalDate endDate) {
-
-        return projectRepository.getProjectsBetweenDates(
-                startDate,
-                endDate
-        );
-    }
-
-    // ONGOING PROJECTS
-    public List<Project> getOngoingProjects() {
-        return projectRepository.getOngoingProjects();
-    }
-
-    // SORT
-    public List<Project> sortProjects(
-            String field,
-            String direction) {
-
-        return projectRepository.sortProjects(
-                field,
-                direction
-        );
-    }
-
-    // GET PROJECTS OF LOGGED-IN EMPLOYEE
-    public List<Project> getMyProjects(String username) {
-
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "User not found: " + username
-                        ));
-
-        if (user.getEmployee() == null ||
-                user.getEmployee().getEmployeeId() == null) {
-
-            throw new ResourceNotFoundException(
-                    "Employee not assigned to this user"
-            );
-        }
-
-        Integer employeeId =
-                user.getEmployee().getEmployeeId();
-
-        return projectRepository.getProjectsByEmployeeId(
-                employeeId
-        );
-    }
-
-    // GET PROJECTS OF MANAGER'S TEAM
-    public List<Project> getTeamProjects(String username) {
-
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "User not found: " + username
-                        ));
-
-        if (user.getEmployee() == null ||
-                user.getEmployee().getEmployeeId() == null) {
-
-            throw new ResourceNotFoundException(
-                    "Employee not assigned to this user"
-            );
-        }
-
-        Integer managerId =
-                user.getEmployee().getEmployeeId();
-
-        return projectRepository.getProjectsByManagerId(
-                managerId
-        );
-    }
-
-    // GET UNASSIGNED PROJECTS OF LOGGED-IN MANAGER
-    public List<Project> getUnassignedProjectsByManager(
-            String username) {
-
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "User not found: " + username
-                        ));
-
-        if (user.getEmployee() == null ||
-                user.getEmployee().getEmployeeId() == null) {
-
-            throw new ResourceNotFoundException(
-                    "Employee not assigned to this user"
-            );
-        }
-
-        Integer managerId =
-                user.getEmployee().getEmployeeId();
-
-        return projectRepository.getUnassignedProjectsByManagerId(
-                managerId
-        );
     }
 }

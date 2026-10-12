@@ -54,11 +54,19 @@ public class CustomUserDetailsService implements UserDetailsService {
                     "Role name not found for user: " + username);
         }
 
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getUsername())
-                .password(user.getPassword())
-                .roles(role.getRoleName())
-                .disabled(!Boolean.TRUE.equals(user.getIsActive()))
-                .build();
+
+        UserDetails springUser =
+                org.springframework.security.core.userdetails.User
+                        .withUsername(user.getUsername())
+                        .password(user.getPassword())
+                        .roles(role.getRoleName())
+                        .disabled(!Boolean.TRUE.equals(user.getIsActive()))
+                        .build();
+
+        return new CompanyUserDetails(
+                springUser,
+                user.getCompanyId()
+        );
+
     }
 }

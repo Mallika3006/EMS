@@ -326,3 +326,149 @@ WHERE e.manager_id = p_manager_id
 );
 END;
 $function$;
+
+
+-- =========================================================
+-- MULTI-COMPANY: EMPLOYEE READ FUNCTIONS
+-- Keep the existing functions until Java callers are migrated.
+-- =========================================================
+
+-- 1. Get one employee within the authenticated company
+CREATE OR REPLACE FUNCTION public.get_employee_by_id_company(
+    p_employee_id INTEGER,
+    p_company_id BIGINT
+)
+RETURNS SETOF public.employees
+LANGUAGE sql
+STABLE
+AS $$
+SELECT e.*
+FROM public.employees e
+WHERE e.employee_id = p_employee_id
+  AND e.company_id = p_company_id;
+$$;
+
+
+-- 2. Search employees by name within one company
+CREATE OR REPLACE FUNCTION public.search_employee_by_name_company(
+    p_name VARCHAR,
+    p_company_id BIGINT
+)
+RETURNS SETOF public.employees
+LANGUAGE sql
+STABLE
+AS $$
+SELECT e.*
+FROM public.employees e
+WHERE e.company_id = p_company_id
+  AND (
+    e.first_name ILIKE '%' || p_name || '%'
+          OR e.last_name ILIKE '%' || p_name || '%'
+    );
+$$;
+
+
+-- 3. Get an employee by email within one company
+CREATE OR REPLACE FUNCTION public.get_employee_by_email_company(
+    p_email VARCHAR,
+    p_company_id BIGINT
+)
+RETURNS SETOF public.employees
+LANGUAGE sql
+STABLE
+AS $$
+SELECT e.*
+FROM public.employees e
+WHERE e.email = p_email
+  AND e.company_id = p_company_id;
+$$;
+
+
+-- 4. Get employees by designation within one company
+CREATE OR REPLACE FUNCTION public.get_employees_by_designation_company(
+    p_designation_id INTEGER,
+    p_company_id BIGINT
+)
+RETURNS SETOF public.employees
+LANGUAGE sql
+STABLE
+AS $$
+SELECT e.*
+FROM public.employees e
+WHERE e.designation_id = p_designation_id
+  AND e.company_id = p_company_id;
+$$;
+
+
+-- 5. Get active team members for a manager in the same company
+CREATE OR REPLACE FUNCTION public.get_employees_by_manager_company(
+    p_manager_id INTEGER,
+    p_company_id BIGINT
+)
+RETURNS SETOF public.employees
+LANGUAGE sql
+STABLE
+AS $$
+SELECT e.*
+FROM public.employees e
+WHERE e.manager_id = p_manager_id
+  AND e.company_id = p_company_id
+  AND EXISTS (
+    SELECT 1
+    FROM public.users u
+    WHERE u.employee_id = e.employee_id
+      AND u.company_id = p_company_id
+      AND u.is_active = TRUE
+)
+  AND EXISTS (
+    SELECT 1
+    FROM public.employees manager
+    WHERE manager.employee_id = p_manager_id
+      AND manager.company_id = p_company_id
+)
+  AND NOT EXISTS (
+    SELECT 1
+    FROM public.users u
+             JOIN public.roles r ON r.role_id = u.role_id
+    WHERE u.employee_id = e.employee_id
+      AND u.company_id = p_company_id
+      AND UPPER(r.role_name) = 'ADMIN'
+);
+$$;
+
+
+-- 6. Get active employees assigned to HR in the same company
+CREATE OR REPLACE FUNCTION public.get_employees_by_hr_company(
+    p_hr_id INTEGER,
+    p_company_id BIGINT
+)
+RETURNS SETOF public.employees
+LANGUAGE sql
+STABLE
+AS $$
+SELECT e.*
+FROM public.employees e
+WHERE e.hr_id = p_hr_id
+  AND e.company_id = p_company_id
+  AND EXISTS (
+    SELECT 1
+    FROM public.users u
+    WHERE u.employee_id = e.employee_id
+      AND u.company_id = p_company_id
+      AND u.is_active = TRUE
+)
+  AND EXISTS (
+    SELECT 1
+    FROM public.employees hr_employee
+    WHERE hr_employee.employee_id = p_hr_id
+      AND hr_employee.company_id = p_company_id
+)
+  AND NOT EXISTS (
+    SELECT 1
+    FROM public.users u
+             JOIN public.roles r ON r.role_id = u.role_id
+    WHERE u.employee_id = e.employee_id
+      AND u.company_id = p_company_id
+      AND UPPER(r.role_name) = 'ADMIN'
+);
+$$;

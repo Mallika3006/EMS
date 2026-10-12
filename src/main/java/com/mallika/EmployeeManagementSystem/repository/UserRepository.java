@@ -231,7 +231,8 @@ public class UserRepository {
     public Optional<User> findByUsername(
             String username) {
 
-        String sql = "SELECT * FROM find_user_by_username(?)";
+        String sql =
+                "SELECT * FROM public.find_user_by_username_company(?)";
 
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement = connection.prepareCall(sql)) {

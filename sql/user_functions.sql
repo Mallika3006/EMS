@@ -438,3 +438,35 @@ END IF;
 
 END;
 $$;
+
+
+-- Multi-company login lookup
+CREATE OR REPLACE FUNCTION public.find_user_by_username_company(
+    p_username VARCHAR
+)
+RETURNS TABLE (
+    user_id INTEGER,
+    username VARCHAR,
+    password VARCHAR,
+    is_active BOOLEAN,
+    employee_id INTEGER,
+    role_id INTEGER,
+    company_id BIGINT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+RETURN QUERY
+SELECT
+    u.user_id,
+    u.username,
+    u.password,
+    u.is_active,
+    u.employee_id,
+    u.role_id,
+    u.company_id
+FROM public.users u
+WHERE u.username = p_username
+    LIMIT 1;
+END;
+$$;

@@ -207,6 +207,15 @@ public class EmployeeRepository {
             Integer employeeId, EmployeeUpdateDTO details) {
         Long companyId = companyId();
 
+        validateDepartmentInCompany(
+                details.getDepartmentId(), companyId);
+
+        validateEmployeeInCompany(
+                details.getManagerId(), companyId, "Manager");
+
+        validateEmployeeInCompany(
+                details.getHrId(), companyId, "HR");
+
         String sql = """
             UPDATE public.employees
             SET first_name = ?,
@@ -565,6 +574,79 @@ public class EmployeeRepository {
                     "Failed to delete employee. Check dependent records.", e);
         }
     }
+
+
+    private void validateDepartmentInCompany(
+            Integer departmentId, Long companyId) {
+
+        if (departmentId == null) {
+            return;
+        }
+
+        String sql = """
+        SELECT EXISTS (
+            SELECT 1
+            FROM public.department
+            WHERE department_id = ?
+              AND company_id = ?
+        )
+        """;
+
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, departmentId);
+            ps.setLong(2, companyId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && !rs.getBoolean(1)) {
+                    throw new IllegalArgumentException(
+                            "Department does not belong to your company");
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Failed to validate department", e);
+        }
+    }
+
+    private void validateEmployeeInCompany(
+            Integer relatedEmployeeId,
+            Long companyId,
+            String relationship) {
+
+        if (relatedEmployeeId == null) {
+            return;
+        }
+
+        String sql = """
+        SELECT EXISTS (
+            SELECT 1
+            FROM public.employees
+            WHERE employee_id = ?
+              AND company_id = ?
+        )
+        """;
+
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, relatedEmployeeId);
+            ps.setLong(2, companyId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next() || !rs.getBoolean(1)) {
+                    throw new IllegalArgumentException(
+                            relationship
+                                    + " does not belong to your company");
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Failed to validate " + relationship, e);
+        }
+    }
+
 
     private void setDate(PreparedStatement ps, int index,
                          java.time.LocalDate value) throws SQLException {

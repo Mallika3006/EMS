@@ -25,649 +25,176 @@ public class EmployeeController {
         this.employeeService = employeeService;
     }
 
-
-    // =========================
-    // CREATE
-    // =========================
-
     @PostMapping
     public ResponseEntity<Employee> createEmployee(
             @RequestBody EmployeeCreateDTO dto) {
-
-        Employee savedEmployee =
-                employeeService.createEmployee(dto);
-
-        return new ResponseEntity<>(
-                savedEmployee,
-                HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(employeeService.createEmployee(dto));
     }
-
-
-    // =========================
-    // GET ALL
-    // =========================
 
     @GetMapping
     public ResponseEntity<List<Employee>> getAllEmployees() {
-
-        return ResponseEntity.ok(
-                employeeService.getAllEmployees()
-        );
+        return ResponseEntity.ok(employeeService.getAllEmployees());
     }
-
-
-    // =========================
-    // GET LOGGED-IN EMPLOYEE
-    // =========================
 
     @GetMapping("/me")
     public ResponseEntity<EmployeeResponseDTO> getMyProfile(
             Authentication authentication) {
-
-        String username = authentication.getName();
-
-        Employee employee =
-                employeeService.getMyProfile(username);
-
-        EmployeeResponseDTO dto = new EmployeeResponseDTO();
-
-        dto.setEmployeeId(
-                employee.getEmployeeId().longValue()
-        );
-
-        dto.setFirstName(
-                employee.getFirstName()
-        );
-
-        dto.setLastName(
-                employee.getLastName()
-        );
-
-        dto.setEmail(
-                employee.getEmail()
-        );
-
-        dto.setPhone(
-                employee.getPhone()
-        );
-
-        dto.setDateOfBirth(
-                employee.getDateOfBirth()
-        );
-
-        dto.setHireDate(
-                employee.getHireDate()
-        );
-
-        dto.setAddress(
-                employee.getAddress()
-        );
-
-        dto.setProfilePhoto(
-                employee.getProfilePhoto()
-        );
-
-
-        // Department
-        if (employee.getDepartment() != null) {
-
-            dto.setDepartmentId(
-                    employee.getDepartment()
-                            .getDepartmentId()
-                            .longValue()
-            );
-        }
-
-
-        // Designation
-        if (employee.getDesignation() != null) {
-
-            dto.setDesignationId(
-                    employee.getDesignation()
-                            .getDesignationId()
-                            .longValue()
-            );
-
-            dto.setDesignationName(
-                    employee.getDesignation()
-                            .getDesignationTitle()
-            );
-        }
-
-
-        // Manager
-        dto.setManagerId(
-                employee.getManagerId() != null
-                        ? employee.getManagerId().longValue()
-                        : null
-        );
-
-
-        // HR
-        dto.setHrId(
-                employee.getHrId() != null
-                        ? employee.getHrId().longValue()
-                        : null
-        );
-
-        return ResponseEntity.ok(dto);
+        return ResponseEntity.ok(toResponse(
+                employeeService.getMyProfile(authentication.getName())));
     }
-
-    // =========================
-    // GET LOGGED-IN EMPLOYEE PROFILE DETAILS
-    // =========================
 
     @GetMapping("/me/profile-details")
     public ResponseEntity<EmployeeProfileDTO> getMyProfileDetails(
             Authentication authentication) {
-
-        String username = authentication.getName();
-
-        EmployeeProfileDTO profile =
-                employeeService.getMyProfileDetails(username);
-
-        return ResponseEntity.ok(profile);
+        return ResponseEntity.ok(
+                employeeService.getMyProfileDetails(authentication.getName()));
     }
-
-    // =========================
-// GET MY TEAM
-// =========================
 
     @GetMapping("/manager/my-team")
     public ResponseEntity<List<Employee>> getMyTeam(
             Authentication authentication) {
-
-        String username =
-                authentication.getName();
-
         Employee manager =
-                employeeService.getMyProfile(username);
-
-        List<Employee> teamMembers =
-                employeeService.getEmployeesByManager(
-                        manager.getEmployeeId()
-                );
-
-        return ResponseEntity.ok(teamMembers);
-    }
-
-
-    // =========================
-    // GET BY ID
-    // =========================
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Employee> getEmployeeById(
-            @PathVariable Integer id) {
+                employeeService.getMyProfile(authentication.getName());
 
         return ResponseEntity.ok(
-                employeeService.getEmployeeById(id)
-        );
+                employeeService.getEmployeesByManager(
+                        manager.getEmployeeId()));
     }
 
     @GetMapping("/{id}/details")
     public ResponseEntity<EmployeeResponseDTO> getEmployeeDetails(
             @PathVariable Integer id) {
-
         Employee employee = employeeService.getEmployeeById(id);
+        EmployeeResponseDTO dto = toResponse(employee);
 
-        EmployeeResponseDTO dto = new EmployeeResponseDTO();
-
-        dto.setEmployeeId(employee.getEmployeeId().longValue());
-        dto.setFirstName(employee.getFirstName());
-        dto.setLastName(employee.getLastName());
-        dto.setEmail(employee.getEmail());
-        dto.setPhone(employee.getPhone());
-
-        // Department
-        if (employee.getDepartment() != null) {
-            dto.setDepartmentId(
-                    employee.getDepartment().getDepartmentId().longValue()
-            );
-            dto.setDepartmentName(
-                    employee.getDepartment().getDepartmentName()
-            );
-        }
-
-        // Designation
-        if (employee.getDesignation() != null) {
-            dto.setDesignationId(
-                    employee.getDesignation().getDesignationId().longValue()
-            );
-            dto.setDesignationName(
-                    employee.getDesignation().getDesignationTitle()
-            );
-        }
-
-        // Manager
         if (employee.getManagerId() != null) {
-            Employee manager = employeeService.getEmployeeById(
-                    employee.getManagerId()
-            );
-
-            dto.setManagerId(employee.getManagerId().longValue());
+            Employee manager =
+                    employeeService.getEmployeeById(employee.getManagerId());
             dto.setManagerName(
-                    manager.getFirstName() + " " + manager.getLastName()
-            );
+                    manager.getFirstName() + " " + manager.getLastName());
         }
 
-        // HR
         if (employee.getHrId() != null) {
-            Employee hr = employeeService.getEmployeeById(
-                    employee.getHrId()
-            );
-
-            dto.setHrId(employee.getHrId().longValue());
-            dto.setHrName(
-                    hr.getFirstName() + " " + hr.getLastName()
-            );
+            Employee hr = employeeService.getEmployeeById(employee.getHrId());
+            dto.setHrName(hr.getFirstName() + " " + hr.getLastName());
         }
 
         return ResponseEntity.ok(dto);
     }
 
-
-    // =========================
-    // UPDATE LOGGED-IN EMPLOYEE
-    // =========================
+    @GetMapping("/{id}")
+    public ResponseEntity<Employee> getEmployeeById(
+            @PathVariable Integer id) {
+        return ResponseEntity.ok(employeeService.getEmployeeById(id));
+    }
 
     @PutMapping("/me")
     public ResponseEntity<EmployeeResponseDTO> updateMyProfile(
             Authentication authentication,
-            @RequestBody EmployeeUpdateDTO updateDetails) {
-
-        String username = authentication.getName();
-
-        Employee employee =
+            @RequestBody EmployeeUpdateDTO details) {
+        return ResponseEntity.ok(toResponse(
                 employeeService.updateMyProfile(
-                        username,
-                        updateDetails
-                );
-
-        EmployeeResponseDTO dto = new EmployeeResponseDTO();
-
-        dto.setEmployeeId(
-                employee.getEmployeeId().longValue()
-        );
-
-        dto.setFirstName(
-                employee.getFirstName()
-        );
-
-        dto.setLastName(
-                employee.getLastName()
-        );
-
-        dto.setEmail(
-                employee.getEmail()
-        );
-
-        dto.setPhone(
-                employee.getPhone()
-        );
-
-        dto.setDateOfBirth(
-                employee.getDateOfBirth()
-        );
-
-        dto.setHireDate(
-                employee.getHireDate()
-        );
-
-        dto.setAddress(
-                employee.getAddress()
-        );
-
-        dto.setProfilePhoto(
-                employee.getProfilePhoto()
-        );
-
-
-        // Department
-        if (employee.getDepartment() != null) {
-
-            dto.setDepartmentId(
-                    employee.getDepartment()
-                            .getDepartmentId()
-                            .longValue()
-            );
-        }
-
-
-        // Designation
-        if (employee.getDesignation() != null) {
-
-            dto.setDesignationId(
-                    employee.getDesignation()
-                            .getDesignationId()
-                            .longValue()
-            );
-
-            dto.setDesignationName(
-                    employee.getDesignation()
-                            .getDesignationTitle()
-            );
-        }
-
-
-        // Manager
-        dto.setManagerId(
-                employee.getManagerId() != null
-                        ? employee.getManagerId().longValue()
-                        : null
-        );
-
-
-        // HR
-        dto.setHrId(
-                employee.getHrId() != null
-                        ? employee.getHrId().longValue()
-                        : null
-        );
-
-        return ResponseEntity.ok(dto);
+                        authentication.getName(), details)));
     }
-
-
-    // =========================
-    // UPLOAD PROFILE PHOTO
-    // =========================
 
     @PostMapping("/me/photo")
     public ResponseEntity<EmployeeResponseDTO> uploadProfilePhoto(
             Authentication authentication,
             @RequestParam("photo") MultipartFile photo) {
-
-        System.out.println("PHOTO ENDPOINT CALLED");
-
-        String username = authentication.getName();
-
-        Employee employee =
+        return ResponseEntity.ok(toResponse(
                 employeeService.updateProfilePhoto(
-                        username,
-                        photo
-                );
-
-        EmployeeResponseDTO dto = new EmployeeResponseDTO();
-
-        dto.setEmployeeId(
-                employee.getEmployeeId().longValue()
-        );
-
-        dto.setFirstName(
-                employee.getFirstName()
-        );
-
-        dto.setLastName(
-                employee.getLastName()
-        );
-
-        dto.setEmail(
-                employee.getEmail()
-        );
-
-        dto.setPhone(
-                employee.getPhone()
-        );
-
-        dto.setDateOfBirth(
-                employee.getDateOfBirth()
-        );
-
-        dto.setHireDate(
-                employee.getHireDate()
-        );
-
-        dto.setAddress(
-                employee.getAddress()
-        );
-
-        dto.setProfilePhoto(
-                employee.getProfilePhoto()
-        );
-
-
-        // Department
-        if (employee.getDepartment() != null) {
-
-            dto.setDepartmentId(
-                    employee.getDepartment()
-                            .getDepartmentId()
-                            .longValue()
-            );
-        }
-
-
-        // Designation
-        if (employee.getDesignation() != null) {
-
-            dto.setDesignationId(
-                    employee.getDesignation()
-                            .getDesignationId()
-                            .longValue()
-            );
-
-            dto.setDesignationName(
-                    employee.getDesignation()
-                            .getDesignationTitle()
-            );
-        }
-
-
-        // Manager
-        dto.setManagerId(
-                employee.getManagerId() != null
-                        ? employee.getManagerId().longValue()
-                        : null
-        );
-
-
-        // HR
-        dto.setHrId(
-                employee.getHrId() != null
-                        ? employee.getHrId().longValue()
-                        : null
-        );
-
-        return ResponseEntity.ok(dto);
+                        authentication.getName(), photo)));
     }
-
-
-    // =========================
-    // UPDATE
-    // =========================
 
     @PutMapping("/{id}")
-    public ResponseEntity<Employee> updateEmployee(
+    public ResponseEntity<EmployeeResponseDTO> updateEmployee(
             @PathVariable Integer id,
             @RequestBody Employee employee) {
-
         return ResponseEntity.ok(
-                employeeService.updateEmployee(id, employee)
-        );
+                toResponse(employeeService.updateEmployee(id, employee)));
     }
-
-
-    // =========================
-    // DELETE
-    // =========================
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteEmployee(
             @PathVariable Integer id) {
-
         employeeService.deleteEmployee(id);
-
-        return ResponseEntity.ok(
-                "Employee deleted successfully"
-        );
+        return ResponseEntity.ok("Employee deleted successfully");
     }
-
-
-    // =========================
-    // SEARCH BY NAME
-    // =========================
 
     @GetMapping("/search")
     public ResponseEntity<List<Employee>> searchEmployee(
             @RequestParam String name) {
-
-        return ResponseEntity.ok(
-                employeeService.searchByName(name)
-        );
+        return ResponseEntity.ok(employeeService.searchByName(name));
     }
-
-
-    // =========================
-    // SEARCH BY EMAIL
-    // =========================
 
     @GetMapping("/email")
-    public ResponseEntity<Employee> getEmployeeByEmail(
+    public ResponseEntity<EmployeeResponseDTO> getEmployeeByEmail(
             @RequestParam String email) {
-
-        return ResponseEntity.ok(
-                employeeService.getEmployeeByEmail(email)
-        );
+        return ResponseEntity.ok(toResponse(
+                employeeService.getEmployeeByEmail(email)));
     }
-
-
-    // =========================
-    // FILTER BY DESIGNATION
-    // =========================
 
     @GetMapping("/designation/{designationId}")
     public ResponseEntity<List<Employee>> getEmployeesByDesignation(
             @PathVariable Integer designationId) {
-
         return ResponseEntity.ok(
-                employeeService.getEmployeesByDesignation(
-                        designationId
-                )
-        );
+                employeeService.getEmployeesByDesignation(designationId));
     }
-
-
-    // =========================
-    // SORT
-    // =========================
 
     @GetMapping("/sort")
     public ResponseEntity<List<Employee>> getEmployeesSorted(
             @RequestParam(defaultValue = "firstName") String field,
             @RequestParam(defaultValue = "asc") String direction) {
-
         return ResponseEntity.ok(
-                employeeService.getEmployeesSorted(
-                        field,
-                        direction
-                )
-        );
+                employeeService.getEmployeesSorted(field, direction));
     }
-
-
-    // =========================
-    // ASSIGN MANAGER
-    // =========================
 
     @PutMapping("/{employeeId}/manager/{managerId}")
-    public ResponseEntity<Employee> assignManager(
+    public ResponseEntity<EmployeeResponseDTO> assignManager(
             @PathVariable Integer employeeId,
             @PathVariable Integer managerId) {
-
-        return ResponseEntity.ok(
-                employeeService.assignManager(
-                        employeeId,
-                        managerId
-                )
-        );
+        return ResponseEntity.ok(toResponse(
+                employeeService.assignManager(employeeId, managerId)));
     }
-
-
-    // =========================
-    // ASSIGN HR
-    // =========================
 
     @PutMapping("/{employeeId}/hr/{hrId}")
-    public ResponseEntity<Employee> assignHr(
+    public ResponseEntity<EmployeeResponseDTO> assignHr(
             @PathVariable Integer employeeId,
             @PathVariable Integer hrId) {
-
-        return ResponseEntity.ok(
-                employeeService.assignHr(
-                        employeeId,
-                        hrId
-                )
-        );
+        return ResponseEntity.ok(toResponse(
+                employeeService.assignHr(employeeId, hrId)));
     }
-
-
-    // =========================
-    // GET EMPLOYEES BY MANAGER
-    // =========================
 
     @GetMapping("/manager/{managerId}")
     public ResponseEntity<List<Employee>> getEmployeesByManager(
             @PathVariable Integer managerId) {
-
         return ResponseEntity.ok(
-                employeeService.getEmployeesByManager(
-                        managerId
-                )
-        );
+                employeeService.getEmployeesByManager(managerId));
     }
-
-
-    // =========================
-    // GET EMPLOYEES BY HR
-    // =========================
 
     @GetMapping("/hr/{hrId}")
     public ResponseEntity<List<Employee>> getEmployeesByHr(
             @PathVariable Integer hrId) {
-
-        return ResponseEntity.ok(
-                employeeService.getEmployeesByHr(hrId)
-        );
+        return ResponseEntity.ok(employeeService.getEmployeesByHr(hrId));
     }
-
-
-    // =========================
-    // GET LOGGED-IN HR'S EMPLOYEES
-    // =========================
 
     @GetMapping("/hr/my-employees")
     public ResponseEntity<List<Employee>> getMyHrEmployees(
             Authentication authentication) {
-
-        String username = authentication.getName();
-
-        Employee hr = employeeService.getMyProfile(username);
-
-        List<Employee> employees =
-                employeeService.getEmployeesByHr(
-                        hr.getEmployeeId()
-                );
-
-        return ResponseEntity.ok(employees);
+        Employee hr = employeeService.getMyProfile(authentication.getName());
+        return ResponseEntity.ok(
+                employeeService.getEmployeesByHr(hr.getEmployeeId()));
     }
 
-    // GET MANAGERS FOR DROPDOWN
     @GetMapping("/managers")
     public ResponseEntity<List<Employee>> getManagers() {
-
-        return ResponseEntity.ok(
-                employeeService.getEmployeesByRole(3)
-        );
+        return ResponseEntity.ok(employeeService.getEmployeesByRole(3));
     }
 
-    // GET HR EMPLOYEES FOR DROPDOWN
     @GetMapping("/hr-options")
     public ResponseEntity<List<Employee>> getHrOptions() {
-
-        return ResponseEntity.ok(
-                employeeService.getEmployeesByRole(2)
-        );
+        return ResponseEntity.ok(employeeService.getEmployeesByRole(2));
     }
 
     @PatchMapping("/{id}/status")
@@ -675,18 +202,53 @@ public class EmployeeController {
     public ResponseEntity<String> updateEmployeeStatus(
             @PathVariable Integer id,
             @RequestParam boolean active) {
-
-        boolean updated = employeeService.setEmployeeActiveStatus(id, active);
+        boolean updated =
+                employeeService.setEmployeeActiveStatus(id, active);
 
         if (!updated) {
             return ResponseEntity.notFound().build();
         }
 
-        String message = active
+        return ResponseEntity.ok(active
                 ? "Employee activated successfully"
-                : "Employee deactivated successfully";
-
-        return ResponseEntity.ok(message);
+                : "Employee deactivated successfully");
     }
 
+    private EmployeeResponseDTO toResponse(Employee employee) {
+        EmployeeResponseDTO dto = new EmployeeResponseDTO();
+
+        dto.setEmployeeId(employee.getEmployeeId().longValue());
+        dto.setFirstName(employee.getFirstName());
+        dto.setLastName(employee.getLastName());
+        dto.setEmail(employee.getEmail());
+        dto.setPhone(employee.getPhone());
+        dto.setDateOfBirth(employee.getDateOfBirth());
+        dto.setHireDate(employee.getHireDate());
+        dto.setAddress(employee.getAddress());
+        dto.setProfilePhoto(employee.getProfilePhoto());
+
+        if (employee.getDepartment() != null) {
+            dto.setDepartmentId(
+                    employee.getDepartment().getDepartmentId().longValue());
+            dto.setDepartmentName(
+                    employee.getDepartment().getDepartmentName());
+        }
+
+        if (employee.getDesignation() != null) {
+            dto.setDesignationId(
+                    employee.getDesignation().getDesignationId().longValue());
+            dto.setDesignationName(
+                    employee.getDesignation().getDesignationTitle());
+        }
+
+        if (employee.getManagerId() != null) {
+            dto.setManagerId(employee.getManagerId().longValue());
+        }
+
+        if (employee.getHrId() != null) {
+            dto.setHrId(employee.getHrId().longValue());
+        }
+
+        return dto;
+    }
 }

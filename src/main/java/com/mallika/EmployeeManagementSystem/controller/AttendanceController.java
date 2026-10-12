@@ -4,6 +4,7 @@ import com.mallika.EmployeeManagementSystem.model.Attendance;
 import com.mallika.EmployeeManagementSystem.service.AttendanceService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -19,63 +20,51 @@ public class AttendanceController {
         this.attendanceService = attendanceService;
     }
 
-    // CREATE
+    // CREATE ATTENDANCE
     @PostMapping
     public ResponseEntity<Attendance> createAttendance(
             @RequestBody Attendance attendance) {
 
-        Attendance savedAttendance =
+        Attendance saved =
                 attendanceService.createAttendance(attendance);
 
-        return new ResponseEntity<>(
-                savedAttendance,
-                HttpStatus.CREATED
-        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
-    // GET ALL
+    // GET ALL ATTENDANCE FOR THE AUTHENTICATED COMPANY
     @GetMapping
     public ResponseEntity<List<Attendance>> getAllAttendance() {
-
         return ResponseEntity.ok(
-                attendanceService.getAllAttendance()
-        );
+                attendanceService.getAllAttendance());
     }
 
-    // GET LOGGED-IN EMPLOYEE'S ATTENDANCE
+    // LOGGED-IN EMPLOYEE'S ATTENDANCE
     @GetMapping("/me")
     public ResponseEntity<List<Attendance>> getMyAttendance() {
-
         return ResponseEntity.ok(
-                attendanceService.getMyAttendance()
-        );
+                attendanceService.getMyAttendance());
     }
 
-    // GET BY ID
+    // GET ATTENDANCE BY ID
     @GetMapping("/{id}")
     public ResponseEntity<Attendance> getAttendanceById(
             @PathVariable Integer id) {
 
         return ResponseEntity.ok(
-                attendanceService.getAttendanceById(id)
-        );
+                attendanceService.getAttendanceById(id));
     }
 
-    // UPDATE
+    // UPDATE ATTENDANCE
     @PutMapping("/{id}")
     public ResponseEntity<Attendance> updateAttendance(
             @PathVariable Integer id,
             @RequestBody Attendance attendance) {
 
         return ResponseEntity.ok(
-                attendanceService.updateAttendance(
-                        id,
-                        attendance
-                )
-        );
+                attendanceService.updateAttendance(id, attendance));
     }
 
-    // DELETE
+    // DELETE ATTENDANCE
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteAttendance(
             @PathVariable Integer id) {
@@ -83,31 +72,28 @@ public class AttendanceController {
         attendanceService.deleteAttendance(id);
 
         return ResponseEntity.ok(
-                "Attendance deleted successfully"
-        );
+                "Attendance deleted successfully");
     }
 
-    // GET BY EMPLOYEE
+    // GET ATTENDANCE BY EMPLOYEE
     @GetMapping("/employee/{employeeId}")
     public ResponseEntity<List<Attendance>> getAttendanceByEmployee(
             @PathVariable Integer employeeId) {
 
         return ResponseEntity.ok(
-                attendanceService.getAttendanceByEmployee(employeeId)
-        );
+                attendanceService.getAttendanceByEmployee(employeeId));
     }
 
-    // GET BY DATE
+    // GET ATTENDANCE BY DATE
     @GetMapping("/date")
     public ResponseEntity<List<Attendance>> getAttendanceByDate(
             @RequestParam LocalDate date) {
 
         return ResponseEntity.ok(
-                attendanceService.getAttendanceByDate(date)
-        );
+                attendanceService.getAttendanceByDate(date));
     }
 
-    // GET BY EMPLOYEE AND DATE
+    // GET ATTENDANCE BY EMPLOYEE AND DATE
     @GetMapping("/employee/{employeeId}/date")
     public ResponseEntity<List<Attendance>> getEmployeeAttendanceByDate(
             @PathVariable Integer employeeId,
@@ -115,76 +101,55 @@ public class AttendanceController {
 
         return ResponseEntity.ok(
                 attendanceService.getEmployeeAttendanceByDate(
-                        employeeId,
-                        date
-                )
-        );
+                        employeeId, date));
     }
 
-    // GET BY STATUS
+    // GET ATTENDANCE BY STATUS
     @GetMapping("/status")
     public ResponseEntity<List<Attendance>> getAttendanceByStatus(
             @RequestParam String status) {
 
         return ResponseEntity.ok(
-                attendanceService.getAttendanceByStatus(status)
-        );
+                attendanceService.getAttendanceByStatus(status));
     }
 
     // GET EMPLOYEE ATTENDANCE BY STATUS
     @GetMapping("/employee/{employeeId}/status")
-    public ResponseEntity<List<Attendance>> getEmployeeAttendanceByStatus(
+    public ResponseEntity<List<Attendance>>
+    getEmployeeAttendanceByStatus(
             @PathVariable Integer employeeId,
             @RequestParam String status) {
 
         return ResponseEntity.ok(
                 attendanceService.getEmployeeAttendanceByStatus(
-                        employeeId,
-                        status
-                )
-        );
+                        employeeId, status));
     }
 
-    // =========================================================
-// MANAGER - TEAM ATTENDANCE
-// =========================================================
-
+    // MANAGER: VIEW TEAM ATTENDANCE
+    @PreAuthorize("hasRole('MANAGER')")
     @GetMapping("/manager/team")
-    public ResponseEntity<List<Attendance>>
-    getMyTeamAttendance() {
-
+    public ResponseEntity<List<Attendance>> getMyTeamAttendance() {
         return ResponseEntity.ok(
-                attendanceService
-                        .getMyTeamAttendance()
-        );
+                attendanceService.getMyTeamAttendance());
     }
 
-    // =========================================================
-// MANAGER - ADD TEAM ATTENDANCE
-// =========================================================
-
+    // MANAGER: ADD TEAM ATTENDANCE
+    @PreAuthorize("hasRole('MANAGER')")
     @PostMapping("/manager")
     public ResponseEntity<Attendance> createTeamAttendance(
             @RequestBody Attendance attendance) {
 
-        Attendance savedAttendance =
+        Attendance saved =
                 attendanceService.createTeamAttendance(attendance);
 
-        return new ResponseEntity<>(
-                savedAttendance,
-                HttpStatus.CREATED
-        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
-    // =========================================================
-    // HR - ATTENDANCE OF ASSIGNED EMPLOYEES
-    // =========================================================
-
+    // HR: VIEW ATTENDANCE FOR ASSIGNED ACTIVE EMPLOYEES
+    @PreAuthorize("hasRole('HR')")
     @GetMapping("/hr")
     public ResponseEntity<List<Attendance>> getHrEmployeeAttendance() {
-
         return ResponseEntity.ok(
-                attendanceService.getHrEmployeeAttendance()
-        );
+                attendanceService.getHrEmployeeAttendance());
     }
 }

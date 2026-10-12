@@ -2,10 +2,12 @@ package com.mallika.EmployeeManagementSystem.service;
 
 import com.mallika.EmployeeManagementSystem.exception.ResourceNotFoundException;
 import com.mallika.EmployeeManagementSystem.model.Attendance;
+import com.mallika.EmployeeManagementSystem.model.Employee;
 import com.mallika.EmployeeManagementSystem.model.User;
 import com.mallika.EmployeeManagementSystem.repository.AttendanceRepository;
 import com.mallika.EmployeeManagementSystem.repository.EmployeeRepository;
 import com.mallika.EmployeeManagementSystem.repository.UserRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -19,339 +21,181 @@ public class AttendanceService {
     private final AttendanceRepository attendanceRepository;
     private final UserRepository userRepository;
     private final EmployeeRepository employeeRepository;
+    private final CompanyContext companyContext;
 
     public AttendanceService(
             AttendanceRepository attendanceRepository,
             UserRepository userRepository,
-            EmployeeRepository employeeRepository) {
-
+            EmployeeRepository employeeRepository,
+            CompanyContext companyContext) {
         this.attendanceRepository = attendanceRepository;
         this.userRepository = userRepository;
         this.employeeRepository = employeeRepository;
+        this.companyContext = companyContext;
     }
 
+    private Long getCompanyId() {
+        Long companyId = companyContext.getCompanyId();
 
-    // =========================================================
-    // CREATE
-    // =========================================================
+        if (companyId == null) {
+            throw new AccessDeniedException(
+                    "No company is associated with the authenticated user");
+        }
 
-    public Attendance createAttendance(
-            Attendance attendance) {
-
-        return attendanceRepository
-                .createAttendance(attendance);
+        return companyId;
     }
 
+    private User getCurrentUser() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
 
-    // =========================================================
-    // GET ALL
-    // =========================================================
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication.getName() == null) {
+            throw new AccessDeniedException("User is not authenticated");
+        }
+
+        User user = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
+
+        if (user.getCompanyId() == null
+                || !user.getCompanyId().equals(getCompanyId())) {
+            throw new AccessDeniedException(
+                    "User does not belong to the current company");
+        }
+
+        if (user.getEmployee() == null
+                || user.getEmployee().getEmployeeId() == null) {
+            throw new ResourceNotFoundException(
+                    "Employee profile not found");
+        }
+
+        return user;
+    }
+
+    private Integer currentEmployeeId() {
+        return getCurrentUser().getEmployee().getEmployeeId();
+    }
+
+    // CREATE: company membership is checked by the repository.
+    public Attendance createAttendance(Attendance attendance) {
+        return attendanceRepository.createAttendance(attendance);
+    }
 
     public List<Attendance> getAllAttendance() {
-
-        return attendanceRepository
-                .getAllAttendance();
+        return attendanceRepository.getAllAttendance();
     }
 
-
-    // =========================================================
-    // GET BY ID
-    // =========================================================
-
-    public Attendance getAttendanceById(
-            Integer id) {
-
-        return attendanceRepository
-                .getAttendanceById(id)
+    public Attendance getAttendanceById(Integer id) {
+        return attendanceRepository.getAttendanceById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Attendance not found with id: "
-                                        + id
-                        ));
+                                "Attendance not found with id: " + id));
     }
-
-
-    // =========================================================
-    // UPDATE
-    // =========================================================
 
     public Attendance updateAttendance(
-            Integer id,
-            Attendance attendanceDetails) {
-
-        return attendanceRepository
-                .updateAttendance(
-                        id,
-                        attendanceDetails
-                );
+            Integer id, Attendance attendanceDetails) {
+        return attendanceRepository.updateAttendance(id, attendanceDetails);
     }
-
-
-    // =========================================================
-    // DELETE
-    // =========================================================
 
     public void deleteAttendance(Integer id) {
-
-        boolean deleted =
-                attendanceRepository
-                        .deleteAttendance(id);
-
-        if (!deleted) {
+        if (!attendanceRepository.deleteAttendance(id)) {
             throw new ResourceNotFoundException(
-                    "Attendance not found with id: "
-                            + id
-            );
+                    "Attendance not found with id: " + id);
         }
     }
 
-
-    // =========================================================
-    // GET BY EMPLOYEE
-    // =========================================================
-
-    public List<Attendance> getAttendanceByEmployee(
-            Integer employeeId) {
-
-        return attendanceRepository
-                .findByEmployeeEmployeeId(
-                        employeeId
-                );
+    public List<Attendance> getAttendanceByEmployee(Integer employeeId) {
+        return attendanceRepository.findByEmployeeEmployeeId(employeeId);
     }
 
-
-    // =========================================================
-    // GET BY DATE
-    // =========================================================
-
-    public List<Attendance> getAttendanceByDate(
-            LocalDate date) {
-
-        return attendanceRepository
-                .findByAttDate(date);
+    public List<Attendance> getAttendanceByDate(LocalDate date) {
+        return attendanceRepository.findByAttDate(date);
     }
 
-
-    // =========================================================
-    // GET BY EMPLOYEE AND DATE
-    // =========================================================
-
-    public List<Attendance>
-    getEmployeeAttendanceByDate(
-            Integer employeeId,
-            LocalDate date) {
-
+    public List<Attendance> getEmployeeAttendanceByDate(
+            Integer employeeId, LocalDate date) {
         return attendanceRepository
-                .findByEmployeeEmployeeIdAndAttDate(
-                        employeeId,
-                        date
-                );
+                .findByEmployeeEmployeeIdAndAttDate(employeeId, date);
     }
 
-
-    // =========================================================
-    // GET BY STATUS
-    // =========================================================
-
-    public List<Attendance> getAttendanceByStatus(
-            String status) {
-
-        return attendanceRepository
-                .findByStatusIgnoreCase(status);
+    public List<Attendance> getAttendanceByStatus(String status) {
+        return attendanceRepository.findByStatusIgnoreCase(status);
     }
 
-
-    // =========================================================
-    // GET EMPLOYEE ATTENDANCE BY STATUS
-    // =========================================================
-
-    public List<Attendance>
-    getEmployeeAttendanceByStatus(
-            Integer employeeId,
-            String status) {
-
+    public List<Attendance> getEmployeeAttendanceByStatus(
+            Integer employeeId, String status) {
         return attendanceRepository
                 .findByEmployeeEmployeeIdAndStatusIgnoreCase(
-                        employeeId,
-                        status
-                );
+                        employeeId, status);
     }
 
-
-    // =========================================================
-    // GET LOGGED-IN EMPLOYEE'S ATTENDANCE
-    // =========================================================
-
+    // LOGGED-IN EMPLOYEE: own attendance only.
     public List<Attendance> getMyAttendance() {
-
-        Authentication authentication =
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication();
-
-        String username =
-                authentication.getName();
-
-        User user =
-                userRepository
-                        .findByUsername(username)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "User not found"
-                                ));
-
-        if (user.getEmployee() == null) {
-            throw new ResourceNotFoundException(
-                    "Employee not found"
-            );
-        }
-
-        Integer employeeId =
-                user.getEmployee()
-                        .getEmployeeId();
-
-        return attendanceRepository
-                .findByEmployeeEmployeeId(
-                        employeeId
-                );
+        return attendanceRepository.findByEmployeeEmployeeId(
+                currentEmployeeId());
     }
 
-    // =========================================================
-// MANAGER - GET MY TEAM ATTENDANCE
-// =========================================================
-
+    // MANAGER: attendance of active team members in the same company.
     public List<Attendance> getMyTeamAttendance() {
+        User manager = getCurrentUser();
 
-        Authentication authentication =
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication();
-
-        String username =
-                authentication.getName();
-
-        User user =
-                userRepository
-                        .findByUsername(username)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "User not found"
-                                )
-                        );
-
-        if (user.getEmployee() == null) {
-
-            throw new ResourceNotFoundException(
-                    "Employee not found"
-            );
+        if (!"MANAGER".equalsIgnoreCase(
+                manager.getRole().getRoleName())) {
+            throw new AccessDeniedException(
+                    "Only managers can view team attendance");
         }
 
-        Integer managerId =
-                user.getEmployee()
-                        .getEmployeeId();
-
-        return attendanceRepository
-                .findTeamAttendanceByManager(
-                        managerId
-                );
+        return attendanceRepository.findTeamAttendanceByManager(
+                manager.getEmployee().getEmployeeId());
     }
 
-    // =========================================================
-// MANAGER - CREATE TEAM ATTENDANCE
-// =========================================================
+    // MANAGER: create attendance only for an active member of their team.
+    public Attendance createTeamAttendance(Attendance attendance) {
+        User manager = getCurrentUser();
 
-    public Attendance createTeamAttendance(
-            Attendance attendance) {
-
-        Authentication authentication =
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication();
-
-        String username =
-                authentication.getName();
-
-        User user =
-                userRepository
-                        .findByUsername(username)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "User not found"
-                                )
-                        );
-
-        if (user.getEmployee() == null) {
-
-            throw new ResourceNotFoundException(
-                    "Employee not found"
-            );
+        if (!"MANAGER".equalsIgnoreCase(
+                manager.getRole().getRoleName())) {
+            throw new AccessDeniedException(
+                    "Only managers can add team attendance");
         }
 
-        Integer managerId =
-                user.getEmployee()
-                        .getEmployeeId();
-
-        if (attendance.getEmployee() == null ||
-                attendance.getEmployee().getEmployeeId() == null) {
-
-            throw new IllegalArgumentException(
-                    "Employee is required"
-            );
+        if (attendance == null
+                || attendance.getEmployee() == null
+                || attendance.getEmployee().getEmployeeId() == null) {
+            throw new IllegalArgumentException("Employee is required");
         }
 
-        Integer employeeId =
-                attendance.getEmployee()
-                        .getEmployeeId();
+        Integer managerId = manager.getEmployee().getEmployeeId();
+        Integer employeeId = attendance.getEmployee().getEmployeeId();
 
-        // Get employees belonging to this manager
-        List<com.mallika.EmployeeManagementSystem.model.Employee> teamEmployees =
-                employeeRepository.getEmployeesByManager(managerId);
+        List<Employee> teamMembers =
+                employeeRepository.getEmployeesByManager(
+                        managerId, getCompanyId());
 
-        boolean isTeamMember =
-                teamEmployees.stream()
-                        .anyMatch(employee ->
-                                employee.getEmployeeId()
-                                        .equals(employeeId)
-                        );
+        boolean isTeamMember = teamMembers.stream()
+                .anyMatch(employee ->
+                        employee.getEmployeeId().equals(employeeId));
 
         if (!isTeamMember) {
-
-            throw new IllegalArgumentException(
-                    "You can only add attendance for your team members"
-            );
+            throw new AccessDeniedException(
+                    "You can only add attendance for your active team members");
         }
 
-        return attendanceRepository
-                .createAttendance(attendance);
+        return attendanceRepository.createAttendance(attendance);
     }
 
-    // =========================================================
-// HR - GET ATTENDANCE OF ASSIGNED EMPLOYEES
-// =========================================================
-
+    // HR: attendance of active employees assigned to this HR user.
     public List<Attendance> getHrEmployeeAttendance() {
+        User hr = getCurrentUser();
 
-        Authentication authentication =
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication();
-
-        String username = authentication.getName();
-
-        User user = userRepository
-                .findByUsername(username)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found")
-                );
-
-        if (user.getEmployee() == null) {
-            throw new ResourceNotFoundException(
-                    "HR employee profile not found"
-            );
+        if (!"HR".equalsIgnoreCase(hr.getRole().getRoleName())) {
+            throw new AccessDeniedException(
+                    "Only HR users can view assigned employee attendance");
         }
 
-        Integer hrId = user.getEmployee().getEmployeeId();
-
-        return attendanceRepository.getAttendanceByHr(hrId);
+        return attendanceRepository.getAttendanceByHr(
+                hr.getEmployee().getEmployeeId());
     }
 }

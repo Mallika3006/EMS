@@ -1,4 +1,3 @@
-
 package com.mallika.EmployeeManagementSystem.service;
 
 import com.mallika.EmployeeManagementSystem.dto.EmployeeCreateDTO;
@@ -9,7 +8,6 @@ import com.mallika.EmployeeManagementSystem.model.Employee;
 import com.mallika.EmployeeManagementSystem.model.User;
 import com.mallika.EmployeeManagementSystem.repository.EmployeeRepository;
 import com.mallika.EmployeeManagementSystem.repository.UserRepository;
-
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,265 +30,206 @@ public class EmployeeService {
     private final PasswordEncoder passwordEncoder;
     private final CompanyContext companyContext;
 
-    public EmployeeService(
-            EmployeeRepository employeeRepository,
-            UserRepository userRepository,
-            PasswordEncoder passwordEncoder,
-            CompanyContext companyContext) {
-
+    public EmployeeService(EmployeeRepository employeeRepository,
+                           UserRepository userRepository,
+                           PasswordEncoder passwordEncoder,
+                           CompanyContext companyContext) {
         this.employeeRepository = employeeRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.companyContext = companyContext;
     }
 
-    // =========================
-    // COMPANY CONTEXT
-    // =========================
-
-    private Long getCompanyId() {
+    private Long companyId() {
         return companyContext.getCompanyId();
     }
 
     private User getCompanyUser(String username) {
-
-        Long companyId = getCompanyId();
-
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "User not found: " + username));
 
         if (user.getCompanyId() == null
-                || !user.getCompanyId().equals(companyId)) {
+                || !user.getCompanyId().equals(companyId())) {
             throw new AccessDeniedException(
                     "User does not belong to the authenticated company");
         }
-
         return user;
     }
 
-    // =========================
-    // CREATE EMPLOYEE
-    // =========================
-
     public Employee createEmployee(EmployeeCreateDTO dto) {
-
         if (dto == null
-                || dto.getFirstName() == null
-                || dto.getFirstName().isBlank()
-                || dto.getLastName() == null
-                || dto.getLastName().isBlank()
-                || dto.getEmail() == null
-                || dto.getEmail().isBlank()
-                || dto.getUsername() == null
-                || dto.getUsername().isBlank()
-                || dto.getPassword() == null
-                || dto.getPassword().isBlank()
+                || blank(dto.getFirstName())
+                || blank(dto.getLastName())
+                || blank(dto.getEmail())
+                || blank(dto.getUsername())
+                || blank(dto.getPassword())
                 || dto.getRoleId() == null) {
-
             throw new IllegalArgumentException(
-                    "Required employee and login fields must be provided");
+                    "First name, last name, email, username, password "
+                            + "and role are required");
         }
 
         if (dto.getRoleId() < 1 || dto.getRoleId() > 4) {
             throw new IllegalArgumentException("Invalid role ID");
         }
 
-        /*
-         * Do not call the old create function here.
-         * It does not accept company_id, so it cannot safely
-         * create an employee for the authenticated company.
-         *
-         * We will enable this operation after adding the
-         * company-scoped SQL function and repository method.
-         */
-        throw new UnsupportedOperationException(
-                "Employee creation is temporarily disabled until "
-                        + "the company-scoped creation function is added");
+        if (employeeRepository.getEmployeeByEmail(
+                dto.getEmail(), companyId()).isPresent()) {
+            throw new IllegalArgumentException(
+                    "Email already exists in this company");
+        }
+
+        return employeeRepository.createEmployeeWithUser(
+                dto, passwordEncoder.encode(dto.getPassword()));
     }
 
-    // =========================
-    // GET ALL EMPLOYEES
-    // =========================
+    private boolean blank(String value) {
+        return value == null || value.isBlank();
+    }
 
     public List<Employee> getAllEmployees() {
-        return employeeRepository.getAllEmployees(getCompanyId());
+        return employeeRepository.getAllEmployees(companyId());
     }
 
-    // =========================
-    // GET EMPLOYEE BY ID
-    // =========================
-
     public Employee getEmployeeById(Integer id) {
-
         if (id == null || id <= 0) {
             throw new IllegalArgumentException("Invalid employee ID");
         }
-
-        return employeeRepository
-                .getEmployeeById(id, getCompanyId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Employee not found with id: " + id));
+        return employeeRepository.getEmployeeById(id, companyId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Employee not found in your company: " + id));
     }
 
-    // =========================
-    // GET LOGGED-IN EMPLOYEE
-    // =========================
-
     public Employee getMyProfile(String username) {
-
         User user = getCompanyUser(username);
 
         if (user.getEmployee() == null) {
             throw new ResourceNotFoundException(
                     "No employee profile linked to user: " + username);
         }
-
-        Integer employeeId = user.getEmployee().getEmployeeId();
-
-        return employeeRepository
-                .getEmployeeById(employeeId, getCompanyId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Employee profile not found"));
+        return getEmployeeById(user.getEmployee().getEmployeeId());
     }
 
-    // =========================
-    // UPDATE EMPLOYEE
-    // =========================
-
-    public Employee updateEmployee(
-            Integer id,
-            Employee employeeDetails) {
-
-        if (employeeDetails == null) {
-            throw new IllegalArgumentException(
-                    "Employee details are required");
+    public Employee updateEmployee(Integer id, Employee details) {
+        if (details == null) {
+            throw new IllegalArgumentException("Employee details required");
         }
 
-        // Verify that the employee belongs to this company first.
-        Employee existingEmployee = getEmployeeById(id);
+        Employee existing = getEmployeeById(id);
+        EmployeeUpdateDTO dto = new EmployeeUpdateDTO();
 
-        EmployeeUpdateDTO updateDetails = new EmployeeUpdateDTO();
+        dto.setFirstName(details.getFirstName());
+        dto.setLastName(details.getLastName());
+        dto.setEmail(details.getEmail());
+        dto.setPhone(details.getPhone());
+        dto.setDateOfBirth(details.getDateOfBirth());
+        dto.setAddress(details.getAddress());
+        dto.setProfilePhoto(existing.getProfilePhoto());
+        dto.setDepartmentId(details.getDepartment() == null
+                ? existing.getDepartment() == null ? null
+                  : existing.getDepartment().getDepartmentId()
+                : details.getDepartment().getDepartmentId());
+        dto.setManagerId(details.getManagerId());
+        dto.setHrId(details.getHrId());
 
-        updateDetails.setFirstName(employeeDetails.getFirstName());
-        updateDetails.setLastName(employeeDetails.getLastName());
-        updateDetails.setEmail(employeeDetails.getEmail());
-        updateDetails.setPhone(employeeDetails.getPhone());
-        updateDetails.setDateOfBirth(employeeDetails.getDateOfBirth());
-        updateDetails.setAddress(employeeDetails.getAddress());
-        updateDetails.setProfilePhoto(existingEmployee.getProfilePhoto());
+        validateRelatedEmployee(dto.getManagerId());
+        validateRelatedEmployee(dto.getHrId());
 
-        if (employeeDetails.getDepartment() != null) {
-            updateDetails.setDepartmentId(
-                    employeeDetails.getDepartment().getDepartmentId());
-        }
-
-        updateDetails.setManagerId(employeeDetails.getManagerId());
-        updateDetails.setHrId(employeeDetails.getHrId());
-
-        /*
-         * The target employee is company-validated above.
-         * The update SQL itself still needs a company_id parameter;
-         * that repository migration is a remaining step.
-         */
-        return employeeRepository.updateMyProfile(id, updateDetails);
+        return employeeRepository.updateMyProfile(id, dto);
     }
-
-    // =========================
-    // DELETE EMPLOYEE
-    // =========================
 
     public void deleteEmployee(Integer id) {
-        // Keep deletion disabled until its SQL function is company-scoped.
         getEmployeeById(id);
-
-        throw new UnsupportedOperationException(
-                "Delete employee is not yet implemented with company scoping");
+        employeeRepository.deleteEmployee(id);
     }
 
-    // =========================
-    // SEARCH BY FIRST NAME
-    // =========================
-
-    public List<Employee> searchByFirstName(String firstName) {
-        return employeeRepository.searchByName(firstName, getCompanyId());
+    public List<Employee> searchByFirstName(String name) {
+        return searchByName(name);
     }
 
-    // =========================
-    // SEARCH BY LAST NAME
-    // =========================
-
-    public List<Employee> searchByLastName(String lastName) {
-        return employeeRepository.searchByName(lastName, getCompanyId());
+    public List<Employee> searchByLastName(String name) {
+        return searchByName(name);
     }
-
-    // =========================
-    // SEARCH BY NAME
-    // =========================
 
     public List<Employee> searchByName(String name) {
-        return employeeRepository.searchByName(name, getCompanyId());
+        if (blank(name)) {
+            throw new IllegalArgumentException("Search name is required");
+        }
+        return employeeRepository.searchByName(name.trim(), companyId());
     }
-
-    // =========================
-    // SEARCH BY EMAIL
-    // =========================
 
     public Employee getEmployeeByEmail(String email) {
-        return employeeRepository
-                .getEmployeeByEmail(email, getCompanyId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Employee not found with email: " + email));
+        return employeeRepository.getEmployeeByEmail(email, companyId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Employee not found with email: " + email));
     }
-
-    // =========================
-    // FILTER BY DESIGNATION
-    // =========================
 
     public List<Employee> getEmployeesByDesignation(Integer designationId) {
         return employeeRepository.getEmployeesByDesignation(
-                designationId, getCompanyId());
+                designationId, companyId());
     }
-
-    // =========================
-    // SORT
-    // =========================
 
     public List<Employee> getEmployeesSorted(
-            String field,
-            String direction) {
+            String field, String direction) {
+        List<Employee> employees = new ArrayList<>(getAllEmployees());
 
-        throw new UnsupportedOperationException(
-                "Sorting requires a company-scoped SQL function");
+        Comparator<Employee> comparator = switch (
+                field == null ? "firstname" : field.toLowerCase()) {
+            case "lastname" -> Comparator.comparing(
+                    Employee::getLastName,
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
+            case "email" -> Comparator.comparing(
+                    Employee::getEmail,
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
+            case "hiredate" -> Comparator.comparing(
+                    Employee::getHireDate,
+                    Comparator.nullsLast(Comparator.naturalOrder()));
+            case "firstname" -> Comparator.comparing(
+                    Employee::getFirstName,
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
+            default -> throw new IllegalArgumentException(
+                    "Sort field must be firstName, lastName, email or hireDate");
+        };
+
+        if ("desc".equalsIgnoreCase(direction)) {
+            comparator = comparator.reversed();
+        } else if (direction != null
+                && !"asc".equalsIgnoreCase(direction)) {
+            throw new IllegalArgumentException(
+                    "Direction must be asc or desc");
+        }
+
+        employees.sort(comparator);
+        return employees;
     }
-
-    // =========================
-    // UPDATE MY PROFILE
-    // =========================
 
     public Employee updateMyProfile(
-            String username,
-            EmployeeUpdateDTO updateDetails) {
+            String username, EmployeeUpdateDTO details) {
+        Employee existing = getMyProfile(username);
 
-        Employee employee = getMyProfile(username);
+        // An employee cannot change their department, manager or HR
+        // through the self-service profile endpoint.
+        EmployeeUpdateDTO safe = new EmployeeUpdateDTO();
+        safe.setFirstName(details.getFirstName());
+        safe.setLastName(details.getLastName());
+        safe.setEmail(details.getEmail());
+        safe.setPhone(details.getPhone());
+        safe.setDateOfBirth(details.getDateOfBirth());
+        safe.setAddress(details.getAddress());
+        safe.setProfilePhoto(existing.getProfilePhoto());
+        safe.setDepartmentId(existing.getDepartment() == null ? null
+                : existing.getDepartment().getDepartmentId());
+        safe.setManagerId(existing.getManagerId());
+        safe.setHrId(existing.getHrId());
 
         return employeeRepository.updateMyProfile(
-                employee.getEmployeeId(),
-                updateDetails);
+                existing.getEmployeeId(), safe);
     }
 
-    // =========================
-    // UPDATE PROFILE PHOTO
-    // =========================
-
     public Employee updateProfilePhoto(
-            String username,
-            MultipartFile photo) {
-
+            String username, MultipartFile photo) {
         if (photo == null || photo.isEmpty()) {
             throw new IllegalArgumentException(
                     "Please select a profile photo");
@@ -298,164 +238,92 @@ public class EmployeeService {
         Employee employee = getMyProfile(username);
 
         try {
-            String uploadDir = "uploads/profile-photos/";
-            Files.createDirectories(Paths.get(uploadDir));
+            Path directory = Paths.get("uploads", "profile-photos");
+            Files.createDirectories(directory);
 
             String originalName = Paths.get(
-                    photo.getOriginalFilename() == null
-                            ? "profile-photo"
-                            : photo.getOriginalFilename()
-            ).getFileName().toString();
+                            photo.getOriginalFilename() == null
+                                    ? "profile-photo"
+                                    : photo.getOriginalFilename())
+                    .getFileName().toString();
 
-            String fileName = UUID.randomUUID()
-                    + "_" + originalName;
-
-            Path filePath = Paths.get(uploadDir, fileName);
-
-            Files.write(filePath, photo.getBytes());
-
-            String profilePhoto = "/uploads/profile-photos/" + fileName;
+            String filename = UUID.randomUUID() + "_" + originalName;
+            Files.write(directory.resolve(filename), photo.getBytes());
 
             return employeeRepository.updateProfilePhoto(
                     employee.getEmployeeId(),
-                    profilePhoto);
-
+                    "/uploads/profile-photos/" + filename);
         } catch (IOException e) {
-            throw new RuntimeException(
-                    "Failed to upload profile photo", e);
+            throw new RuntimeException("Failed to save profile photo", e);
         }
     }
 
-    // =========================
-    // ASSIGN MANAGER
-    // =========================
+    private void validateRelatedEmployee(Integer id) {
+        if (id != null) {
+            getEmployeeById(id);
+        }
+    }
 
-    public Employee assignManager(
-            Integer employeeId,
-            Integer managerId) {
-
-        // Both IDs must resolve within the logged-in company.
+    public Employee assignManager(Integer employeeId, Integer managerId) {
         getEmployeeById(employeeId);
-        getEmployeeById(managerId);
-
+        validateRelatedEmployee(managerId);
         return employeeRepository.assignManager(employeeId, managerId);
     }
 
-    // =========================
-    // ASSIGN HR
-    // =========================
-
-    public Employee assignHr(
-            Integer employeeId,
-            Integer hrId) {
-
+    public Employee assignHr(Integer employeeId, Integer hrId) {
         getEmployeeById(employeeId);
-        getEmployeeById(hrId);
-
+        validateRelatedEmployee(hrId);
         return employeeRepository.assignHr(employeeId, hrId);
     }
 
-    // =========================
-    // GET EMPLOYEES BY MANAGER
-    // =========================
-
     public List<Employee> getEmployeesByManager(Integer managerId) {
-
         getEmployeeById(managerId);
-
         return employeeRepository.getEmployeesByManager(
-                managerId, getCompanyId());
+                managerId, companyId());
     }
-
-    // =========================
-    // GET EMPLOYEES BY HR
-    // =========================
 
     public List<Employee> getEmployeesByHr(Integer hrId) {
-
         getEmployeeById(hrId);
-
-        return employeeRepository.getEmployeesByHr(
-                hrId, getCompanyId());
+        return employeeRepository.getEmployeesByHr(hrId, companyId());
     }
-
-    // =========================
-    // GET MY PROFILE DETAILS
-    // =========================
 
     public EmployeeProfileDTO getMyProfileDetails(String username) {
+        Employee employee = getMyProfile(username);
 
-        User user = getCompanyUser(username);
-
-        if (user.getEmployee() == null) {
-            throw new ResourceNotFoundException(
-                    "No employee profile linked to user: " + username);
-        }
-
-        Integer employeeId = user.getEmployee().getEmployeeId();
-
-        // Ensure the employee belongs to the authenticated company.
-        getEmployeeById(employeeId);
-
-        return employeeRepository
-                .getEmployeeProfileDetails(employeeId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Employee profile not found with id: "
-                                        + employeeId));
+        return employeeRepository.getEmployeeProfileDetails(
+                        employee.getEmployeeId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Employee profile details not found"));
     }
 
-    // =========================
-    // GET EMPLOYEES BY ROLE
-    // =========================
-
     public List<Employee> getEmployeesByRole(Integer roleId) {
-
         if (roleId == null || (roleId != 2 && roleId != 3)) {
             throw new IllegalArgumentException(
                     "Only HR and Manager roles are allowed");
         }
 
-        Long companyId = getCompanyId();
+        Long companyId = companyId();
+        List<Employee> result = new ArrayList<>();
 
-        List<User> users =
-                userRepository.findByRoleRoleIdAndIsActive(roleId, true);
-
-        List<Employee> employees = new ArrayList<>();
-
-        for (User user : users) {
-
-            // Filter users by the authenticated company.
+        for (User user :
+                userRepository.findByRoleRoleIdAndIsActive(roleId, true)) {
             if (user.getCompanyId() == null
                     || !user.getCompanyId().equals(companyId)
                     || user.getEmployee() == null) {
                 continue;
             }
 
-            Integer employeeId = user.getEmployee().getEmployeeId();
-
-            employeeRepository
-                    .getEmployeeById(employeeId, companyId)
-                    .ifPresent(employees::add);
+            employeeRepository.getEmployeeById(
+                            user.getEmployee().getEmployeeId(), companyId)
+                    .ifPresent(result::add);
         }
-
-        return employees;
+        return result;
     }
 
-    // =========================
-    // SET EMPLOYEE ACTIVE STATUS
-    // =========================
-
     public boolean setEmployeeActiveStatus(
-            Integer employeeId,
-            boolean isActive) {
-
-        // Confirm that the employee belongs to this company.
+            Integer employeeId, boolean active) {
         getEmployeeById(employeeId);
-
         return userRepository.setUserActiveStatus(
-                employeeId,
-                isActive,
-                getCompanyId());
+                employeeId, active, companyId());
     }
 }

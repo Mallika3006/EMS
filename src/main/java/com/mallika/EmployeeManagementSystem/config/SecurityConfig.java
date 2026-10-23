@@ -233,12 +233,12 @@ public class SecurityConfig {
                 )
 
                 .addFilterBefore(
-                        cookieOriginValidationFilter,
-                        JwtAuthenticationFilter.class
-                )
-                .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
+                )
+                .addFilterBefore(
+                        cookieOriginValidationFilter,
+                        JwtAuthenticationFilter.class
                 );
 
         return http.build();

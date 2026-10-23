@@ -160,7 +160,7 @@ BEGIN
     ) THEN
         RAISE EXCEPTION 'Duplicate usernames exist across companies; rename duplicates before applying multi-company authentication';
     END IF;
-END $;
+END $$;
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_users_username_case_insensitive
     ON public.users (LOWER(username));
@@ -295,7 +295,7 @@ BEGIN
             FOREIGN KEY (assigned_to, company_id)
             REFERENCES public.employees(employee_id, company_id) ON DELETE RESTRICT;
     END IF;
-END $;
+END $$;
 
 -- Keep the identity sequence above all preserved company IDs.
 SELECT setval(

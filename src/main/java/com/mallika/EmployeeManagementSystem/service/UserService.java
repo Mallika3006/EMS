@@ -81,6 +81,15 @@ public class UserService {
         return userRepository.updateUser(id, userDetails);
     }
 
+    public User setActiveStatus(Integer id, boolean active) {
+        User user = getUserById(id);
+        if (user.getEmployee() == null || user.getEmployee().getEmployeeId() == null) {
+            throw new IllegalArgumentException("Only employee-linked accounts can be activated or deactivated here");
+        }
+        userRepository.setUserActiveStatus(user.getEmployee().getEmployeeId(), active, user.getCompanyId());
+        return getUserById(id);
+    }
+
     public void deleteUser(Integer id) { getUserById(id); userRepository.deleteUser(id); }
     public List<User> searchByUsername(String username) { return userRepository.findByUsernameContainingIgnoreCase(username); }
     public User getByUsername(String username) {

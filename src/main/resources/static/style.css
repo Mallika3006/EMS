@@ -92,7 +92,7 @@ tbody tr:hover { background: #f8faff; }
 .login-intro h1 { max-width: 560px; font-size: clamp(2rem, 4vw, 3.3rem); }
 .login-intro p { max-width: 480px; color: #dbe5ff; font-size: 1.05rem; }
 .login-brand { font-weight: 800; letter-spacing: .02em; }
-.login-panel { display: flex; align-items: center; justify-content: center; padding: 36px 24px; }
+.login-panel { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 36px 24px; }
 .login-container { width: min(100%, 430px); padding: clamp(24px, 4vw, 42px); border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: var(--shadow); }
 .login-container h2 { margin-bottom: 8px; font-size: 1.7rem; }
 .login-container .subtitle { margin-top: 0; margin-bottom: 26px; }

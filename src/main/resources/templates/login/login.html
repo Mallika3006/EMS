@@ -98,7 +98,7 @@
                 throw new Error("Your account role could not be recognized. Contact your administrator.");
             }
 
-            // Authentication remains in the server-issued HttpOnly cookie. Only the UI role is retained.
+            // Authentication remains in the server-issued HttpOnly cookie.
             // Role is used only to choose the initial redirect; auth remains in the HttpOnly cookie.
             window.location.assign(destination);
         } catch (error) {

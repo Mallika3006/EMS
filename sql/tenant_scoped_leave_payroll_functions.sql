@@ -199,10 +199,23 @@ $$;
 CREATE OR REPLACE FUNCTION public.get_manager_leave_requests(
     p_manager_id INTEGER, p_company_id BIGINT
 )
-RETURNS SETOF public.leaves
+RETURNS TABLE (
+    leave_id INTEGER,
+    from_date DATE,
+    to_date DATE,
+    reason VARCHAR,
+    status VARCHAR,
+    employee_id INTEGER,
+    company_id BIGINT,
+    employee_first_name VARCHAR,
+    employee_last_name VARCHAR
+)
 LANGUAGE sql STABLE
-AS $$
-    SELECT l.*
+AS $
+    SELECT l.leave_id, l.from_date, l.to_date, l.reason, l.status,
+           l.employee_id, l.company_id,
+           e.first_name AS employee_first_name,
+           e.last_name AS employee_last_name
     FROM public.leaves l
     JOIN public.employees e ON e.employee_id = l.employee_id
     JOIN public.users u
@@ -213,15 +226,28 @@ AS $$
       AND e.company_id = p_company_id
       AND l.company_id = p_company_id
     ORDER BY l.leave_id DESC;
-$$;
+$;
 
 CREATE OR REPLACE FUNCTION public.get_leaves_by_hr(
     p_hr_id INTEGER, p_company_id BIGINT
 )
-RETURNS SETOF public.leaves
+RETURNS TABLE (
+    leave_id INTEGER,
+    from_date DATE,
+    to_date DATE,
+    reason VARCHAR,
+    status VARCHAR,
+    employee_id INTEGER,
+    company_id BIGINT,
+    employee_first_name VARCHAR,
+    employee_last_name VARCHAR
+)
 LANGUAGE sql STABLE
-AS $$
-    SELECT l.*
+AS $
+    SELECT l.leave_id, l.from_date, l.to_date, l.reason, l.status,
+           l.employee_id, l.company_id,
+           e.first_name AS employee_first_name,
+           e.last_name AS employee_last_name
     FROM public.leaves l
     JOIN public.employees e ON e.employee_id = l.employee_id
     JOIN public.users u
@@ -232,7 +258,7 @@ AS $$
       AND e.company_id = p_company_id
       AND l.company_id = p_company_id
     ORDER BY l.leave_id DESC;
-$$;
+$;
 
 CREATE OR REPLACE FUNCTION public.delete_leave_by_hr(
     p_leave_id INTEGER, p_hr_id INTEGER, p_company_id BIGINT

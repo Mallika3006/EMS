@@ -691,12 +691,17 @@ public class LeaveRepository {
             Employee employee = new Employee();
 
             employee.setEmployeeId(employeeId);
-            employee.setFirstName(
-                    rs.getString("employee_first_name")
-            );
-            employee.setLastName(
-                    rs.getString("employee_last_name")
-            );
+            // Legacy SETOF leaves functions do not all return employee name columns.
+            try {
+                employee.setFirstName(rs.getString("employee_first_name"));
+            } catch (SQLException ignored) {
+                // Name is optional for this result shape.
+            }
+            try {
+                employee.setLastName(rs.getString("employee_last_name"));
+            } catch (SQLException ignored) {
+                // Name is optional for this result shape.
+            }
 
             leave.setEmployee(employee);
         }

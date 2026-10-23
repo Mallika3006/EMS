@@ -42,7 +42,8 @@ public class CookieOriginValidationFilter extends OncePerRequestFilter {
             return;
         }
 
-        if (!hasJwtCookie(request)) {
+        boolean loginRequest = "/login".equals(request.getServletPath());
+        if (!hasJwtCookie(request) && !loginRequest) {
             filterChain.doFilter(request, response);
             return;
         }

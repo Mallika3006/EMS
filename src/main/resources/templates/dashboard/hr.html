@@ -1,75 +1,24 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Dashboard - StaffSync</title>
-    <link rel="stylesheet" th:href="@{/style.css}">
-</head>
-
-<body>
-
-<div class="container">
-
-    <h1>HR Dashboard</h1>
-
-    <!-- MY INFORMATION -->
-    <div class="card">
-        <h2>My Information</h2>
-
-        <div class="dashboard-links">
-            <a href="/hr/profile">My Profile</a> <br>
-            <a href="/hr/attendance">My Attendance</a> <br>
-            <a href="/hr/leaves">My Leaves</a> <br>
-            <a href="/hr/payroll">My Payroll</a>
-        </div>
-    </div>
-
-    <!-- EMPLOYEE MANAGEMENT -->
-    <div class="card">
-        <h2>Employee Management</h2>
-
-        <div class="dashboard-links">
-            <a href="/hr/employees">Employees</a>
-        </div>
-    </div>
-
-    <!-- ORGANIZATION MANAGEMENT -->
-    <div class="card">
-        <h2>Organization Management</h2>
-
-        <div class="dashboard-links">
-            <a href="/hr/departments">Departments</a> <br>
-            <a href="/hr/designations">Designations</a>
-        </div>
-    </div>
-
-    <!-- ATTENDANCE & LEAVE MANAGEMENT -->
-    <div class="card">
-        <h2>Attendance & Leave Management</h2>
-
-        <div class="dashboard-links">
-            <a href="/hr/employee-attendance">Employee Attendance</a> <br>
-            <a href="/hr/employee-leaves">Employee Leaves</a> <br>
-        </div>
-    </div>
-
-    <!-- PAYROLL MANAGEMENT -->
-    <div class="card">
-        <h2>Payroll Management</h2>
-
-        <div class="dashboard-links">
-            <a href="/hr/employee-payroll">Employee Payroll</a>
-        </div>
-    </div>
-
-    <!-- LOGOUT -->
-    <div class="card">
-        <a class="logout-link" href="/logout">Logout</a>
-    </div>
-
-</div>
-
-</body>
-</html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>HR Dashboard | Employee Management System</title><link rel="stylesheet" th:href="@{/style.css}"></head>
+<body><div class="app-shell">
+<aside class="app-sidebar"><a class="app-brand" th:href="@{/hr-dashboard}" style="text-decoration:none">EMS <small>Employee Management System</small></a>
+<nav class="app-nav" aria-label="HR navigation">
+<span class="nav-section">Workspace</span><a th:href="@{/hr-dashboard}" aria-current="page">⌂ &nbsp; Overview</a><a th:href="@{/hr/employees}">♙ &nbsp; Employees</a>
+<span class="nav-section">People operations</span><a th:href="@{/hr/departments}">▦ &nbsp; Departments</a><a th:href="@{/hr/designations}">▤ &nbsp; Designations</a><a th:href="@{/hr/employee-attendance}">◷ &nbsp; Employee attendance</a><a th:href="@{/hr/employee-leaves}">▣ &nbsp; Employee leaves</a><a th:href="@{/hr/employee-payroll}">₹ &nbsp; Employee payroll</a>
+<span class="nav-section">My account</span><a th:href="@{/hr/profile}">♙ &nbsp; My profile</a><a th:href="@{/hr/attendance}">◷ &nbsp; My attendance</a><a th:href="@{/hr/leaves}">▣ &nbsp; My leaves</a><a th:href="@{/hr/payroll}">₹ &nbsp; My payroll</a>
+</nav><div class="app-sidebar-footer"><form th:action="@{/logout}" method="post"><button type="submit">↪ &nbsp; Log out</button></form></div></aside>
+<main class="app-main"><header class="app-topbar"><div><h1>HR workspace</h1><p>Employee services and people operations.</p></div><div><span class="role-pill">Human Resources</span><p>Signed in as <strong sec:authentication="name">HR</strong></p></div></header>
+<section class="dashboard-intro"><h2>Good to see you</h2><p>Open an existing HR workflow below. Records and available actions are provided by the server for your current organization.</p></section>
+<section class="dashboard-grid" aria-label="HR modules">
+<article class="dashboard-card"><span class="card-icon">♙</span><h3>Employees</h3><p>View employee information and supported employee operations.</p><a th:href="@{/hr/employees}">Open employees →</a></article>
+<article class="dashboard-card"><span class="card-icon">▦</span><h3>Departments</h3><p>Review organization department records.</p><a th:href="@{/hr/departments}">Open departments →</a></article>
+<article class="dashboard-card"><span class="card-icon">▤</span><h3>Designations</h3><p>Review designation information.</p><a th:href="@{/hr/designations}">Open designations →</a></article>
+<article class="dashboard-card"><span class="card-icon">◷</span><h3>Attendance</h3><p>Review employee attendance and your own records.</p><a th:href="@{/hr/employee-attendance}">Employee attendance →</a></article>
+<article class="dashboard-card"><span class="card-icon">▣</span><h3>Leave requests</h3><p>Review leave records supported by the HR workflow.</p><a th:href="@{/hr/employee-leaves}">Employee leaves →</a></article>
+<article class="dashboard-card"><span class="card-icon">₹</span><h3>Payroll</h3><p>Access employee payroll where authorized.</p><a th:href="@{/hr/employee-payroll}">Employee payroll →</a></article>
+<article class="dashboard-card"><span class="card-icon">◎</span><h3>My profile</h3><p>View your account and profile information.</p><a th:href="@{/hr/profile}">View profile →</a></article>
+<article class="dashboard-card"><span class="card-icon">◷</span><h3>My attendance</h3><p>Check your own attendance records.</p><a th:href="@{/hr/attendance}">View attendance →</a></article>
+<article class="dashboard-card"><span class="card-icon">▣</span><h3>My leaves</h3><p>View your leave records and supported actions.</p><a th:href="@{/hr/leaves}">View leaves →</a></article>
+<article class="dashboard-card"><span class="card-icon">₹</span><h3>My payroll</h3><p>Review your own payroll records.</p><a th:href="@{/hr/payroll}">View payroll →</a></article>
+</section><footer style="padding:24px 0 8px"><small>Employee Management System · HR workspace</small></footer></main></div></body></html>

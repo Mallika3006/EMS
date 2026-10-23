@@ -1,133 +1,21 @@
 <!DOCTYPE html>
-
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-
-<head>
-    <title>Manager Dashboard - StaffSync</title>
-
-    <link rel="stylesheet" th:href="@{/style.css}">
-</head>
-
-<body>
-
-<div class="container">
-
-    <h1>Manager Dashboard</h1>
-
-    <p>
-        Welcome,
-        <strong sec:authentication="name"></strong>
-    </p>
-
-
-    <!-- =====================================================
-         MY PROFILE
-         ===================================================== -->
-
-    <div class="card">
-
-        <h3>My Profile</h3>
-
-        <a href="/manager/profile">
-            View My Profile
-        </a>
-
-    </div>
-
-
-    <!-- =====================================================
-         MY WORK
-         ===================================================== -->
-
-    <div class="card">
-
-        <h3>My Work</h3>
-
-        <ul class="dashboard-links">
-
-            <li>
-                <a href="/manager/my-attendance">
-                    My Attendance
-                </a>
-            </li>
-
-            <li>
-                <a href="/manager/my-leaves">
-                    My Leaves
-                </a>
-            </li>
-
-            <li>
-                <a href="/manager/my-payroll">
-                    My Payroll
-                </a>
-            </li>
-
-        </ul>
-
-    </div>
-
-
-    <!-- =====================================================
-         TEAM & WORK MANAGEMENT
-         ===================================================== -->
-
-    <div class="card">
-
-        <h3>Team &amp; Work Management</h3>
-
-        <ul class="dashboard-links">
-
-            <li>
-                <a href="/manager/team">
-                    My Team
-                </a>
-            </li>
-
-            <li>
-                <a href="/manager/leaves">
-                    Leave Requests
-                </a>
-            </li>
-
-            <li>
-                <a href="/manager/attendance">
-                    Team Attendance
-                </a>
-            </li>
-
-            <li>
-                <a href="/manager/projects">
-                    Team Projects
-                </a>
-            </li>
-
-            <li>
-                <a href="/manager/tasks">
-                    Team Tasks
-                </a>
-            </li>
-
-        </ul>
-
-    </div>
-
-
-    <!-- =====================================================
-         LOGOUT
-         ===================================================== -->
-
-    <form action="/logout" method="post">
-
-        <button type="submit">
-            Logout
-        </button>
-
-    </form>
-
-</div>
-
-</body>
-
-</html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Manager Dashboard | Employee Management System</title><link rel="stylesheet" th:href="@{/style.css}"></head>
+<body><div class="app-shell">
+<aside class="app-sidebar"><a class="app-brand" th:href="@{/manager-dashboard}" style="text-decoration:none">EMS <small>Employee Management System</small></a>
+<nav class="app-nav" aria-label="Manager navigation"><span class="nav-section">Workspace</span><a th:href="@{/manager-dashboard}" aria-current="page">⌂ &nbsp; Overview</a><a th:href="@{/manager/profile}">♙ &nbsp; My profile</a>
+<span class="nav-section">My account</span><a th:href="@{/manager/my-attendance}">◷ &nbsp; My attendance</a><a th:href="@{/manager/my-leaves}">▣ &nbsp; My leaves</a><a th:href="@{/manager/my-payroll}">₹ &nbsp; My payroll</a>
+<span class="nav-section">Workflows</span><a th:href="@{/manager/leaves}">▣ &nbsp; Leave requests</a><a th:href="@{/manager/attendance}">◷ &nbsp; Employee attendance</a><a th:href="@{/manager/projects}">▱ &nbsp; Projects</a><a th:href="@{/manager/tasks}">☷ &nbsp; Tasks</a></nav>
+<div class="app-sidebar-footer"><form th:action="@{/logout}" method="post"><button type="submit">↪ &nbsp; Log out</button></form></div></aside>
+<main class="app-main"><header class="app-topbar"><div><h1>Manager workspace</h1><p>Coordinate assigned work and review supported employee workflows.</p></div><div><span class="role-pill">Manager</span><p>Signed in as <strong sec:authentication="name">Manager</strong></p></div></header>
+<section class="dashboard-intro"><h2>Your work, in one place</h2><p>Manage only the employee, project, task, attendance, and leave actions permitted by your account. Project creation remains in the Admin workflow.</p></section>
+<section class="dashboard-grid" aria-label="Manager modules">
+<article class="dashboard-card"><span class="card-icon">◎</span><h3>My profile</h3><p>View your profile details.</p><a th:href="@{/manager/profile}">Open profile →</a></article>
+<article class="dashboard-card"><span class="card-icon">◷</span><h3>My attendance</h3><p>Review your attendance records.</p><a th:href="@{/manager/my-attendance}">View attendance →</a></article>
+<article class="dashboard-card"><span class="card-icon">▣</span><h3>Leave requests</h3><p>Review leave requests available to your role.</p><a th:href="@{/manager/leaves}">Review leaves →</a></article>
+<article class="dashboard-card"><span class="card-icon">◷</span><h3>Employee attendance</h3><p>Open the existing manager attendance workflow.</p><a th:href="@{/manager/attendance}">Review attendance →</a></article>
+<article class="dashboard-card"><span class="card-icon">▱</span><h3>Projects</h3><p>View and manage permitted project assignments.</p><a th:href="@{/manager/projects}">Open projects →</a></article>
+<article class="dashboard-card"><span class="card-icon">☷</span><h3>Tasks</h3><p>Manage task workflows available to managers.</p><a th:href="@{/manager/tasks}">Open tasks →</a></article>
+<article class="dashboard-card"><span class="card-icon">▣</span><h3>My leaves</h3><p>View your own leave records.</p><a th:href="@{/manager/my-leaves}">View my leaves →</a></article>
+<article class="dashboard-card"><span class="card-icon">₹</span><h3>My payroll</h3><p>Review your own payroll records.</p><a th:href="@{/manager/my-payroll}">View payroll →</a></article>
+</section><footer style="padding:24px 0 8px"><small>Employee Management System · Manager workspace</small></footer></main></div></body></html>

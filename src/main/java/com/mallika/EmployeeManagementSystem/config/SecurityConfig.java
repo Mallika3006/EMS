@@ -65,7 +65,7 @@ public class SecurityConfig {
                         .requestMatchers("/admin-dashboard")
                         .hasRole("ADMIN")
 
-                        .requestMatchers("/admin/employees/add")
+                        .requestMatchers("/admin/**")
                         .hasRole("ADMIN")
 
                         // HR and Manager dashboards

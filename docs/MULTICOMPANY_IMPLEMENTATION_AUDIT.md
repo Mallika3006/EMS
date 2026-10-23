@@ -12,7 +12,7 @@ Working branch: agent/multicompany-hardening
 - Project and task repositories now use company-scoped SQL reads/writes, avoiding the legacy unscoped project/task function signatures.
 - Task create/update validates project and assigned-employee tenant ownership; manager task lists are company-scoped and exclude inactive employees.
 - Managers can edit/delete only projects assigned to them, and assign their own projects to active direct reports through `POST /projects/{projectId}/members/{employeeId}`. The manager projects page now includes a member-assignment control backed by the existing `employee_project` table.
-- Leave and payroll repository operations validate employee/record ownership against the authenticated company and filter list results by employee company. Attendance repository operations use company-scoped employee joins and persist `company_id`.
+- Leave and payroll repositories call company-ID-bearing SQL overloads for reads and writes. Attendance repository operations use company-scoped employee joins and persist `company_id`.
 - The original `application.properties` contained database credentials, a JWT signing secret, and a default Spring Security user. This branch now expects environment variables instead. Rotate any credentials or signing secrets that were committed previously.
 
 ## Required relationship model
@@ -41,7 +41,8 @@ Working branch: agent/multicompany-hardening
 - [ ] Inventory every table, column, SQL function, and repository invocation completely.
 - [ ] Review all legacy SQL function behavior against the new migration and verify trigger/constraint behavior on a real database.
 - [ ] Review JWT user/company status validation, cookie flags, logout, expiration, and CSRF.
-- [ ] Add tenant-isolation and role-authorization tests.
+- [x] Add database-level tenant-isolation assertions for migration, project membership, and leave/payroll queries.
+- [ ] Add application-level role-authorization tests.
 - [x] Compile and package with Java 26 in GitHub Actions.
 - [x] Run the company migration, all updated SQL function scripts, and tenant-isolation assertions against a disposable PostgreSQL 18 fixture in GitHub Actions.
 - [ ] Run application-level tests and exercise all roles against the real EMS schema/data.
@@ -51,7 +52,7 @@ Working branch: agent/multicompany-hardening
 
 1. Back up the `employee_management_system` database before applying schema changes.
 2. Review `sql/multicompany_hardening.sql` against the actual live schema. Resolve duplicate usernames, orphan records, or cross-company relationships it reports before retrying.
-3. Run `sql/multicompany_hardening.sql` first. Then run `sql/department_company_functions.sql`, `sql/department_functions.sql` (company-aware designation overloads), `sql/task_functions.sql` (company-aware create function), and the updated `sql/attendance_functions.sql`, `sql/leave_functions.sql`, and `sql/payroll_functions.sql` definitions.
+3. Run `sql/multicompany_hardening.sql` first. Then run `sql/department_company_functions.sql`, `sql/department_functions.sql` (company-aware designation overloads), `sql/task_functions.sql` (company-aware create function), the updated `sql/attendance_functions.sql`, `sql/leave_functions.sql`, and `sql/payroll_functions.sql`, and finally `sql/tenant_scoped_leave_payroll_functions.sql` so leave/payroll repositories use company-ID-bearing overloads.
 4. Configure `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, and `JWT_SECRET` from `.env.example` in the environment used to start Spring Boot. Do not commit actual values.
 5. Run `mvn clean test` and exercise each role with two companies before deploying.
 
@@ -61,8 +62,8 @@ New-company onboarding is currently a database/bootstrap operation: create a row
 
 ## Verification status
 
-- **Maven package:** passed in GitHub Actions on Java 26. The workflow compiles production and test sources and packages the Spring Boot JAR; test execution is currently skipped.
-- **PostgreSQL migration/functions:** passed against a disposable PostgreSQL 18 fixture containing two companies. The workflow validates company-ID backfill, foreign-key creation, rejection of cross-company project membership, company-scoped leave/payroll query overloads, and successful creation of the department/designation/task/attendance/leave/payroll SQL functions.
+- **Maven verify:** passed in GitHub Actions on Java 26. Production and test sources compile and the Spring Boot artifact packages successfully; the repository currently has no executable application-level test methods.
+- **PostgreSQL migration/functions:** passed against a disposable PostgreSQL 18 fixture containing two companies and a manager/HR hierarchy. The workflow validates company-ID backfill, foreign-key creation, rejection of cross-company project membership, company-scoped leave/payroll query overloads, manager/HR list filtering, and successful creation of the department/designation/task/attendance/leave/payroll SQL functions.
 - **Not yet verified:** running the migration against the real EMS database, existing-data edge cases, application startup with the real schema, browser flows, and end-to-end role/tenant integration tests.
 
 The migration is intentionally tested against a representative fixture, not claimed safe for the live database until it is backed up and checked against its actual data.

@@ -1,99 +1,18 @@
 <!DOCTYPE html>
-
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-
-<head>
-    <title>Employee Dashboard - StaffSync</title>
-
-    <link rel="stylesheet" th:href="@{/style.css}">
-</head>
-
-<body>
-
-<div class="container">
-
-    <h1>Employee Dashboard</h1>
-
-    <p>
-        Welcome,
-        <strong sec:authentication="name"></strong>
-    </p>
-
-
-    <!-- =====================================================
-         MY PROFILE
-         ===================================================== -->
-
-    <div class="card">
-
-        <h3>My Profile</h3>
-
-        <a href="/my-profile">
-            View My Profile
-        </a>
-
-    </div>
-
-
-    <!-- =====================================================
-         MY WORK
-         ===================================================== -->
-
-    <div class="card">
-
-        <h3>My Work</h3>
-
-        <ul class="dashboard-links">
-
-            <li>
-                <a href="/my-attendance">
-                    My Attendance
-                </a>
-            </li>
-
-            <li>
-                <a href="/my-leaves">
-                    My Leaves
-                </a>
-            </li>
-
-            <li>
-                <a href="/my-payroll">
-                    My Payroll
-                </a>
-            </li>
-
-            <li>
-                <a href="/my-projects">
-                    My Projects
-                </a>
-            </li>
-
-            <li>
-                <a href="/my-tasks">
-                    My Tasks
-                </a>
-            </li>
-
-        </ul>
-
-    </div>
-
-
-    <!-- =====================================================
-         LOGOUT
-         ===================================================== -->
-
-    <form action="/logout" method="post">
-
-        <button type="submit">
-            Logout
-        </button>
-
-    </form>
-
-</div>
-
-</body>
-</html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Employee Dashboard | Employee Management System</title><link rel="stylesheet" th:href="@{/style.css}"></head>
+<body><div class="app-shell">
+<aside class="app-sidebar"><a class="app-brand" th:href="@{/employee-dashboard}" style="text-decoration:none">EMS <small>Employee Management System</small></a>
+<nav class="app-nav" aria-label="Employee navigation"><span class="nav-section">Workspace</span><a th:href="@{/employee-dashboard}" aria-current="page">⌂ &nbsp; Overview</a><a th:href="@{/my-profile}">♙ &nbsp; My profile</a><a th:href="@{/my-department}">▦ &nbsp; My department</a><span class="nav-section">My work</span><a th:href="@{/my-attendance}">◷ &nbsp; Attendance</a><a th:href="@{/my-leaves}">▣ &nbsp; Leaves</a><a th:href="@{/my-payroll}">₹ &nbsp; Payroll</a><a th:href="@{/my-projects}">▱ &nbsp; My projects</a><a th:href="@{/my-tasks}">☷ &nbsp; My tasks</a></nav>
+<div class="app-sidebar-footer"><form th:action="@{/logout}" method="post"><button type="submit">↪ &nbsp; Log out</button></form></div></aside>
+<main class="app-main"><header class="app-topbar"><div><h1>My dashboard</h1><p>Your employee self-service workspace.</p></div><div><span class="role-pill">Employee</span><p>Welcome, <strong sec:authentication="name">Employee</strong></p></div></header>
+<section class="dashboard-intro"><h2>Welcome back</h2><p>Quick access to your profile, attendance, leave history, payroll, and assigned work. Your records are loaded through the existing secure EMS backend.</p></section>
+<section class="dashboard-grid" aria-label="Employee self-service">
+<article class="dashboard-card"><span class="card-icon">◎</span><h3>My profile</h3><p>View your personal and employment details.</p><a th:href="@{/my-profile}">View profile →</a></article>
+<article class="dashboard-card"><span class="card-icon">▦</span><h3>My department</h3><p>Review your department information.</p><a th:href="@{/my-department}">View department →</a></article>
+<article class="dashboard-card"><span class="card-icon">◷</span><h3>Attendance</h3><p>Check your attendance records.</p><a th:href="@{/my-attendance}">View attendance →</a></article>
+<article class="dashboard-card"><span class="card-icon">▣</span><h3>Leave requests</h3><p>Apply for leave and review your records where supported.</p><a th:href="@{/my-leaves}">Manage my leaves →</a></article>
+<article class="dashboard-card"><span class="card-icon">₹</span><h3>Payroll</h3><p>Review payroll information available to your account.</p><a th:href="@{/my-payroll}">View payroll →</a></article>
+<article class="dashboard-card"><span class="card-icon">▱</span><h3>My projects</h3><p>See projects assigned to you.</p><a th:href="@{/my-projects}">View projects →</a></article>
+<article class="dashboard-card"><span class="card-icon">☷</span><h3>My tasks</h3><p>Review your assigned tasks.</p><a th:href="@{/my-tasks}">View tasks →</a></article>
+</section><footer style="padding:24px 0 8px"><small>Employee Management System · Employee workspace</small></footer></main></div></body></html>

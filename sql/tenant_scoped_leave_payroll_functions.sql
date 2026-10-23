@@ -245,10 +245,11 @@ RETURNS TABLE (
 )
 LANGUAGE sql STABLE
 AS $$
-    SELECT l.leave_id, l.from_date, l.to_date, l.reason, l.status,
+    SELECT l.leave_id, l.from_date, l.to_date,
+           l.reason::VARCHAR, l.status::VARCHAR,
            l.employee_id, l.company_id,
-           e.first_name AS employee_first_name,
-           e.last_name AS employee_last_name
+           e.first_name::VARCHAR AS employee_first_name,
+           e.last_name::VARCHAR AS employee_last_name
     FROM public.leaves l
     JOIN public.employees e ON e.employee_id = l.employee_id
     JOIN public.users u

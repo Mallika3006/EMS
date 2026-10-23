@@ -255,7 +255,7 @@ ALTER TABLE public.payroll DROP CONSTRAINT IF EXISTS fk_payroll_employee_company
 ALTER TABLE public.employee_project DROP CONSTRAINT IF EXISTS fk_employee_project_employee_company;
 ALTER TABLE public.employee_project DROP CONSTRAINT IF EXISTS fk_employee_project_project_company;
 
-DO $
+DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_employees_company') THEN
         ALTER TABLE public.employees ADD CONSTRAINT fk_employees_company

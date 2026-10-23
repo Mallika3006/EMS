@@ -51,6 +51,10 @@
     const passwordToggle = document.getElementById("passwordToggle");
     const registrationNotice = document.getElementById("registration-notice");
 
+    if (new URLSearchParams(window.location.search).has("expired")) {
+        errorMessage.textContent = "Your session has expired or you are signed out. Please sign in again.";
+    }
+
     if (new URLSearchParams(window.location.search).has("registered")) {
         registrationNotice.textContent = "Company registered successfully. Sign in with your new Admin account.";
     }

@@ -394,7 +394,7 @@ public class LeaveRepository {
             );
         }
 
-        return leaves;
+        return filterByCompany(leaves);
     }
 
 
@@ -431,7 +431,7 @@ public class LeaveRepository {
             );
         }
 
-        return leaves;
+        return filterByCompany(leaves);
     }
 
 
@@ -471,7 +471,7 @@ public class LeaveRepository {
             );
         }
 
-        return leaves;
+        return filterByCompany(leaves);
     }
 
 
@@ -511,7 +511,7 @@ public class LeaveRepository {
             );
         }
 
-        return leaves;
+        return filterByCompany(leaves);
     }
 
 
@@ -551,7 +551,7 @@ public class LeaveRepository {
             );
         }
 
-        return leaves;
+        return filterByCompany(leaves);
     }
 
 
@@ -597,7 +597,7 @@ public class LeaveRepository {
             );
         }
 
-        return leaves;
+        return filterByCompany(leaves);
     }
 
     // =========================================================
@@ -731,7 +731,7 @@ public class LeaveRepository {
             throw new RuntimeException("Error fetching manager leave requests", e);
         }
 
-        return leaves;
+        return filterByCompany(leaves);
     }
 
     // =========================================================
@@ -761,7 +761,7 @@ public class LeaveRepository {
             throw new RuntimeException("Error fetching HR employee leaves", e);
         }
 
-        return leaves;
+        return filterByCompany(leaves);
     }
 
 

@@ -165,9 +165,13 @@ public class LeaveRepository {
                          statement.executeQuery()) {
 
                 if (resultSet.next()) {
-                    return Optional.of(
-                            mapLeave(resultSet)
-                    );
+                    Leave leave = mapLeave(resultSet);
+                    Integer employeeId = leave.getEmployee() == null
+                            ? null : leave.getEmployee().getEmployeeId();
+                    if (employeeId != null
+                            && isEmployeeInCompany(employeeId, companyContext.getCompanyId())) {
+                        return Optional.of(leave);
+                    }
                 }
             }
 

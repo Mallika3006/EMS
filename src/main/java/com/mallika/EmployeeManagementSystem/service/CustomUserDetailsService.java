@@ -59,7 +59,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 org.springframework.security.core.userdetails.User
                         .withUsername(user.getUsername())
                         .password(user.getPassword())
-                        .roles(role.getRoleName())
+                        .roles(role.getRoleName().toUpperCase(java.util.Locale.ROOT))
                         .disabled(!Boolean.TRUE.equals(user.getIsActive()))
                         .build();
 

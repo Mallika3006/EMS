@@ -88,7 +88,8 @@ public class DepartmentService {
 
         // Never trust company ID supplied in the request body.
         department.setCompanyId(companyId);
-        department.setDepartmentName(department.getDepartmentName().trim());
+        department.setDepartmentName(department.getDepartmentName() == null
+                ? null : department.getDepartmentName().trim());
         validateDepartmentName(department.getDepartmentName(), null, companyId);
 
         return departmentRepository.createDepartment(

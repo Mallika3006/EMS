@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#172554">
+    <title>Register your company | Employee Management System</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+    <link rel="stylesheet" th:href="@{/company-registration.css}">
+</head>
+<body>
+<div class="login-page">
+    <section class="login-intro" aria-label="Employee Management System">
+        <div class="login-brand">EMS <span aria-hidden="true">/</span> Employee Management System</div>
+        <div>
+            <h1>Bring your people operations together.</h1>
+            <p>Create your company's private workspace and start managing your organization with EMS.</p>
+        </div>
+        <p><small>Each company has its own isolated workspace.</small></p>
+    </section>
+    <main class="login-panel">
+        <section class="login-container registration-container" aria-labelledby="register-heading">
+            <a class="registration-back" th:href="@{/login}">← Back to sign in</a>
+            <h2 id="register-heading">Register your company</h2>
+            <p class="subtitle">Set up your company and create its first Admin account.</p>
+            <p id="registration-message" class="error-message" role="alert" aria-live="polite"></p>
+
+            <form id="registrationForm" novalidate>
+                <label for="companyName">Company name</label>
+                <input id="companyName" name="companyName" type="text" maxlength="200"
+                       autocomplete="organization" placeholder="e.g. Acme Technologies" required>
+
+                <label for="adminUsername">Admin username</label>
+                <input id="adminUsername" name="adminUsername" type="text" minlength="3" maxlength="50"
+                       pattern="[A-Za-z0-9._-]+" autocomplete="username"
+                       placeholder="Choose a username" required>
+
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password" minlength="10" maxlength="72"
+                       autocomplete="new-password" placeholder="At least 10 characters" required>
+
+                <label for="confirmPassword">Confirm password</label>
+                <input id="confirmPassword" name="confirmPassword" type="password" minlength="10" maxlength="72"
+                       autocomplete="new-password" placeholder="Re-enter your password" required>
+
+                <button id="registerButton" type="submit">Create company account</button>
+            </form>
+            <p class="registration-note">Registration creates a new company and its first Admin account. It cannot add an account to an existing company.</p>
+        </section>
+    </main>
+</div>
+<script>
+(() => {
+    const form = document.getElementById("registrationForm");
+    const message = document.getElementById("registration-message");
+    const button = document.getElementById("registerButton");
+    const password = document.getElementById("password");
+    const confirmPassword = document.getElementById("confirmPassword");
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        message.textContent = "";
+        message.className = "error-message";
+
+        if (!form.reportValidity()) return;
+        if (password.value !== confirmPassword.value) {
+            message.textContent = "Passwords do not match.";
+            confirmPassword.focus();
+            return;
+        }
+
+        button.disabled = true;
+        button.textContent = "Creating account…";
+        try {
+            const body = new URLSearchParams(new FormData(form));
+            const response = await fetch("/register-company", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                    "Accept": "application/json"
+                },
+                body
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || "Registration failed. Please try again.");
+
+            message.className = "success-message";
+            message.textContent = result.message;
+            form.reset();
+            window.setTimeout(() => window.location.assign(result.redirect || "/login?registered"), 900);
+        } catch (error) {
+            message.textContent = error instanceof Error
+                ? error.message
+                : "Registration failed. Please try again.";
+        } finally {
+            button.disabled = false;
+            button.textContent = "Create company account";
+        }
+    });
+})();
+</script>
+</body>
+</html>

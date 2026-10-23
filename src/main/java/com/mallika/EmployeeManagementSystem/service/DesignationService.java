@@ -51,12 +51,40 @@ public class DesignationService {
         return user.getCompanyId();
     }
 
+    private void validateDesignation(
+            Designation designation, Integer currentId, Long companyId) {
+        if (designation == null || designation.getDesignationTitle() == null
+                || designation.getDesignationTitle().trim().isEmpty()) {
+            throw new IllegalArgumentException("Designation title is required.");
+        }
+        String title = designation.getDesignationTitle().trim();
+        designation.setDesignationTitle(title);
+        if (designation.getMinSalary() != null && designation.getMinSalary().signum() < 0) {
+            throw new IllegalArgumentException("Minimum salary cannot be negative.");
+        }
+        if (designation.getMaxSalary() != null && designation.getMaxSalary().signum() < 0) {
+            throw new IllegalArgumentException("Maximum salary cannot be negative.");
+        }
+        if (designation.getMinSalary() != null && designation.getMaxSalary() != null
+                && designation.getMinSalary().compareTo(designation.getMaxSalary()) > 0) {
+            throw new IllegalArgumentException("Minimum salary cannot exceed maximum salary.");
+        }
+        designationRepository.getDesignationByTitle(title, companyId)
+                .filter(existing -> currentId == null
+                        || !existing.getDesignationId().equals(currentId))
+                .ifPresent(existing -> {
+                    throw new IllegalArgumentException(
+                            "A designation with this title already exists in your company.");
+                });
+    }
+
     // CREATE
     public Designation createDesignation(Designation designation) {
 
         Long companyId = getCurrentCompanyId();
 
-        // Never trust company ID from the request body
+        // Never trust company ID from the request body.
+        validateDesignation(designation, null, companyId);
         designation.setCompanyId(companyId);
 
         return designationRepository.createDesignation(
@@ -88,8 +116,9 @@ public class DesignationService {
 
         Long companyId = getCurrentCompanyId();
 
-        // Ensure the designation belongs to this company
+        // Ensure the designation belongs to this company and validate the new values.
         getDesignationById(id);
+        validateDesignation(designationDetails, id, companyId);
 
         designationDetails.setCompanyId(companyId);
 
@@ -102,8 +131,14 @@ public class DesignationService {
 
         Long companyId = getCurrentCompanyId();
 
-        // Ensure the designation belongs to this company
+        // Ensure the designation belongs to this company.
         getDesignationById(id);
+        int assignedEmployees = designationRepository.countEmployeesByDesignation(id, companyId);
+        if (assignedEmployees > 0) {
+            throw new IllegalArgumentException(
+                    "Cannot delete this designation because it is assigned to "
+                            + assignedEmployees + " employee(s). Reassign those employees first.");
+        }
 
         designationRepository.deleteDesignation(id, companyId);
     }

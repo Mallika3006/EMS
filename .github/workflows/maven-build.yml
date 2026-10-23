@@ -71,3 +71,4 @@ jobs:
           psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/leave_functions.sql
           psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/payroll_functions.sql
           psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/tenant_scoped_leave_payroll_functions.sql
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/tests/tenant_function_assertions.sql

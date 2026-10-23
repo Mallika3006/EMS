@@ -46,7 +46,7 @@ public class AttendanceRepository {
                e.first_name AS employee_first_name,
                e.last_name AS employee_last_name
         FROM attendance a
-        JOIN employees e ON e.employee_id = a.employee_id
+        JOIN employees e ON e.employee_id = a.employee_id AND a.company_id = e.company_id
         WHERE e.company_id = ?
         """;
 
@@ -71,6 +71,12 @@ public class AttendanceRepository {
             WHERE e.employee_id = ?
               AND e.company_id = ?
               AND u.is_active = TRUE
+              AND NOT EXISTS (
+                  SELECT 1 FROM attendance existing
+                  WHERE existing.employee_id = e.employee_id
+                    AND existing.att_date = ?
+                    AND existing.company_id = e.company_id
+              )
             RETURNING attendance_id
             """;
 
@@ -80,11 +86,12 @@ public class AttendanceRepository {
             setAttendanceFields(ps, attendance, 1);
             ps.setInt(5, employeeId);
             ps.setLong(6, companyId());
+            ps.setDate(7, Date.valueOf(attendance.getAttDate()));
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
                     throw new IllegalArgumentException(
-                            "Employee is inactive or does not belong to your company");
+                            "An attendance record may already exist for this employee and date, or the employee is inactive/outside your company");
                 }
 
                 int attendanceId = rs.getInt("attendance_id");

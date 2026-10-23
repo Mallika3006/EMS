@@ -171,7 +171,32 @@ BEGIN
         ALTER TABLE public.employee_project ADD CONSTRAINT fk_employee_project_company
             FOREIGN KEY (company_id) REFERENCES public.companies(company_id) ON DELETE RESTRICT;
     END IF;
-END $$;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_attendance_employee_company') THEN
+        ALTER TABLE public.attendance ADD CONSTRAINT fk_attendance_employee_company
+            FOREIGN KEY (employee_id, company_id)
+            REFERENCES public.employees(employee_id, company_id) ON DELETE RESTRICT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_leaves_employee_company') THEN
+        ALTER TABLE public.leaves ADD CONSTRAINT fk_leaves_employee_company
+            FOREIGN KEY (employee_id, company_id)
+            REFERENCES public.employees(employee_id, company_id) ON DELETE RESTRICT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_payroll_employee_company') THEN
+        ALTER TABLE public.payroll ADD CONSTRAINT fk_payroll_employee_company
+            FOREIGN KEY (employee_id, company_id)
+            REFERENCES public.employees(employee_id, company_id) ON DELETE RESTRICT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_employee_project_employee_company') THEN
+        ALTER TABLE public.employee_project ADD CONSTRAINT fk_employee_project_employee_company
+            FOREIGN KEY (employee_id, company_id)
+            REFERENCES public.employees(employee_id, company_id) ON DELETE RESTRICT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_employee_project_project_company') THEN
+        ALTER TABLE public.employee_project ADD CONSTRAINT fk_employee_project_project_company
+            FOREIGN KEY (project_id, company_id)
+            REFERENCES public.projects(project_id, company_id) ON DELETE RESTRICT;
+    END IF;
+END $;
 
 -- Keep the identity sequence above all preserved company IDs.
 SELECT setval(

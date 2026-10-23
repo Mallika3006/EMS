@@ -9,7 +9,7 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
 
-    <title>Team Tasks</title>
+    <title>Task Management | Employee Management System</title>
 
     <link rel="stylesheet" href="/style.css">
 
@@ -20,11 +20,11 @@
 <div class="container">
 
     <h1 id="pageTitle">
-        Team Tasks
+        Task Management
     </h1>
 
     <p>
-        Create and track tasks assigned to your team.
+        Create and track tasks assigned to employees within your permitted scope.
     </p>
 
 
@@ -222,7 +222,7 @@
     <div class="card">
 
         <h2 id="taskSectionTitle">
-            Team Tasks
+            Task Management
         </h2>
 
 
@@ -882,7 +882,7 @@
              * If projectId is present,
              * load only that project's tasks.
              *
-             * Otherwise load all team tasks.
+             * Otherwise load all tasks.
              */
 
             if (selectedProjectId) {
@@ -913,7 +913,7 @@
 
             /*
              * Load project filter only
-             * for Team Tasks page.
+             * for Task Management page.
              */
 
             populateProjectFilter();
@@ -1016,7 +1016,7 @@
 
 
                 /*
-                 * Team Tasks filter shows
+                 * Task Management filter shows
                  * ONLY project name.
                  */
 
@@ -1125,7 +1125,7 @@
 
         /*
          * Project filter is used only
-         * on the main Team Tasks page.
+         * on the main Task Management page.
          */
 
         let projectFilter = "";
@@ -1246,7 +1246,7 @@
 
         /*
          * Clear Project filter only
-         * on Team Tasks page.
+         * on Task Management page.
          */
 
         if (!selectedProjectId) {

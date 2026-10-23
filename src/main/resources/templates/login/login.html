@@ -1,130 +1,115 @@
 <!DOCTYPE html>
-
-<html xmlns:th="http://www.thymeleaf.org">
-
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>User Login</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#172554">
+    <title>Sign in | Employee Management System</title>
     <link rel="stylesheet" th:href="@{/style.css}">
 </head>
-
 <body>
-
-<div class="login-container">
-
-    <h2>User Login</h2>
-
-    <p id="error-message" style="color: red;"></p>
-
-    <form id="loginForm">
-
+<div class="login-page">
+    <section class="login-intro" aria-label="Employee Management System">
         <div>
-            <label for="username">Username:</label>
-            <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    required>
+            <div class="login-brand">EMS <span aria-hidden="true">/</span> Employee Management System</div>
         </div>
-
-        <br>
-
         <div>
-            <label for="password">Password:</label>
-            <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    required>
+            <h1>People operations, made simpler.</h1>
+            <p>A single place to manage employee information and the everyday work that keeps your organization moving.</p>
         </div>
-
-        <br>
-
-        <button type="submit">Login</button>
-
-    </form>
-
+        <p><small>Secure access for your organization</small></p>
+    </section>
+    <main class="login-panel">
+        <section class="login-container" aria-labelledby="login-heading">
+            <h2 id="login-heading">Welcome back</h2>
+            <p class="subtitle">Sign in with your assigned account to continue.</p>
+            <p id="error-message" class="error-message" role="alert" aria-live="polite"></p>
+            <form id="loginForm" novalidate>
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" autocomplete="username"
+                       placeholder="Enter your username" required autofocus>
+                <label for="password">Password</label>
+                <div class="password-wrap">
+                    <input type="password" id="password" name="password" autocomplete="current-password"
+                           placeholder="Enter your password" required>
+                    <button class="password-toggle" id="passwordToggle" type="button"
+                            aria-controls="password" aria-pressed="false">Show</button>
+                </div>
+                <button id="loginButton" type="submit">Sign in</button>
+            </form>
+            <p style="font-size:.82rem; margin:20px 0 0;">If you cannot sign in, contact your organization administrator.</p>
+        </section>
+    </main>
 </div>
-
 <script>
+(() => {
+    const form = document.getElementById("loginForm");
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+    const errorMessage = document.getElementById("error-message");
+    const loginButton = document.getElementById("loginButton");
+    const passwordToggle = document.getElementById("passwordToggle");
 
-    document.getElementById("loginForm").addEventListener("submit", async function (event) {
+    passwordToggle.addEventListener("click", () => {
+        const reveal = passwordInput.type === "password";
+        passwordInput.type = reveal ? "text" : "password";
+        passwordToggle.textContent = reveal ? "Hide" : "Show";
+        passwordToggle.setAttribute("aria-pressed", String(reveal));
+    });
 
+    form.addEventListener("submit", async (event) => {
         event.preventDefault();
-
-        const username =
-            document.getElementById("username").value;
-
-        const password =
-            document.getElementById("password").value;
-
-        const errorMessage =
-            document.getElementById("error-message");
-
         errorMessage.textContent = "";
+        if (!usernameInput.value.trim() || !passwordInput.value) {
+            errorMessage.textContent = "Enter both your username and password.";
+            (!usernameInput.value.trim() ? usernameInput : passwordInput).focus();
+            return;
+        }
 
+        loginButton.disabled = true;
+        loginButton.textContent = "Signing in…";
         try {
-
             const response = await fetch("/login", {
-
                 method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
+                credentials: "same-origin",
+                headers: { "Content-Type": "application/json", "Accept": "application/json" },
                 body: JSON.stringify({
-                    username: username,
-                    password: password
+                    username: usernameInput.value.trim(),
+                    password: passwordInput.value
                 })
-
             });
 
             if (!response.ok) {
-                throw new Error("Invalid username or password");
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error("The username or password is incorrect, or this account cannot sign in.");
+                }
+                throw new Error("Sign-in is temporarily unavailable. Please try again.");
             }
 
             const data = await response.json();
-
-            // Store role
-            localStorage.setItem("role", data.role);
-
-            // Redirect according to role
-            if (data.role === "ROLE_ADMIN") {
-
-                window.location.href = "/admin-dashboard";
-
-            } else if (data.role === "ROLE_HR") {
-
-                window.location.href = "/hr-dashboard";
-
-            } else if (data.role === "ROLE_MANAGER") {
-
-                window.location.href = "/manager-dashboard";
-
-            } else if (data.role === "ROLE_EMPLOYEE") {
-
-                window.location.href = "/employee-dashboard";
-
-            } else {
-
-                errorMessage.textContent =
-                    "Invalid user role.";
-
+            const destinations = {
+                "ROLE_ADMIN": "/admin-dashboard",
+                "ROLE_HR": "/hr-dashboard",
+                "ROLE_MANAGER": "/manager-dashboard",
+                "ROLE_EMPLOYEE": "/employee-dashboard"
+            };
+            const destination = destinations[data.role];
+            if (!destination) {
+                throw new Error("Your account role could not be recognized. Contact your administrator.");
             }
 
+            // Authentication remains in the server-issued HttpOnly cookie. Only the UI role is retained.
+            localStorage.setItem("role", data.role);
+            window.location.assign(destination);
         } catch (error) {
-
-            errorMessage.textContent =
-                "Invalid username or password.";
-
+            errorMessage.textContent = error instanceof Error
+                ? error.message
+                : "Sign-in failed. Please try again.";
+            loginButton.disabled = false;
+            loginButton.textContent = "Sign in";
         }
-
     });
-
+})();
 </script>
-
 </body>
-
 </html>

@@ -165,7 +165,7 @@ LANGUAGE sql STABLE
 AS $$
     SELECT l.* FROM public.leaves l
     WHERE l.company_id = p_company_id
-      AND l.from_date >= p_start_date AND l.to_date <= p_end_date
+      AND l.from_date <= p_end_date AND l.to_date >= p_start_date
     ORDER BY l.from_date, l.leave_id;
 $$;
 

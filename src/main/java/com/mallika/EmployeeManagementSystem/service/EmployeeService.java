@@ -121,7 +121,7 @@ public class EmployeeService {
         Employee existing = getEmployeeById(id);
         if (blank(details.getFirstName()) || blank(details.getLastName())
                 || blank(details.getEmail())
-                || !details.getEmail().matches("^[^\\\\s@]+@[^\\\\s@]+\\\\.[^\\\\s@]+$")) {
+                || !details.getEmail().matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
             throw new IllegalArgumentException(
                     "First name, last name and a valid email are required");
         }

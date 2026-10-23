@@ -60,7 +60,7 @@ Working branch: agent/multicompany-hardening
 
 The migration intentionally stops rather than silently assigning company IDs to orphan attendance/leave/payroll rows, accepting cross-company relationships, or allowing duplicate usernames (the JWT subject is username-only). It creates no team-related tables.
 
-New-company onboarding is currently a database/bootstrap operation: create a row in `companies`, then provision the first Admin user with that company ID through a trusted administrative process. Do not accept a company ID from a public login or employee-create request.
+Public company onboarding is implemented at `/register-company`: it creates a new `companies` row and the first active Admin account in one database transaction, assigns the generated company ID on the server, and hashes the password with BCrypt. It does not accept a company ID from the browser and does not allow registration into an existing company. Apply `sql/multicompany_hardening.sql` before using registration; that migration also advances the companies identity sequence after explicit legacy-ID backfills.
 
 ## Verification status
 

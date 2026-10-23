@@ -86,6 +86,38 @@ class CookieOriginValidationFilterTest {
         assertNotNull(chain.getRequest());
     }
 
+    @Test
+    void rejectsCrossOriginLoginRequestEvenWithoutJwtCookie() throws ServletException, IOException {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setMethod("POST");
+        request.setServletPath("/login");
+        request.addHeader("Origin", "https://attacker.example");
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
+
+        filter.doFilter(request, response, chain);
+
+        assertEquals(403, response.getStatus());
+        assertNull(chain.getRequest());
+    }
+
+    @Test
+    void allowsSameOriginLoginRequestWithoutJwtCookie() throws ServletException, IOException {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setMethod("POST");
+        request.setServletPath("/login");
+        request.addHeader("Origin", "http://localhost:8080");
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
+
+        filter.doFilter(request, response, chain);
+
+        assertEquals(200, response.getStatus());
+        assertNotNull(chain.getRequest());
+    }
+
     private MockHttpServletRequest requestWithJwtCookie() {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setCookies(new Cookie("jwt", "test-jwt"));

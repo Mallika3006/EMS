@@ -24,6 +24,9 @@ public class ProjectRepository {
     }
 
     public Project createProject(Project project, Long companyId) {
+        if (project.getManagerId() != null) {
+            validateEmployeeCompany(project.getManagerId(), companyId);
+        }
         String sql = """
             INSERT INTO public.projects
                 (project_name, start_date, end_date, manager_id, company_id)
@@ -115,6 +118,23 @@ public class ProjectRepository {
               AND e.company_id = ?
             ORDER BY p.project_id
             """, ps -> { ps.setInt(1, employeeId); ps.setLong(2, companyId); ps.setLong(3, companyId); });
+    }
+
+    private void validateEmployeeCompany(Integer employeeId, Long companyId) {
+        String sql = "SELECT 1 FROM public.employees WHERE employee_id = ? AND company_id = ?";
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, employeeId);
+            ps.setLong(2, companyId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    throw new IllegalArgumentException(
+                            "Project manager does not belong to this company");
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not validate project manager company", e);
+        }
     }
 
     private List<Project> queryProjects(String sql, Binder binder) {

@@ -196,6 +196,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.get_manager_leave_requests(INTEGER, BIGINT);
 CREATE OR REPLACE FUNCTION public.get_manager_leave_requests(
     p_manager_id INTEGER, p_company_id BIGINT
 )
@@ -229,6 +230,7 @@ AS $$
     ORDER BY l.leave_id DESC;
 $$;
 
+DROP FUNCTION IF EXISTS public.get_leaves_by_hr(INTEGER, BIGINT);
 CREATE OR REPLACE FUNCTION public.get_leaves_by_hr(
     p_hr_id INTEGER, p_company_id BIGINT
 )

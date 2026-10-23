@@ -200,6 +200,23 @@ public class DesignationRepository {
         }
     }
 
+    /**
+     * Counts employees assigned to a designation within the current company.
+     */
+    public int countEmployeesByDesignation(Integer designationId, Long companyId) {
+        String sql = "SELECT COUNT(*) FROM public.employees WHERE designation_id = ? AND company_id = ?";
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, designationId);
+            statement.setLong(2, companyId);
+            try (ResultSet rs = statement.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error checking employees assigned to designation", e);
+        }
+    }
+
     // MAPPER
     private Designation mapDesignation(
             ResultSet rs, Long companyId) throws SQLException {

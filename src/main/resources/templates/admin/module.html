@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin | Employee Management System</title><link rel="stylesheet" th:href="@{/style.css}"></head>
-<body th:attr="data-module=\${module}">
+<body th:attr="data-module=${module}">
 <div class="app-shell">
 <aside class="app-sidebar"><a class="app-brand" th:href="@{/admin-dashboard}" style="text-decoration:none">EMS<small>Employee Management System</small></a>
 <nav class="app-nav" aria-label="Admin navigation"><span class="nav-section">Workspace</span><a th:href="@{/admin-dashboard}">⌂ &nbsp; Overview</a><a th:href="@{/admin/employees}">♙ &nbsp; Employees</a><a th:href="@{/admin/users}">♧ &nbsp; User accounts</a><span class="nav-section">Organization</span><a th:href="@{/admin/departments}">▦ &nbsp; Departments</a><a th:href="@{/admin/designations}">▤ &nbsp; Designations</a><span class="nav-section">Operations</span><a th:href="@{/admin/attendance}">◷ &nbsp; Attendance</a><a th:href="@{/admin/leaves}">▣ &nbsp; Leaves</a><a th:href="@{/admin/payroll}">₹ &nbsp; Payroll</a><a th:href="@{/admin/projects}">▱ &nbsp; Projects</a><a th:href="@{/admin/tasks}">☷ &nbsp; Tasks</a></nav>

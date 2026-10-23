@@ -31,7 +31,7 @@ public class UserService {
             throw new IllegalArgumentException("Password must contain at least 8 characters");
         user.setUsername(user.getUsername().trim());
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setIsActive(user.getIsActive() == null || user.getIsActive());
+        user.setIsActive(user.getIsActive() == null ? true : user.getIsActive());
         return userRepository.createUser(user);
     }
 

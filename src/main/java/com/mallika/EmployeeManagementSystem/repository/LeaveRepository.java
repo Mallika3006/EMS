@@ -2,6 +2,7 @@ package com.mallika.EmployeeManagementSystem.repository;
 
 import com.mallika.EmployeeManagementSystem.model.Employee;
 import com.mallika.EmployeeManagementSystem.model.Leave;
+import com.mallika.EmployeeManagementSystem.service.CompanyContext;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -18,9 +19,11 @@ import java.util.Optional;
 public class LeaveRepository {
 
     private final DataSource dataSource;
+    private final CompanyContext companyContext;
 
-    public LeaveRepository(DataSource dataSource) {
+    public LeaveRepository(DataSource dataSource, CompanyContext companyContext) {
         this.dataSource = dataSource;
+        this.companyContext = companyContext;
     }
 
     // =========================================================
@@ -28,6 +31,9 @@ public class LeaveRepository {
     // =========================================================
 
     public Leave createLeave(Leave leave) {
+        Integer employeeId = leave.getEmployee() == null
+                ? null : leave.getEmployee().getEmployeeId();
+        validateEmployeeInCompany(employeeId);
 
         String sql =
                 "SELECT * FROM create_leave(?, ?, ?, ?, ?)";
@@ -136,7 +142,7 @@ public class LeaveRepository {
             );
         }
 
-        return leaves;
+        return filterByCompany(leaves);
     }
 
 
@@ -183,6 +189,10 @@ public class LeaveRepository {
     public Leave updateLeave(
             Integer id,
             Leave leaveDetails) {
+        ensureLeaveInCompany(id);
+        Integer employeeId = leaveDetails.getEmployee() == null
+                ? null : leaveDetails.getEmployee().getEmployeeId();
+        if (employeeId != null) validateEmployeeInCompany(employeeId);
 
         String sql =
                 "SELECT * FROM update_leave(?, ?, ?, ?, ?, ?)";
@@ -276,6 +286,7 @@ public class LeaveRepository {
 // =========================================================
 
     public Leave withdrawLeave(Integer id) {
+        ensureLeaveInCompany(id);
 
         String sql =
                 "SELECT * FROM withdraw_leave(?)";
@@ -316,6 +327,7 @@ public class LeaveRepository {
     // =========================================================
 
     public boolean deleteLeave(Integer id) {
+        ensureLeaveInCompany(id);
 
         String sql =
                 "SELECT delete_leave(?)";
@@ -592,6 +604,8 @@ public class LeaveRepository {
             Integer leaveId,
             Integer managerId,
             String status) {
+        ensureLeaveInCompany(leaveId);
+        validateEmployeeInCompany(managerId);
 
         String sql =
                 "SELECT * FROM update_manager_leave_status(?, ?, ?)";
@@ -687,6 +701,7 @@ public class LeaveRepository {
     }
 
     public List<Leave> getManagerLeaveRequests(Integer managerId) {
+        validateEmployeeInCompany(managerId);
 
         List<Leave> leaves = new ArrayList<>();
 
@@ -715,6 +730,7 @@ public class LeaveRepository {
 // =========================================================
 
     public List<Leave> getLeavesByHr(Integer hrId) {
+        validateEmployeeInCompany(hrId);
 
         List<Leave> leaves = new ArrayList<>();
 
@@ -745,6 +761,8 @@ public class LeaveRepository {
 // =========================================================
 
     public boolean deleteLeaveByHr(Integer leaveId, Integer hrId) {
+        ensureLeaveInCompany(leaveId);
+        validateEmployeeInCompany(hrId);
 
         String sql = "SELECT delete_leave_by_hr(?, ?)";
 
@@ -776,6 +794,8 @@ public class LeaveRepository {
             Integer leaveId,
             Integer hrId,
             String status) {
+        ensureLeaveInCompany(leaveId);
+        validateEmployeeInCompany(hrId);
 
         String sql =
                 "SELECT * FROM update_hr_leave_status(?, ?, ?)";
@@ -808,4 +828,63 @@ public class LeaveRepository {
                         "or not assigned to this HR"
         );
     }
+
+    // Defense-in-depth while legacy leave functions are being retired:
+    // rows are owned by an employee, so tenancy is derived from employees.company_id.
+    private List<Leave> filterByCompany(List<Leave> leaves) {
+        Long companyId = companyContext.getCompanyId();
+        List<Leave> scoped = new ArrayList<>();
+        for (Leave leave : leaves) {
+            Integer employeeId = leave.getEmployee() == null
+                    ? null : leave.getEmployee().getEmployeeId();
+            if (employeeId != null && isEmployeeInCompany(employeeId, companyId)) {
+                scoped.add(leave);
+            }
+        }
+        return scoped;
+    }
+
+    private void ensureLeaveInCompany(Integer leaveId) {
+        String sql = """
+            SELECT 1
+            FROM public.leaves l
+            JOIN public.employees e ON e.employee_id = l.employee_id
+            WHERE l.leave_id = ? AND e.company_id = ?
+            """;
+        try (Connection con = dataSource.getConnection();
+             java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, leaveId);
+            ps.setLong(2, companyContext.getCompanyId());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    throw new org.springframework.security.access.AccessDeniedException(
+                            "Leave does not belong to your company");
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not validate leave company", e);
+        }
+    }
+
+    private void validateEmployeeInCompany(Integer employeeId) {
+        if (employeeId == null || !isEmployeeInCompany(employeeId, companyContext.getCompanyId())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Employee does not belong to your company");
+        }
+    }
+
+    private boolean isEmployeeInCompany(Integer employeeId, Long companyId) {
+        String sql = "SELECT 1 FROM public.employees WHERE employee_id = ? AND company_id = ?";
+        try (Connection con = dataSource.getConnection();
+             java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, employeeId);
+            ps.setLong(2, companyId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not validate employee company", e);
+        }
+    }
+
 }

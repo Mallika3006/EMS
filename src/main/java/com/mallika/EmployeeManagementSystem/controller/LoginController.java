@@ -33,6 +33,12 @@ public class LoginController {
         this.jwtService = jwtService;
     }
 
+    // Public entry points for the shared sign-in page.
+    @GetMapping({"/", "/login"})
+    public String loginPage() {
+        return "login/login";
+    }
+
     // ==========================================
     // ADMIN LOGIN PAGE
     // ==========================================

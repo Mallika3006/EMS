@@ -67,10 +67,10 @@
             const projects = await response.json();
 
             const reportsResponse = await fetch("/employees/manager/my-team");
-            if (!teamResponse.ok) {
+            if (!reportsResponse.ok) {
                 throw new Error("Failed to load your direct reports");
             }
-            const employees = await teamResponse.json();
+            const employees = await reportsResponse.json();
 
             tableBody.innerHTML = "";
 

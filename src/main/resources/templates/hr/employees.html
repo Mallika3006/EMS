@@ -602,11 +602,7 @@
 
                 if (!response.ok) {
 
-                    const errorText = await response.text();
-
-                    throw new Error(
-                        errorText || "Failed to save employee"
-                    );
+                    throw new Error(response.status === 401 ? "Your session has expired. Please sign in again." : response.status === 403 ? "Your account is not permitted to update this employee." : response.status >= 500 ? "The server could not save the employee. Please try again or contact the administrator." : "The employee details were not accepted. Review the fields and try again.");
                 }
 
                 alert(
@@ -623,7 +619,6 @@
                 message.textContent =
                     "Unable to save employee. " + error.message;
 
-                console.error(error);
             }
         }
     );

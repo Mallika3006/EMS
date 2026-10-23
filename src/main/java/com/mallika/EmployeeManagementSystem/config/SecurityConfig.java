@@ -1,9 +1,14 @@
 package com.mallika.EmployeeManagementSystem.config;
 
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -14,10 +19,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 public class SecurityConfig {
+    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CookieOriginValidationFilter cookieOriginValidationFilter;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, CookieOriginValidationFilter cookieOriginValidationFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                          CookieOriginValidationFilter cookieOriginValidationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.cookieOriginValidationFilter = cookieOriginValidationFilter;
     }
@@ -70,6 +78,24 @@ public class SecurityConfig {
                 .requestMatchers("/tasks/**").hasAnyRole("ADMIN", "MANAGER")
                 .requestMatchers("/leaves/**").hasRole("ADMIN")
                 .anyRequest().authenticated())
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, exception) -> {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.setCharacterEncoding("UTF-8");
+                    response.getWriter().write("{\"message\":\"Authentication required. Please sign in again.\"}");
+                })
+                .accessDeniedHandler((request, response, exception) -> {
+                    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+                    String username = authentication == null ? "anonymous" : authentication.getName();
+                    String authorities = authentication == null ? "[]" : authentication.getAuthorities().toString();
+                    log.warn("Forbidden request: method={} uri={} user={} authorities={}",
+                            request.getMethod(), request.getRequestURI(), username, authorities);
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json");
+                    response.setCharacterEncoding("UTF-8");
+                    response.getWriter().write("{\"message\":\"Access denied. Your account does not have permission for this action.\"}");
+                }))
             .logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/user-login").deleteCookies("jwt").invalidateHttpSession(true))
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(cookieOriginValidationFilter, JwtAuthenticationFilter.class);

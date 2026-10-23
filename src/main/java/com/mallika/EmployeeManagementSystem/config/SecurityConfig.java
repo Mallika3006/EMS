@@ -85,6 +85,23 @@ public class SecurityConfig {
                 .anyRequest().authenticated())
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint((request, response, exception) -> {
+                    String path = request.getRequestURI();
+                    String accept = request.getHeader("Accept");
+                    boolean apiRequest = path.startsWith("/admin/api/")
+                            || path.startsWith("/api/")
+                            || (accept != null && accept.contains("application/json"))
+                            || (request.getContentType() != null
+                                && request.getContentType().contains("application/json"));
+
+                    if (!apiRequest && "GET".equalsIgnoreCase(request.getMethod())) {
+                        String loginPage = path.startsWith("/admin/")
+                                || "/admin-dashboard".equals(path)
+                                ? "/admin-login?expired=1"
+                                : "/login?expired=1";
+                        response.sendRedirect(request.getContextPath() + loginPage);
+                        return;
+                    }
+
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType("application/json");
                     response.setCharacterEncoding("UTF-8");

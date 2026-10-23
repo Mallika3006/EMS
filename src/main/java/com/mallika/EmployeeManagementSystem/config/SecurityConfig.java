@@ -195,6 +195,10 @@ public class SecurityConfig {
 
                         // Only Admin creates, edits, or deletes projects.
                         // Managers can read projects in their company and employees use /projects/me.
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/projects/*/members/*"
+                        ).hasRole("MANAGER")
                         .requestMatchers(HttpMethod.POST, "/projects/**")
                         .hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/projects/**")

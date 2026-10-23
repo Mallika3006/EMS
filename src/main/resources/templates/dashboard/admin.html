@@ -1,81 +1,55 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Admin Dashboard | Employee Management System</title>
     <link rel="stylesheet" th:href="@{/style.css}">
 </head>
 <body>
-
-<div class="dashboard-container">
-
-    <header>
-        <h1>Employee Management System</h1>
-        <h2>Admin Dashboard</h2>
-        <p>Welcome to Employee Management System Admin Panel!</p>
-    </header>
-
-    <main>
-        <h2>Management Modules</h2>
-
-        <div class="dashboard-grid">
-
-            <div class="dashboard-card">
-                <h3>Employees</h3>
-                <a th:href="@{/admin/employees}">Manage Employees</a>
-            </div>
-
-            <div class="dashboard-card">
-                <h3>Users</h3>
-                <a th:href="@{/users}">Manage Users</a>
-            </div>
-
-            <div class="dashboard-card">
-                <h3>Departments</h3>
-                <a th:href="@{/departments}">Manage Departments</a>
-            </div>
-
-            <div class="dashboard-card">
-                <h3>Designations</h3>
-                <a th:href="@{/designations}">Manage Designations</a>
-            </div>
-
-            <div class="dashboard-card">
-                <h3>Attendance</h3>
-                <a th:href="@{/attendance}">Manage Attendance</a>
-            </div>
-
-            <div class="dashboard-card">
-                <h3>Leaves</h3>
-                <a th:href="@{/leaves}">Manage Leaves</a>
-            </div>
-
-            <div class="dashboard-card">
-                <h3>Payroll</h3>
-                <a th:href="@{/payrolls}">Manage Payroll</a>
-            </div>
-
-            <div class="dashboard-card">
-                <h3>Projects</h3>
-                <a th:href="@{/projects}">Manage Projects</a>
-            </div>
-
-            <div class="dashboard-card">
-                <h3>Tasks</h3>
-                <a th:href="@{/tasks}">Manage Tasks</a>
-            </div>
-
+<div class="app-shell">
+    <aside class="app-sidebar">
+        <a class="app-brand" th:href="@{/admin-dashboard}" style="text-decoration:none">EMS <small>Employee Management System</small></a>
+        <nav class="app-nav" aria-label="Admin navigation">
+            <span class="nav-section">Workspace</span>
+            <a th:href="@{/admin-dashboard}" aria-current="page"><span aria-hidden="true">⌂</span> Overview</a>
+            <a th:href="@{/admin/employees}"><span aria-hidden="true">♙</span> Employees</a>
+            <a th:href="@{/users}"><span aria-hidden="true">♧</span> User accounts</a>
+            <span class="nav-section">Organization</span>
+            <a th:href="@{/departments}"><span aria-hidden="true">▦</span> Departments</a>
+            <a th:href="@{/designations}"><span aria-hidden="true">▤</span> Designations</a>
+            <span class="nav-section">Operations</span>
+            <a th:href="@{/attendance}"><span aria-hidden="true">◷</span> Attendance</a>
+            <a th:href="@{/leaves}"><span aria-hidden="true">▣</span> Leaves</a>
+            <a th:href="@{/payrolls}"><span aria-hidden="true">₹</span> Payroll</a>
+            <a th:href="@{/projects}"><span aria-hidden="true">▱</span> Projects</a>
+            <a th:href="@{/tasks}"><span aria-hidden="true">☷</span> Tasks</a>
+        </nav>
+        <div class="app-sidebar-footer">
+            <form th:action="@{/logout}" method="post"><button type="submit"><span aria-hidden="true">↪</span> Log out</button></form>
         </div>
+    </aside>
+    <main class="app-main">
+        <header class="app-topbar">
+            <div><h1>Overview</h1><p>Manage your organization's people and operations.</p></div>
+            <div><span class="role-pill">Administrator</span><p>Signed in as <strong sec:authentication="name">Admin</strong></p></div>
+        </header>
+        <section class="dashboard-intro">
+            <h2>Management workspace</h2>
+            <p>Choose a module to view and manage the records available to your account. Information is loaded from the existing EMS backend.</p>
+        </section>
+        <section class="dashboard-grid" aria-label="Management modules">
+            <article class="dashboard-card"><span class="card-icon" aria-hidden="true">♙</span><h3>Employees</h3><p>Employee records and employment details.</p><a th:href="@{/admin/employees}">Manage employees <span aria-hidden="true">→</span></a></article>
+            <article class="dashboard-card"><span class="card-icon" aria-hidden="true">♧</span><h3>User accounts</h3><p>Manage application accounts and roles.</p><a th:href="@{/users}">Manage users <span aria-hidden="true">→</span></a></article>
+            <article class="dashboard-card"><span class="card-icon" aria-hidden="true">▦</span><h3>Departments</h3><p>View and maintain department records.</p><a th:href="@{/departments}">Open departments <span aria-hidden="true">→</span></a></article>
+            <article class="dashboard-card"><span class="card-icon" aria-hidden="true">▤</span><h3>Designations</h3><p>Manage job titles and designations.</p><a th:href="@{/designations}">Open designations <span aria-hidden="true">→</span></a></article>
+            <article class="dashboard-card"><span class="card-icon" aria-hidden="true">◷</span><h3>Attendance</h3><p>Review attendance records and workflows.</p><a th:href="@{/attendance}">Manage attendance <span aria-hidden="true">→</span></a></article>
+            <article class="dashboard-card"><span class="card-icon" aria-hidden="true">▣</span><h3>Leaves</h3><p>Review leave requests and their statuses.</p><a th:href="@{/leaves}">Manage leaves <span aria-hidden="true">→</span></a></article>
+            <article class="dashboard-card"><span class="card-icon" aria-hidden="true">₹</span><h3>Payroll</h3><p>Access payroll records available to Admin.</p><a th:href="@{/payrolls}">Manage payroll <span aria-hidden="true">→</span></a></article>
+            <article class="dashboard-card"><span class="card-icon" aria-hidden="true">▱</span><h3>Projects</h3><p>Maintain projects for your organization.</p><a th:href="@{/projects}">Manage projects <span aria-hidden="true">→</span></a></article>
+            <article class="dashboard-card"><span class="card-icon" aria-hidden="true">☷</span><h3>Tasks</h3><p>Review task records and assignments.</p><a th:href="@{/tasks}">Manage tasks <span aria-hidden="true">→</span></a></article>
+        </section>
+        <footer style="padding:24px 0 8px"><small>Employee Management System · Secure organization workspace</small></footer>
     </main>
-
-    <footer style="text-align: center; margin-top: 30px; padding: 20px;">
-        <form th:action="@{/logout}" method="post">
-            <button type="submit">Logout</button>
-        </form>
-    </footer>
-
 </div>
-
 </body>
 </html>

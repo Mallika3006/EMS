@@ -136,43 +136,12 @@
                 }
 
 
-                // ==========================================
-                // STORE JWT IN COOKIE
-                // ==========================================
-
-                document.cookie =
-                    "jwt=" +
-                    data.token +
-                    "; path=/; SameSite=Lax";
-
                 // Store role for frontend use
                 localStorage.setItem(
                     "role",
                     data.role
                 );
 
-
-                // ==========================================
-                // DEBUG
-                // ==========================================
-
-                console.log(
-                    "Login successful"
-                );
-
-                console.log(
-                    "Role:",
-                    data.role
-                );
-
-                console.log(
-                    "JWT cookie created"
-                );
-
-                console.log(
-                    "Cookies:",
-                    document.cookie
-                );
 
 
                 // ==========================================

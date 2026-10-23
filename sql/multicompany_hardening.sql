@@ -63,6 +63,39 @@ WHERE e.employee_id = p.employee_id AND p.company_id IS NULL;
 -- assignments cannot cross company boundaries.
 ALTER TABLE public.employee_project ADD COLUMN IF NOT EXISTS company_id BIGINT;
 
+-- Keep legacy/JPA join-table inserts compatible while enforcing same-company membership.
+CREATE OR REPLACE FUNCTION public.set_employee_project_company_id()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $trigger$
+DECLARE
+    employee_company BIGINT;
+    project_company BIGINT;
+BEGIN
+    SELECT e.company_id INTO employee_company
+    FROM public.employees e
+    WHERE e.employee_id = NEW.employee_id;
+
+    SELECT p.company_id INTO project_company
+    FROM public.projects p
+    WHERE p.project_id = NEW.project_id;
+
+    IF employee_company IS NULL OR project_company IS NULL
+       OR employee_company <> project_company THEN
+        RAISE EXCEPTION 'Employee and project must belong to the same company';
+    END IF;
+
+    NEW.company_id := project_company;
+    RETURN NEW;
+END;
+$trigger$;
+
+DROP TRIGGER IF EXISTS trg_employee_project_company_id ON public.employee_project;
+CREATE TRIGGER trg_employee_project_company_id
+BEFORE INSERT OR UPDATE OF employee_id, project_id, company_id
+ON public.employee_project
+FOR EACH ROW EXECUTE FUNCTION public.set_employee_project_company_id();
+
 UPDATE public.employee_project ep
 SET company_id = p.company_id
 FROM public.projects p

@@ -73,14 +73,17 @@ public class ProjectService {
 
     public Project updateProject(
             Integer id, Project details, String username) {
-        Long companyId = getCompanyId(username);
+        User user = getUser(username);
+        Long companyId = requireCompanyId(user);
+        ensureManagerOwnsProject(id, user, companyId);
 
-        return projectRepository.updateProject(
-                id, details, companyId);
+        return projectRepository.updateProject(id, details, companyId);
     }
 
     public void deleteProject(Integer id, String username) {
-        Long companyId = getCompanyId(username);
+        User user = getUser(username);
+        Long companyId = requireCompanyId(user);
+        ensureManagerOwnsProject(id, user, companyId);
 
         boolean deleted =
                 projectRepository.deleteProject(id, companyId);
@@ -172,6 +175,19 @@ public class ProjectService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication != null && authentication.getAuthorities().stream()
                 .anyMatch(authority -> "ROLE_MANAGER".equals(authority.getAuthority()));
+    }
+
+
+    private void ensureManagerOwnsProject(Integer projectId, User user, Long companyId) {
+        if (!isManager()) return;
+        Integer managerId = requireEmployeeId(user);
+        Project project = projectRepository.getProjectById(projectId, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Project not found in your company: " + projectId));
+        if (!managerId.equals(project.getManagerId())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Managers can only modify projects assigned to them");
+        }
     }
 
 }

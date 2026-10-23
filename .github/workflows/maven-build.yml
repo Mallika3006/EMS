@@ -30,4 +30,4 @@ jobs:
           DB_PASSWORD: ci-placeholder-password
           JWT_SECRET: ci-only-placeholder-secret-at-least-32-characters
           COOKIE_SECURE: 'false'
-        run: ./mvnw --batch-mode --no-transfer-progress -DskipTests package
+        run: bash ./mvnw --batch-mode --no-transfer-progress -DskipTests package

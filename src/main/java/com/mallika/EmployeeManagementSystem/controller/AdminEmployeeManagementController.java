@@ -1,9 +1,11 @@
 package com.mallika.EmployeeManagementSystem.controller;
 
+import com.mallika.EmployeeManagementSystem.dto.EmployeeCreateDTO;
 import com.mallika.EmployeeManagementSystem.model.Employee;
 import com.mallika.EmployeeManagementSystem.model.User;
 import com.mallika.EmployeeManagementSystem.service.EmployeeService;
 import com.mallika.EmployeeManagementSystem.repository.UserRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,6 +39,13 @@ public class AdminEmployeeManagementController {
             result.add(toSafeMap(employee));
         }
         return result;
+    }
+
+    @PostMapping
+    public ResponseEntity<Map<String, Object>> createEmployee(
+            @RequestBody EmployeeCreateDTO details) {
+        Employee created = employeeService.createEmployee(details);
+        return ResponseEntity.status(HttpStatus.CREATED).body(toSafeMap(created));
     }
 
     @GetMapping("/{id}")

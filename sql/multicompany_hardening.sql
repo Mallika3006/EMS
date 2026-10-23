@@ -235,7 +235,7 @@ BEGIN
             FOREIGN KEY (project_id, company_id)
             REFERENCES public.projects(project_id, company_id) ON DELETE RESTRICT;
     END IF;
-END $;
+END $$;
 
 -- Keep the identity sequence above all preserved company IDs.
 SELECT setval(

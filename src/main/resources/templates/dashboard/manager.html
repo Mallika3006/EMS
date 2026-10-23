@@ -7,7 +7,7 @@
 <span class="nav-section">My account</span><a th:href="@{/manager/my-attendance}">◷ &nbsp; My attendance</a><a th:href="@{/manager/my-leaves}">▣ &nbsp; My leaves</a><a th:href="@{/manager/my-payroll}">₹ &nbsp; My payroll</a>
 <span class="nav-section">Workflows</span><a th:href="@{/manager/leaves}">▣ &nbsp; Leave requests</a><a th:href="@{/manager/attendance}">◷ &nbsp; Employee attendance</a><a th:href="@{/manager/projects}">▱ &nbsp; Projects</a><a th:href="@{/manager/tasks}">☷ &nbsp; Tasks</a></nav>
 <div class="app-sidebar-footer"><form th:action="@{/logout}" method="post"><button type="submit">↪ &nbsp; Log out</button></form></div></aside>
-<main class="app-main"><header class="app-topbar"><div><h1>Manager workspace</h1><p>Coordinate assigned work and review supported team workflows.</p></div><div><span class="role-pill">Manager</span><p>Signed in as <strong sec:authentication="name">Manager</strong></p></div></header>
+<main class="app-main"><header class="app-topbar"><div><h1>Manager workspace</h1><p>Coordinate assigned work and review supported employee workflows.</p></div><div><span class="role-pill">Manager</span><p>Signed in as <strong sec:authentication="name">Manager</strong></p></div></header>
 <section class="dashboard-intro"><h2>Your work, in one place</h2><p>Manage only the employee, project, task, attendance, and leave actions permitted by your account. Project creation remains in the Admin workflow.</p></section>
 <section class="dashboard-grid" aria-label="Manager modules">
 <article class="dashboard-card"><span class="card-icon">◎</span><h3>My profile</h3><p>View your profile details.</p><a th:href="@{/manager/profile}">Open profile →</a></article>

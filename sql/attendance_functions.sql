@@ -20,15 +20,18 @@ BEGIN
         status,
         check_in_time,
         check_out_time,
-        employee_id
+        employee_id,
+        company_id
     )
-    VALUES (
+    SELECT
         p_att_date,
         p_status,
         p_check_in_time,
         p_check_out_time,
-        p_employee_id
-    );
+        e.employee_id,
+        e.company_id
+    FROM public.employees e
+    WHERE e.employee_id = p_employee_id;
 
     RETURN QUERY
     SELECT *
@@ -104,8 +107,16 @@ BEGIN
         status = p_status,
         check_in_time = p_check_in_time,
         check_out_time = p_check_out_time,
-        employee_id = p_employee_id
-    WHERE attendance_id = p_attendance_id;
+        employee_id = p_employee_id,
+        company_id = (
+            SELECT e.company_id FROM public.employees e
+            WHERE e.employee_id = p_employee_id
+        )
+    WHERE attendance_id = p_attendance_id
+      AND company_id = (
+            SELECT e.company_id FROM public.employees e
+            WHERE e.employee_id = p_employee_id
+      );
 
     RETURN QUERY
     SELECT *

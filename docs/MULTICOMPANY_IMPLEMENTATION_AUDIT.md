@@ -34,7 +34,7 @@ Working branch: agent/multicompany-hardening
 - [x] Add company-scoped manager project-member assignment using `employee_project` and expose it in the manager projects page.
 - [x] Allow managers to edit/delete only projects assigned to them; Admin alone creates projects.
 - [x] Add the missing company-scoped department functions used by `DepartmentRepository`.
-- [x] Add company ownership checks to leave and payroll repository operations; attendance writes are company-scoped.
+- [x] Add company ownership checks and company-scoped SQL overloads for leave/payroll operations; attendance writes are company-scoped.
 - [x] Restrict project writes to Admin, general task APIs to Admin/Manager, and general leave administration to Admin; preserve manager/HR-specific leave routes.
 - [x] Fail closed if a username resolves to multiple users, because the current JWT subject identifies a user by username only.
 - [x] Remove authentication debug output and externalize database/JWT secrets.

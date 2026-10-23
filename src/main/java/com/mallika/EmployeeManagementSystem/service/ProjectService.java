@@ -85,6 +85,11 @@ public class ProjectService {
         Long companyId = requireCompanyId(user);
         ensureManagerOwnsProject(id, user, companyId);
 
+        if (projectRepository.hasTasks(id, companyId)) {
+            throw new IllegalStateException(
+                    "Delete or reassign the project's tasks before deleting the project");
+        }
+
         boolean deleted =
                 projectRepository.deleteProject(id, companyId);
 

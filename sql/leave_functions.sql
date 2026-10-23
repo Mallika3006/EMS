@@ -32,6 +32,10 @@ SELECT
 FROM public.employees e
 WHERE e.employee_id = p_employee_id;
 
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Leave employee not found: %', p_employee_id;
+    END IF;
+
 RETURN QUERY
 SELECT *
 FROM leaves

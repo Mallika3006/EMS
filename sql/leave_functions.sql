@@ -417,7 +417,9 @@ RETURNS TABLE(
     to_date date,
     reason character varying,
     status character varying,
-    employee_id integer
+    employee_id integer,
+    employee_first_name character varying,
+    employee_last_name character varying
 )
 LANGUAGE plpgsql
 AS $function$
@@ -429,7 +431,9 @@ SELECT
     l.to_date,
     l.reason,
     l.status,
-    l.employee_id
+    l.employee_id,
+    e.first_name,
+    e.last_name
 FROM leaves l
          JOIN employees e
               ON l.employee_id = e.employee_id

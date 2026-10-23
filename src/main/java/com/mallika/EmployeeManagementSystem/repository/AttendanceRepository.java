@@ -63,8 +63,8 @@ public class AttendanceRepository {
 
         String sql = """
             INSERT INTO attendance
-                (att_date, status, check_in_time, check_out_time, employee_id)
-            SELECT ?, ?, ?, ?, e.employee_id
+                (att_date, status, check_in_time, check_out_time, employee_id, company_id)
+            SELECT ?, ?, ?, ?, e.employee_id, e.company_id
             FROM employees e
             JOIN users u ON u.employee_id = e.employee_id
                        AND u.company_id = e.company_id
@@ -130,7 +130,8 @@ public class AttendanceRepository {
                 status = ?,
                 check_in_time = ?,
                 check_out_time = ?,
-                employee_id = ?
+                employee_id = ?,
+                company_id = ?
             WHERE a.attendance_id = ?
               AND EXISTS (
                   SELECT 1
@@ -154,10 +155,11 @@ public class AttendanceRepository {
 
             setAttendanceFields(ps, details, 1);
             ps.setInt(5, details.getEmployee().getEmployeeId());
-            ps.setInt(6, id);
-            ps.setLong(7, companyId());
-            ps.setInt(8, details.getEmployee().getEmployeeId());
-            ps.setLong(9, companyId());
+            ps.setLong(6, companyId());
+            ps.setInt(7, id);
+            ps.setLong(8, companyId());
+            ps.setInt(9, details.getEmployee().getEmployeeId());
+            ps.setLong(10, companyId());
 
             if (ps.executeUpdate() == 0) {
                 throw new IllegalArgumentException(

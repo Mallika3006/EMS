@@ -9,6 +9,8 @@ import com.mallika.EmployeeManagementSystem.repository.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -52,13 +54,42 @@ public class DepartmentService {
         return user.getCompanyId();
     }
 
+    // Validate department names within the authenticated company's tenant.
+    private void validateDepartmentName(String name, Integer currentDepartmentId, Long companyId) {
+        if (name == null || name.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Department name is required");
+        }
+
+        String normalizedName = name.trim();
+        if (normalizedName.length() > 100) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Department name must be 100 characters or fewer");
+        }
+
+        departmentRepository.findByDepartmentNameIgnoreCase(normalizedName, companyId)
+                .filter(existing -> !existing.getDepartmentId().equals(currentDepartmentId))
+                .ifPresent(existing -> {
+                    throw new ResponseStatusException(
+                            HttpStatus.CONFLICT,
+                            "A department with this name already exists in your company");
+                });
+    }
+
     // CREATE
     public Department createDepartment(Department department) {
 
         Long companyId = getCurrentCompanyId();
 
+        if (department == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Department details are required");
+        }
+
         // Never trust company ID supplied in the request body.
         department.setCompanyId(companyId);
+        department.setDepartmentName(department.getDepartmentName().trim());
+        validateDepartmentName(department.getDepartmentName(), null, companyId);
 
         return departmentRepository.createDepartment(
                 department, companyId);
@@ -88,6 +119,15 @@ public class DepartmentService {
             Department departmentDetails) {
 
         Long companyId = getCurrentCompanyId();
+
+        if (departmentDetails == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Department details are required");
+        }
+        departmentDetails.setDepartmentName(
+                departmentDetails.getDepartmentName() == null
+                        ? null : departmentDetails.getDepartmentName().trim());
+        validateDepartmentName(departmentDetails.getDepartmentName(), id, companyId);
 
         Department updated = departmentRepository.updateDepartment(
                 id, departmentDetails, companyId);

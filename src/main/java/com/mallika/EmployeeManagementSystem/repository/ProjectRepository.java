@@ -107,6 +107,15 @@ public class ProjectRepository {
             """, ps -> { ps.setInt(1, managerId); ps.setLong(2, companyId); });
     }
 
+    public List<Project> getProjectsVisibleToManager(Integer managerId, Long companyId) {
+        return queryProjects("""
+            SELECT project_id, project_name, start_date, end_date, manager_id
+            FROM public.projects
+            WHERE company_id = ? AND (manager_id = ? OR manager_id IS NULL)
+            ORDER BY project_id
+            """, ps -> { ps.setLong(1, companyId); ps.setInt(2, managerId); });
+    }
+
     public List<Project> getProjectsByEmployee(Integer employeeId, Long companyId) {
         return queryProjects("""
             SELECT DISTINCT p.project_id, p.project_name, p.start_date, p.end_date, p.manager_id

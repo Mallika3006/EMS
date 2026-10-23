@@ -51,11 +51,11 @@ public class SecurityConfig {
                                 "/favicon.ico"
                         ).permitAll()
 
-                        // First user creation
+                        // User creation is company-scoped and requires an Admin.
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/users"
-                        ).permitAll()
+                        ).hasRole("ADMIN")
 
                         // Admin dashboard and pages
                         .requestMatchers("/admin-dashboard")

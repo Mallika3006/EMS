@@ -152,6 +152,7 @@ public class ProjectRepository {
                   WHERE ep.employee_id = e.employee_id
                     AND ep.project_id = p.project_id
               )
+            ON CONFLICT DO NOTHING
             RETURNING employee_id
             """;
         try (Connection con = dataSource.getConnection();
@@ -175,6 +176,10 @@ public class ProjectRepository {
               ON p.project_id = ep.project_id AND p.company_id = ep.company_id
             JOIN public.employees e
               ON e.employee_id = ep.employee_id AND e.company_id = ep.company_id
+            JOIN public.users u
+              ON u.employee_id = e.employee_id
+             AND u.company_id = e.company_id
+             AND u.is_active = TRUE
             WHERE ep.project_id = ? AND ep.employee_id = ?
               AND ep.company_id = ? AND p.manager_id = ? AND e.manager_id = ?
             """;

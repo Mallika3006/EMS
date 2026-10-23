@@ -4,39 +4,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login - StaffSync</title>
+    <title>Admin Login | Employee Management System</title>
 
     <link rel="stylesheet" th:href="@{/style.css}">
 </head>
 
 <body>
 
-<div class="login-container">
+<div class="login-panel"><section class="login-container" aria-labelledby="login-heading">
 
-    <h2>Admin Login</h2>
+    <h2 id="login-heading">Administrator sign in</h2><p class="subtitle">Sign in using your administrator account.</p>
 
-    <p id="error-message" style="color: red;"></p>
+    <p id="error-message" class="error-message" role="alert" aria-live="polite"></p>
 
     <form id="loginForm">
 
         <div>
             <label for="username">Username:</label>
-            <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    required>
+            <input type="text" id="username" name="username" autocomplete="username" required>
         </div>
 
         <br>
 
         <div>
             <label for="password">Password:</label>
-            <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    required>
+            <input type="password" id="password" name="password" autocomplete="current-password" required>
         </div>
 
         <br>
@@ -45,8 +37,7 @@
 
     </form>
 
-</div>
-
+</section></div>
 <script>
     document.getElementById("loginForm")
         .addEventListener("submit", async function (event) {
@@ -82,7 +73,7 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error("Login failed");
+                    throw new Error("The username or password is incorrect.");
                 }
 
                 const data = await response.json();
@@ -95,14 +86,13 @@
                 }
 
                 // JWT is held in the HttpOnly cookie set by the server.
-                localStorage.setItem("role", data.role);
+                // The role is used only for this redirect; authentication stays in the HttpOnly cookie.
 
                 // Cookie is set by LoginController
                 window.location.href = "/admin-dashboard";
 
             } catch (error) {
-                errorMessage.textContent =
-                    "Invalid username or password.";
+                errorMessage.textContent = error instanceof Error ? error.message : "Sign-in failed. Please try again.";
             } finally {
                 loginButton.disabled = false;
             }

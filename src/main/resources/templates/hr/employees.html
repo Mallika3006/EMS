@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Employees - StaffSync</title>
+    <title>HR Employees | Employee Management System</title>
     <link rel="stylesheet" th:href="@{/style.css}">
 </head>
 
@@ -130,58 +130,63 @@
     // ==========================================
 
     function displayEmployees(employees) {
-
         const container = document.getElementById("employees");
+        container.replaceChildren();
 
-        if (!employees || employees.length === 0) {
-            container.innerHTML = "<p>No employees found.</p>";
+        if (!Array.isArray(employees) || employees.length === 0) {
+            const empty = document.createElement("p");
+            empty.className = "empty-message";
+            empty.textContent = "No employees found.";
+            container.appendChild(empty);
             return;
         }
 
-        container.innerHTML = `
-            <table>
-                <thead>
-                    <tr>
-                        <th>Employee ID</th>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                        <th>Hire Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
+        const table = document.createElement("table");
+        const head = document.createElement("thead");
+        const headerRow = document.createElement("tr");
+        ["Employee ID", "First Name", "Last Name", "Email", "Phone", "Hire Date", "Actions"]
+            .forEach(label => {
+                const th = document.createElement("th");
+                th.textContent = label;
+                headerRow.appendChild(th);
+            });
+        head.appendChild(headerRow);
+        table.appendChild(head);
 
-                <tbody>
-                    ${employees.map(employee => `
-                        <tr>
-                            <td>${employee.employeeId ?? "N/A"}</td>
-                            <td>${employee.firstName ?? "N/A"}</td>
-                            <td>${employee.lastName ?? "N/A"}</td>
-                            <td>${employee.email ?? "N/A"}</td>
-                            <td>${employee.phone ?? "N/A"}</td>
-                            <td>${employee.hireDate ?? "N/A"}</td>
+        const body = document.createElement("tbody");
+        employees.forEach(employee => {
+            const row = document.createElement("tr");
+            [employee.employeeId, employee.firstName, employee.lastName, employee.email, employee.phone, employee.hireDate]
+                .forEach(value => {
+                    const cell = document.createElement("td");
+                    cell.textContent = value == null || value === "" ? "—" : String(value);
+                    row.appendChild(cell);
+                });
 
-                            <td>
-                                <button
-                                    class="btn"
-                                    onclick="viewEmployee(${employee.employeeId})">
-                                    View
-                                </button>
+            const actions = document.createElement("td");
+            const view = document.createElement("button");
+            view.type = "button";
+            view.className = "btn-small";
+            view.textContent = "View";
+            view.addEventListener("click", () => viewEmployee(employee.employeeId));
 
-                                <button
-                                    class="btn"
-                                    onclick="editEmployee(${employee.employeeId})">
-                                    Edit
-                                </button>
-                            </td>
-                        </tr>
-                    `).join("")}
-                </tbody>
-            </table>
-        `;
+            const edit = document.createElement("button");
+            edit.type = "button";
+            edit.className = "btn-small";
+            edit.textContent = "Edit";
+            edit.addEventListener("click", () => editEmployee(employee.employeeId));
+
+            actions.append(view, edit);
+            row.appendChild(actions);
+            body.appendChild(row);
+        });
+        table.appendChild(body);
+
+        const responsive = document.createElement("div");
+        responsive.className = "table-responsive";
+        responsive.appendChild(table);
+        container.appendChild(responsive);
     }
-
 
     // ==========================================
     // GET LOGGED-IN HR

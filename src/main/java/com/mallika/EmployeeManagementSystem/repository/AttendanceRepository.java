@@ -46,7 +46,7 @@ public class AttendanceRepository {
                e.first_name AS employee_first_name,
                e.last_name AS employee_last_name
         FROM attendance a
-        JOIN employees e ON e.employee_id = a.employee_id
+        JOIN employees e ON e.employee_id = a.employee_id AND a.company_id = e.company_id
         WHERE e.company_id = ?
         """;
 
@@ -71,6 +71,12 @@ public class AttendanceRepository {
             WHERE e.employee_id = ?
               AND e.company_id = ?
               AND u.is_active = TRUE
+              AND NOT EXISTS (
+                  SELECT 1 FROM attendance existing
+                  WHERE existing.employee_id = e.employee_id
+                    AND existing.att_date = ?
+                    AND existing.company_id = e.company_id
+              )
             RETURNING attendance_id
             """;
 
@@ -80,11 +86,12 @@ public class AttendanceRepository {
             setAttendanceFields(ps, attendance, 1);
             ps.setInt(5, employeeId);
             ps.setLong(6, companyId());
+            ps.setDate(7, Date.valueOf(attendance.getAttDate()));
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
                     throw new IllegalArgumentException(
-                            "Employee is inactive or does not belong to your company");
+                            "An attendance record may already exist for this employee and date, or the employee is inactive/outside your company");
                 }
 
                 int attendanceId = rs.getInt("attendance_id");
@@ -95,6 +102,131 @@ public class AttendanceRepository {
         } catch (SQLException e) {
             throw new RuntimeException("Error creating attendance", e);
         }
+    }
+
+    // Employee self-service: create today's record or complete an existing open record.
+    public Attendance checkIn(Integer employeeId) {
+        Long currentCompanyId = companyId();
+        int attendanceId = -1;
+        try (Connection con = dataSource.getConnection()) {
+            con.setAutoCommit(false);
+            try {
+                String findSql = """
+                    SELECT a.attendance_id, a.status, a.check_in_time
+                    FROM attendance a
+                    JOIN employees e ON e.employee_id = a.employee_id AND a.company_id = e.company_id
+                    JOIN users u ON u.employee_id = e.employee_id AND u.company_id = e.company_id
+                    WHERE a.employee_id = ? AND a.att_date = CURRENT_DATE
+                      AND e.company_id = ? AND u.is_active = TRUE
+                    ORDER BY a.attendance_id DESC LIMIT 1 FOR UPDATE OF a
+                    """;
+                try (PreparedStatement ps = con.prepareStatement(findSql)) {
+                    ps.setInt(1, employeeId);
+                    ps.setLong(2, currentCompanyId);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            attendanceId = rs.getInt("attendance_id");
+                            String status = rs.getString("status");
+                            if (rs.getTime("check_in_time") != null) {
+                                throw new IllegalArgumentException("You have already checked in today");
+                            }
+                            if ("leave".equalsIgnoreCase(status)) {
+                                throw new IllegalArgumentException("Attendance cannot be started on a leave record");
+                            }
+                        }
+                    }
+                }
+                if (attendanceId > 0) {
+                    String updateSql = """
+                        UPDATE attendance
+                        SET check_in_time = CURRENT_TIME,
+                            status = CASE WHEN LOWER(status) = 'absent' THEN 'Present' ELSE status END
+                        WHERE attendance_id = ? AND company_id = ?
+                        """;
+                    try (PreparedStatement ps = con.prepareStatement(updateSql)) {
+                        ps.setInt(1, attendanceId);
+                        ps.setLong(2, currentCompanyId);
+                        if (ps.executeUpdate() != 1) throw new IllegalStateException("Could not record check-in");
+                    }
+                } else {
+                    String insertSql = """
+                        INSERT INTO attendance (att_date, status, check_in_time, check_out_time, employee_id, company_id)
+                        SELECT CURRENT_DATE, 'Present', CURRENT_TIME, NULL, e.employee_id, e.company_id
+                        FROM employees e
+                        JOIN users u ON u.employee_id = e.employee_id AND u.company_id = e.company_id
+                        WHERE e.employee_id = ? AND e.company_id = ? AND u.is_active = TRUE
+                        RETURNING attendance_id
+                        """;
+                    try (PreparedStatement ps = con.prepareStatement(insertSql)) {
+                        ps.setInt(1, employeeId);
+                        ps.setLong(2, currentCompanyId);
+                        try (ResultSet rs = ps.executeQuery()) {
+                            if (!rs.next()) throw new IllegalArgumentException(
+                                    "Your employee account is inactive or not assigned to this company");
+                            attendanceId = rs.getInt("attendance_id");
+                        }
+                    }
+                }
+                con.commit();
+            } catch (RuntimeException | SQLException ex) {
+                con.rollback();
+                throw ex;
+            } finally {
+                con.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error recording check-in", e);
+        }
+        return getAttendanceById(attendanceId).orElseThrow(
+                () -> new IllegalStateException("Checked-in attendance could not be retrieved"));
+    }
+
+    // Employee self-service: check out only from an open check-in for today.
+    public Attendance checkOut(Integer employeeId) {
+        Long currentCompanyId = companyId();
+        int attendanceId;
+        try (Connection con = dataSource.getConnection()) {
+            con.setAutoCommit(false);
+            try {
+                String findSql = """
+                    SELECT a.attendance_id
+                    FROM attendance a
+                    JOIN employees e ON e.employee_id = a.employee_id
+                    JOIN users u ON u.employee_id = e.employee_id AND u.company_id = e.company_id
+                    WHERE a.employee_id = ? AND a.att_date = CURRENT_DATE
+                      AND a.company_id = ? AND e.company_id = ? AND u.is_active = TRUE
+                      AND a.check_in_time IS NOT NULL AND a.check_out_time IS NULL
+                    ORDER BY a.attendance_id DESC LIMIT 1 FOR UPDATE OF a
+                    """;
+                try (PreparedStatement ps = con.prepareStatement(findSql)) {
+                    ps.setInt(1, employeeId);
+                    ps.setLong(2, currentCompanyId);
+                    ps.setLong(3, currentCompanyId);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (!rs.next()) throw new IllegalArgumentException(
+                                "No open check-in was found for today");
+                        attendanceId = rs.getInt("attendance_id");
+                    }
+                }
+                try (PreparedStatement ps = con.prepareStatement(
+                        "UPDATE attendance SET check_out_time = CURRENT_TIME WHERE attendance_id = ? AND company_id = ? AND check_out_time IS NULL")) {
+                    ps.setInt(1, attendanceId);
+                    ps.setLong(2, currentCompanyId);
+                    if (ps.executeUpdate() != 1) throw new IllegalArgumentException(
+                            "You have already checked out today");
+                }
+                con.commit();
+            } catch (RuntimeException | SQLException ex) {
+                con.rollback();
+                throw ex;
+            } finally {
+                con.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error recording check-out", e);
+        }
+        return getAttendanceById(attendanceId).orElseThrow(
+                () -> new IllegalStateException("Checked-out attendance could not be retrieved"));
     }
 
     // GET ALL ATTENDANCE IN THE CURRENT COMPANY
@@ -148,6 +280,13 @@ public class AttendanceRepository {
                     AND new_e.company_id = ?
                     AND u.is_active = TRUE
               )
+              AND NOT EXISTS (
+                  SELECT 1 FROM attendance other
+                  WHERE other.employee_id = ?
+                    AND other.att_date = ?
+                    AND other.company_id = ?
+                    AND other.attendance_id <> a.attendance_id
+              )
             """;
 
         try (Connection con = dataSource.getConnection();
@@ -160,6 +299,9 @@ public class AttendanceRepository {
             ps.setLong(8, companyId());
             ps.setInt(9, details.getEmployee().getEmployeeId());
             ps.setLong(10, companyId());
+            ps.setInt(11, details.getEmployee().getEmployeeId());
+            ps.setDate(12, Date.valueOf(details.getAttDate()));
+            ps.setLong(13, companyId());
 
             if (ps.executeUpdate() == 0) {
                 throw new IllegalArgumentException(

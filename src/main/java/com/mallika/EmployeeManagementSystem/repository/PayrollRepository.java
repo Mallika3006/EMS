@@ -147,7 +147,7 @@ public class PayrollRepository {
             );
         }
 
-        return filterPayrollsByCompany(payrolls);
+        return payrolls;
     }
 
 
@@ -370,7 +370,7 @@ public class PayrollRepository {
             );
         }
 
-        return filterPayrollsByCompany(payrolls);
+        return payrolls;
     }
 
 
@@ -412,7 +412,7 @@ public class PayrollRepository {
             );
         }
 
-        return filterPayrollsByCompany(payrolls);
+        return payrolls;
     }
 
 
@@ -457,7 +457,7 @@ public class PayrollRepository {
             );
         }
 
-        return filterPayrollsByCompany(payrolls);
+        return payrolls;
     }
 
 
@@ -502,7 +502,7 @@ public class PayrollRepository {
             );
         }
 
-        return filterPayrollsByCompany(payrolls);
+        return payrolls;
     }
 
 
@@ -551,7 +551,7 @@ public class PayrollRepository {
             );
         }
 
-        return filterPayrollsByCompany(payrolls);
+        return payrolls;
     }
 
 
@@ -644,23 +644,9 @@ public class PayrollRepository {
                     "Error fetching HR employee payrolls", e);
         }
 
-        return filterPayrollsByCompany(payrolls);
+        return payrolls;
     }
 
-
-    // Payroll records are tenant-owned through their employee relationship.
-    private List<Payroll> filterPayrollsByCompany(List<Payroll> payrolls) {
-        Long companyId = companyContext.getCompanyId();
-        List<Payroll> scoped = new ArrayList<>();
-        for (Payroll payroll : payrolls) {
-            Integer employeeId = payroll.getEmployee() == null
-                    ? null : payroll.getEmployee().getEmployeeId();
-            if (employeeId != null && isEmployeeInCompany(employeeId, companyId)) {
-                scoped.add(payroll);
-            }
-        }
-        return scoped;
-    }
 
     private void ensurePayrollInCompany(Integer payrollId) {
         String sql = """

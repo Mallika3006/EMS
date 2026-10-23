@@ -71,8 +71,9 @@ public class EmployeeService {
                             + "and role are required");
         }
 
-        if (dto.getRoleId() < 1 || dto.getRoleId() > 4) {
-            throw new IllegalArgumentException("Invalid role ID");
+        if (dto.getRoleId() < 2 || dto.getRoleId() > 4) {
+            throw new IllegalArgumentException(
+                    "Employee accounts must use the HR, Manager or Employee role");
         }
 
         if (employeeRepository.getEmployeeByEmail(
@@ -118,11 +119,21 @@ public class EmployeeService {
         }
 
         Employee existing = getEmployeeById(id);
+        if (blank(details.getFirstName()) || blank(details.getLastName())
+                || blank(details.getEmail())
+                || !details.getEmail().matches("^[^\\\\s@]+@[^\\\\s@]+\\\\.[^\\\\s@]+$")) {
+            throw new IllegalArgumentException(
+                    "First name, last name and a valid email are required");
+        }
+        employeeRepository.getEmployeeByEmail(details.getEmail().trim(), companyId())
+                .filter(found -> !found.getEmployeeId().equals(id))
+                .ifPresent(found -> { throw new IllegalArgumentException(
+                        "Email already exists in this company"); });
         EmployeeUpdateDTO dto = new EmployeeUpdateDTO();
 
-        dto.setFirstName(details.getFirstName());
-        dto.setLastName(details.getLastName());
-        dto.setEmail(details.getEmail());
+        dto.setFirstName(details.getFirstName().trim());
+        dto.setLastName(details.getLastName().trim());
+        dto.setEmail(details.getEmail().trim());
         dto.setPhone(details.getPhone());
         dto.setDateOfBirth(details.getDateOfBirth());
         dto.setHireDate(details.getHireDate());

@@ -30,11 +30,15 @@ The route-to-template relationship is defined by the existing Spring MVC control
 
 ## Changes implemented
 
-- Replaced duplicated global CSS with shared design tokens, consistent controls, responsive tables/forms/cards, focus indicators, reduced-motion support, login styling, and a responsive dashboard shell.
-- Rebuilt the login presentation while preserving the actual `POST /login` JSON contract (`username`, `password`) and the server-issued HttpOnly JWT cookie. No JWT is written to local storage.
+- Replaced duplicated global CSS with shared design tokens, consistent controls, responsive tables/forms/cards, focus indicators, reduced-motion support, login styling, responsive dashboard shells, and reusable Admin form/table styles.
+- Rebuilt the main login presentation while preserving the actual `POST /login` JSON contract (`username`, `password`) and server-issued HttpOnly JWT cookie. Removed unnecessary browser-side role persistence; no JWT or role is stored in local storage by the updated login flows.
 - Redesigned the Admin, HR, Manager, and Employee dashboard landing pages around existing routes and authenticated username.
-- Removed the Team/Team Members link from the Manager dashboard. No team table, schema, or new endpoint was created.
-- Kept dashboards free of fake KPI counts; module cards direct users to existing server-backed screens.
+- Added a reusable Admin module page backed by the existing REST APIs for departments, designations, attendance, leaves, payroll, projects, tasks, and user accounts. It supports real-data tables, client-side search, create/edit/delete requests, relationship dropdowns populated from existing APIs, loading/empty/error feedback, confirmation before deletion, and safe text rendering.
+- Added `AdminModulePageController` only to render the new frontend page shell for a whitelist of existing Admin modules; business logic remains in existing controllers/services/repositories.
+- Tightened the page-route matcher for `/admin/**` to the existing Admin role so the new pages and Admin employee page are not exposed as generic authenticated views. Existing API role/tenant checks remain in place.
+- Reworked the HR employee table to render backend fields with DOM `textContent` instead of interpolating employee data into HTML. Sanitized employee-form error feedback and prevented duplicate submissions.
+- Removed the Team navigation/module from the Manager dashboard. Manager project assignment continues to use the existing manager-to-employee hierarchy endpoint; no team table, schema, or new endpoint was created.
+- Kept dashboards free of fake KPI counts; summary cards link to real existing UI/API-backed workflows.
 
 ## Role navigation
 
@@ -47,10 +51,11 @@ UI navigation is not an authorization boundary. Existing backend security and te
 
 ## Verification status and limitations
 
-- Repository files and controller mappings were inspected through the GitHub repository API.
+- Repository files, controller mappings, service contracts, model fields, and security matchers were inspected through the GitHub repository API.
 - The working branch was created from `agent/multicompany-hardening`; changes were committed to the feature branch only.
-- This hosted editing session does not provide a checked-out working tree or a local PostgreSQL runtime, so `mvn clean compile`, browser testing, and role-by-role end-to-end verification have **not** been run here. Do not treat them as passed.
-- The existing `/manager/team` controller mapping and legacy template predate this UI pass. The dashboard no longer advertises that route; fully removing its server mapping is intentionally outside this frontend-only change.
+- GitHub Actions completed successfully for the feature branch commit `57a96d8`: Maven `verify` passed, inline JavaScript syntax checks across the Thymeleaf templates passed, and the PostgreSQL migration/tenant assertions passed. A later small Admin form-label/config change is on the current branch head and its CI run is pending; recheck the latest run before merging.
+- Live browser verification against an actual configured company database has not been performed in this hosted repository-editing session. The CI migration fixture validates SQL migration/tenant constraints but is not a substitute for role-by-role UI testing.
+- The existing `/manager/team` controller mapping and legacy template predate this UI pass. The dashboard no longer advertises that route; the old server mapping/template are retained to avoid unrelated destructive cleanup. No new Team feature or Team database dependency was added.
 - The feature templates remain backed by existing controllers and repository behavior. Each workflow should still be verified locally against a configured PostgreSQL instance before the frontend is considered fully runtime-verified.
 
 ## Local verification checklist

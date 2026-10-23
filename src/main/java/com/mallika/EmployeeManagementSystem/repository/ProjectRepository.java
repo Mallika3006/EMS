@@ -121,7 +121,18 @@ public class ProjectRepository {
     }
 
     private void validateEmployeeCompany(Integer employeeId, Long companyId) {
-        String sql = "SELECT 1 FROM public.employees WHERE employee_id = ? AND company_id = ?";
+        String sql = """
+            SELECT 1
+            FROM public.employees e
+            JOIN public.users u
+              ON u.employee_id = e.employee_id
+             AND u.company_id = e.company_id
+            JOIN public.roles r ON r.role_id = u.role_id
+            WHERE e.employee_id = ?
+              AND e.company_id = ?
+              AND u.is_active = TRUE
+              AND LOWER(r.role_name) = 'manager'
+            """;
         try (Connection con = dataSource.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, employeeId);
@@ -129,7 +140,7 @@ public class ProjectRepository {
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
                     throw new IllegalArgumentException(
-                            "Project manager does not belong to this company");
+                            "Project manager must be an active Manager in this company");
                 }
             }
         } catch (SQLException e) {

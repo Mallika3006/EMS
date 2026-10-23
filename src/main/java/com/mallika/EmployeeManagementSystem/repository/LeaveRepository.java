@@ -141,7 +141,7 @@ public class LeaveRepository {
             );
         }
 
-        return filterByCompany(leaves);
+        return leaves;
     }
 
 
@@ -398,7 +398,7 @@ public class LeaveRepository {
             );
         }
 
-        return filterByCompany(leaves);
+        return leaves;
     }
 
 
@@ -436,7 +436,7 @@ public class LeaveRepository {
             );
         }
 
-        return filterByCompany(leaves);
+        return leaves;
     }
 
 
@@ -477,7 +477,7 @@ public class LeaveRepository {
             );
         }
 
-        return filterByCompany(leaves);
+        return leaves;
     }
 
 
@@ -518,7 +518,7 @@ public class LeaveRepository {
             );
         }
 
-        return filterByCompany(leaves);
+        return leaves;
     }
 
 
@@ -559,7 +559,7 @@ public class LeaveRepository {
             );
         }
 
-        return filterByCompany(leaves);
+        return leaves;
     }
 
 
@@ -606,7 +606,7 @@ public class LeaveRepository {
             );
         }
 
-        return filterByCompany(leaves);
+        return leaves;
     }
 
     // =========================================================
@@ -742,7 +742,7 @@ public class LeaveRepository {
             throw new RuntimeException("Error fetching manager leave requests", e);
         }
 
-        return filterByCompany(leaves);
+        return leaves;
     }
 
     // =========================================================
@@ -773,7 +773,7 @@ public class LeaveRepository {
             throw new RuntimeException("Error fetching HR employee leaves", e);
         }
 
-        return filterByCompany(leaves);
+        return leaves;
     }
 
 
@@ -850,21 +850,6 @@ public class LeaveRepository {
                 "Leave request not found, not pending, " +
                         "or not assigned to this HR"
         );
-    }
-
-    // Defense-in-depth while legacy leave functions are being retired:
-    // rows are owned by an employee, so tenancy is derived from employees.company_id.
-    private List<Leave> filterByCompany(List<Leave> leaves) {
-        Long companyId = companyContext.getCompanyId();
-        List<Leave> scoped = new ArrayList<>();
-        for (Leave leave : leaves) {
-            Integer employeeId = leave.getEmployee() == null
-                    ? null : leave.getEmployee().getEmployeeId();
-            if (employeeId != null && isEmployeeInCompany(employeeId, companyId)) {
-                scoped.add(leave);
-            }
-        }
-        return scoped;
     }
 
     private void ensureLeaveInCompany(Integer leaveId) {

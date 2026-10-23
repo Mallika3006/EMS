@@ -193,8 +193,8 @@ public class SecurityConfig {
                         .requestMatchers("/payrolls/**")
                         .hasAnyRole("ADMIN", "HR")
 
-                        // Only Admin creates, edits, or deletes projects.
-                        // Managers can read projects in their company and employees use /projects/me.
+                        // Admin creates projects. Manager writes are restricted by ProjectService to owned projects.
+                        // Employees use /projects/me.
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/projects/*/members/*"

@@ -83,7 +83,7 @@
             </select>
 
             <br><br>
-            <button type="submit">Create Employee</button>
+            <button type="submit" id="createEmployeeButton">Create Employee</button>
             <button type="button"
                     onclick="window.location.href='/admin-dashboard'">
                 Cancel
@@ -240,7 +240,6 @@
                     "Failed to load Manager and HR options.",
                     true
                 );
-                console.error(error);
             }
         }
 
@@ -300,6 +299,9 @@
             message.textContent = "Creating employee...";
             message.style.color = "black";
 
+            const submitButton = document.getElementById("createEmployeeButton");
+            submitButton.disabled = true;
+            submitButton.textContent = "Creating…";
             try {
                 const response = await fetch(API.createEmployee, {
                     method: "POST",
@@ -309,11 +311,7 @@
                 });
 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(
-                        "Creation failed (HTTP " + response.status + "): " +
-                        errorText
-                    );
+                    throw new Error(response.status === 401 ? "Your session has expired. Please sign in again." : response.status === 403 ? "Your account is not permitted to create employees." : response.status >= 500 ? "The server could not create the employee. Please try again or contact the administrator." : "The employee details were not accepted. Review the fields and try again.");
                 }
 
                 const responseText = await response.text();

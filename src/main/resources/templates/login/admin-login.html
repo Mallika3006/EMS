@@ -94,8 +94,7 @@
                     return;
                 }
 
-                // Keep token and role for existing frontend compatibility
-                localStorage.setItem("token", data.token);
+                // JWT is held in the HttpOnly cookie set by the server.
                 localStorage.setItem("role", data.role);
 
                 // Cookie is set by LoginController

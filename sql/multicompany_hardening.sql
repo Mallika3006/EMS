@@ -193,6 +193,14 @@ FROM (
 WHERE company_id IS NOT NULL
 ON CONFLICT (company_id) DO NOTHING;
 
+-- Explicit legacy IDs do not advance a PostgreSQL identity sequence. Keep
+-- the next public company registration from colliding with an existing ID.
+SELECT setval(
+    pg_get_serial_sequence('public.companies', 'company_id'),
+    GREATEST(COALESCE((SELECT MAX(company_id) FROM public.companies), 1), 1),
+    true
+);
+
 ALTER TABLE public.employees ALTER COLUMN company_id SET NOT NULL;
 ALTER TABLE public.users ALTER COLUMN company_id SET NOT NULL;
 ALTER TABLE public.department ALTER COLUMN company_id SET NOT NULL;

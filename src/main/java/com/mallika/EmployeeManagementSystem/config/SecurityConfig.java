@@ -14,250 +14,78 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 public class SecurityConfig {
-
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CookieOriginValidationFilter cookieOriginValidationFilter;
 
-    public SecurityConfig(
-            JwtAuthenticationFilter jwtAuthenticationFilter,
-            CookieOriginValidationFilter cookieOriginValidationFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, CookieOriginValidationFilter cookieOriginValidationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.cookieOriginValidationFilter = cookieOriginValidationFilter;
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http) throws Exception {
-
-        http
-                .csrf(csrf -> csrf.disable())
-
-                .authorizeHttpRequests(auth -> auth
-
-                        // Login pages
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/", "/login", "/admin-login", "/user-login"
-                        ).permitAll()
-
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/login"
-                        ).permitAll()
-
-                        // Static resources
-                        .requestMatchers(
-                                "/css/**",
-                                "/js/**",
-                                "/images/**",
-                                "/style.css",
-                                "/favicon.ico"
-                        ).permitAll()
-
-                        // User creation is company-scoped and requires an Admin.
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/users"
-                        ).hasRole("ADMIN")
-
-                        // Admin dashboard and pages
-                        .requestMatchers("/admin-dashboard")
-                        .hasRole("ADMIN")
-
-                        .requestMatchers("/admin/**")
-                        .hasRole("ADMIN")
-
-                        // HR and Manager dashboards
-                        .requestMatchers("/hr-dashboard")
-                        .hasRole("HR")
-
-                        .requestMatchers("/manager-dashboard")
-                        .hasRole("MANAGER")
-
-                        .requestMatchers("/employee-dashboard")
-                        .hasAnyRole("EMPLOYEE", "HR", "MANAGER")
-
-                        // Manager pages
-                        .requestMatchers("/manager/**")
-                        .hasRole("MANAGER")
-
-                        // HR pages
-                        .requestMatchers("/hr/**")
-                        .hasRole("HR")
-
-                        // User management
-                        .requestMatchers("/users/**")
-                        .hasRole("ADMIN")
-
-                        // Own employee data
-                        .requestMatchers(
-                                "/employees/me",
-                                "/employees/me/profile-details",
-                                "/employees/me/photo"
-                        ).hasAnyRole("EMPLOYEE", "HR", "MANAGER")
-
-                        // Manager employee endpoints
-                        .requestMatchers(
-                                "/employees/manager/me",
-                                "/employees/manager/my-team"
-                        ).hasRole("MANAGER")
-
-                        // HR employee endpoints
-                        .requestMatchers("/employees/hr/me")
-                        .hasRole("HR")
-
-                        // Own attendance
-                        .requestMatchers("/attendance/me")
-                        .hasAnyRole("EMPLOYEE", "HR", "MANAGER")
-
-                        // Manager team attendance
-                        .requestMatchers("/attendance/manager/team")
-                        .hasRole("MANAGER")
-
-                        // Manager adds attendance for team members
-                        .requestMatchers(
-                                        HttpMethod.POST,
-                                        "/attendance/manager"
-                                ).hasRole("MANAGER")
-
-                        // Own payroll
-                        .requestMatchers("/payrolls/me")
-                        .hasAnyRole("EMPLOYEE", "HR", "MANAGER")
-
-                        // Own projects
-                        .requestMatchers("/projects/me")
-                        .hasAnyRole("EMPLOYEE", "HR", "MANAGER")
-
-                        // Own tasks
-                        .requestMatchers("/tasks/me")
-                        .hasAnyRole("EMPLOYEE", "HR", "MANAGER")
-
-                        // Own department
-                        .requestMatchers("/departments/me")
-                        .hasAnyRole("EMPLOYEE", "HR", "MANAGER")
-
-                        // Own leave requests
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/leaves/me"
-                        ).hasAnyRole("EMPLOYEE", "HR", "MANAGER", "ADMIN")
-
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/leaves"
-                        ).hasAnyRole("EMPLOYEE", "HR", "MANAGER", "ADMIN")
-
-                        .requestMatchers(
-                                HttpMethod.PUT,
-                                "/leaves/*/withdraw"
-                        ).hasAnyRole("EMPLOYEE", "HR", "MANAGER", "ADMIN")
-
-                        // Leave management
-                        .requestMatchers("/leaves/manager/**")
-                        .hasRole("MANAGER")
-
-                        .requestMatchers("/leaves/hr/**")
-                        .hasRole("HR")
-
-                        // Cross-employee leave administration is Admin-only.
-                        .requestMatchers(
-                                HttpMethod.PUT,
-                                "/leaves/*"
-                        ).hasRole("ADMIN")
-
-                        .requestMatchers(
-                                HttpMethod.DELETE,
-                                "/leaves/*"
-                        ).hasRole("ADMIN")
-
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/leaves",
-                                "/leaves/*"
-                        ).hasRole("ADMIN")
-
-                        // Employee APIs
-                        .requestMatchers("/employees/**")
-                        .hasAnyRole("ADMIN", "HR")
-
-                        // Department APIs
-                        .requestMatchers("/departments/**")
-                        .hasAnyRole("ADMIN", "HR")
-
-                        // Designation APIs
-                        .requestMatchers("/designations/**")
-                        .hasAnyRole("ADMIN", "HR")
-
-                        // Attendance APIs
-                        .requestMatchers("/attendance/**")
-                        .hasAnyRole("ADMIN", "HR")
-
-                        // Payroll APIs
-                        .requestMatchers("/payrolls/**")
-                        .hasAnyRole("ADMIN", "HR")
-
-                        // Admin creates projects. Manager writes are restricted by ProjectService to owned projects.
-                        // Employees use /projects/me.
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/projects/*/members/*"
-                        ).hasRole("MANAGER")
-                        .requestMatchers(HttpMethod.POST, "/projects/**")
-                        .hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/projects/**")
-                        .hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.PATCH, "/projects/**")
-                        .hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.DELETE, "/projects/**")
-                        .hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.GET, "/projects/**")
-                        .hasAnyRole("ADMIN", "MANAGER")
-
-                        // HR does not manage tasks; Admin and Manager do.
-                        .requestMatchers("/tasks/**")
-                        .hasAnyRole("ADMIN", "MANAGER")
-
-                        // Remaining leave administration endpoints are Admin-only.
-                        .requestMatchers("/leaves/**")
-                        .hasRole("ADMIN")
-
-                        // Everything else requires authentication
-                        .anyRequest().authenticated()
-                )
-
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/user-login")
-                        .deleteCookies("jwt")
-                        .invalidateHttpSession(true)
-                )
-
-                .addFilterBefore(
-                        jwtAuthenticationFilter,
-                        UsernamePasswordAuthenticationFilter.class
-                )
-                .addFilterBefore(
-                        cookieOriginValidationFilter,
-                        JwtAuthenticationFilter.class
-                );
-
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.GET, "/", "/login", "/admin-login", "/user-login", "/register-company").permitAll()
+                .requestMatchers(HttpMethod.POST, "/login", "/register-company").permitAll()
+                .requestMatchers("/css/**", "/js/**", "/images/**", "/style.css", "/company-registration.css", "/favicon.ico").permitAll()
+                .requestMatchers(HttpMethod.POST, "/users").hasRole("ADMIN")
+                .requestMatchers("/admin-dashboard").hasRole("ADMIN")
+                .requestMatchers("/admin/**").hasRole("ADMIN")
+                .requestMatchers("/hr-dashboard").hasRole("HR")
+                .requestMatchers("/manager-dashboard").hasRole("MANAGER")
+                .requestMatchers("/employee-dashboard").hasAnyRole("EMPLOYEE", "HR", "MANAGER")
+                .requestMatchers("/manager/**").hasRole("MANAGER")
+                .requestMatchers("/hr/**").hasRole("HR")
+                .requestMatchers("/users/**").hasRole("ADMIN")
+                .requestMatchers("/employees/me", "/employees/me/profile-details", "/employees/me/photo").hasAnyRole("EMPLOYEE", "HR", "MANAGER")
+                .requestMatchers("/employees/manager/me", "/employees/manager/my-team").hasRole("MANAGER")
+                .requestMatchers("/employees/hr/me").hasRole("HR")
+                .requestMatchers("/attendance/me").hasAnyRole("EMPLOYEE", "HR", "MANAGER")
+                .requestMatchers("/attendance/manager/team").hasRole("MANAGER")
+                .requestMatchers(HttpMethod.POST, "/attendance/manager").hasRole("MANAGER")
+                .requestMatchers("/payrolls/me").hasAnyRole("EMPLOYEE", "HR", "MANAGER")
+                .requestMatchers("/projects/me").hasAnyRole("EMPLOYEE", "HR", "MANAGER")
+                .requestMatchers("/tasks/me").hasAnyRole("EMPLOYEE", "HR", "MANAGER")
+                .requestMatchers("/departments/me").hasAnyRole("EMPLOYEE", "HR", "MANAGER")
+                .requestMatchers(HttpMethod.GET, "/leaves/me").hasAnyRole("EMPLOYEE", "HR", "MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/leaves").hasAnyRole("EMPLOYEE", "HR", "MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/leaves/*/withdraw").hasAnyRole("EMPLOYEE", "HR", "MANAGER", "ADMIN")
+                .requestMatchers("/leaves/manager/**").hasRole("MANAGER")
+                .requestMatchers("/leaves/hr/**").hasRole("HR")
+                .requestMatchers(HttpMethod.PUT, "/leaves/*").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/leaves/*").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/leaves", "/leaves/*").hasRole("ADMIN")
+                .requestMatchers("/employees/**").hasAnyRole("ADMIN", "HR")
+                .requestMatchers("/departments/**").hasAnyRole("ADMIN", "HR")
+                .requestMatchers("/designations/**").hasAnyRole("ADMIN", "HR")
+                .requestMatchers("/attendance/**").hasAnyRole("ADMIN", "HR")
+                .requestMatchers("/payrolls/**").hasAnyRole("ADMIN", "HR")
+                .requestMatchers(HttpMethod.POST, "/projects/*/members/*").hasRole("MANAGER")
+                .requestMatchers(HttpMethod.POST, "/projects/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/projects/**").hasAnyRole("ADMIN", "MANAGER")
+                .requestMatchers(HttpMethod.PATCH, "/projects/**").hasAnyRole("ADMIN", "MANAGER")
+                .requestMatchers(HttpMethod.DELETE, "/projects/**").hasAnyRole("ADMIN", "MANAGER")
+                .requestMatchers(HttpMethod.GET, "/projects/**").hasAnyRole("ADMIN", "MANAGER")
+                .requestMatchers("/tasks/**").hasAnyRole("ADMIN", "MANAGER")
+                .requestMatchers("/leaves/**").hasRole("ADMIN")
+                .anyRequest().authenticated())
+            .logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/user-login").deleteCookies("jwt").invalidateHttpSession(true))
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(cookieOriginValidationFilter, JwtAuthenticationFilter.class);
         return http.build();
     }
 
     @Bean
-    public FilterRegistrationBean<JwtAuthenticationFilter> jwtFilterServletRegistration(
-            JwtAuthenticationFilter filter) {
-        FilterRegistrationBean<JwtAuthenticationFilter> registration =
-                new FilterRegistrationBean<>(filter);
+    public FilterRegistrationBean<JwtAuthenticationFilter> jwtFilterServletRegistration(JwtAuthenticationFilter filter) {
+        FilterRegistrationBean<JwtAuthenticationFilter> registration = new FilterRegistrationBean<>(filter);
         registration.setEnabled(false);
         return registration;
     }
 
     @Bean
-    public FilterRegistrationBean<CookieOriginValidationFilter> cookieOriginFilterServletRegistration(
-            CookieOriginValidationFilter filter) {
-        FilterRegistrationBean<CookieOriginValidationFilter> registration =
-                new FilterRegistrationBean<>(filter);
+    public FilterRegistrationBean<CookieOriginValidationFilter> cookieOriginFilterServletRegistration(CookieOriginValidationFilter filter) {
+        FilterRegistrationBean<CookieOriginValidationFilter> registration = new FilterRegistrationBean<>(filter);
         registration.setEnabled(false);
         return registration;
     }
@@ -268,9 +96,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration configuration)
-            throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
 }

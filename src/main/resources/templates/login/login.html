@@ -10,9 +10,7 @@
 <body>
 <div class="login-page">
     <section class="login-intro" aria-label="Employee Management System">
-        <div>
-            <div class="login-brand">EMS <span aria-hidden="true">/</span> Employee Management System</div>
-        </div>
+        <div><div class="login-brand">EMS <span aria-hidden="true">/</span> Employee Management System</div></div>
         <div>
             <h1>People operations, made simpler.</h1>
             <p>A single place to manage employee information and the everyday work that keeps your organization moving.</p>
@@ -23,6 +21,7 @@
         <section class="login-container" aria-labelledby="login-heading">
             <h2 id="login-heading">Welcome back</h2>
             <p class="subtitle">Sign in with your assigned account to continue.</p>
+            <p id="registration-notice" class="success-message" role="status" aria-live="polite"></p>
             <p id="error-message" class="error-message" role="alert" aria-live="polite"></p>
             <form id="loginForm" novalidate>
                 <label for="username">Username</label>
@@ -37,7 +36,8 @@
                 </div>
                 <button id="loginButton" type="submit">Sign in</button>
             </form>
-            <p style="font-size:.82rem; margin:20px 0 0;">If you cannot sign in, contact your organization administrator.</p>
+            <p class="registration-login-link">New to EMS? <a th:href="@{/register-company}">Register as a company</a></p>
+            <p style="font-size:.82rem; margin:14px 0 0;">If you cannot sign in, contact your organization administrator.</p>
         </section>
     </main>
 </div>
@@ -49,6 +49,11 @@
     const errorMessage = document.getElementById("error-message");
     const loginButton = document.getElementById("loginButton");
     const passwordToggle = document.getElementById("passwordToggle");
+    const registrationNotice = document.getElementById("registration-notice");
+
+    if (new URLSearchParams(window.location.search).has("registered")) {
+        registrationNotice.textContent = "Company registered successfully. Sign in with your new Admin account.";
+    }
 
     passwordToggle.addEventListener("click", () => {
         const reveal = passwordInput.type === "password";
@@ -94,17 +99,10 @@
                 "ROLE_EMPLOYEE": "/employee-dashboard"
             };
             const destination = destinations[data.role];
-            if (!destination) {
-                throw new Error("Your account role could not be recognized. Contact your administrator.");
-            }
-
-            // Authentication remains in the server-issued HttpOnly cookie.
-            // Role is used only to choose the initial redirect; auth remains in the HttpOnly cookie.
+            if (!destination) throw new Error("Your account role could not be recognized. Contact your administrator.");
             window.location.assign(destination);
         } catch (error) {
-            errorMessage.textContent = error instanceof Error
-                ? error.message
-                : "Sign-in failed. Please try again.";
+            errorMessage.textContent = error instanceof Error ? error.message : "Sign-in failed. Please try again.";
             loginButton.disabled = false;
             loginButton.textContent = "Sign in";
         }

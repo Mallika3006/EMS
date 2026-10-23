@@ -86,6 +86,20 @@ public class ProjectRepository {
         throw new RuntimeException("Project not found in current company: " + id);
     }
 
+    public boolean hasTasks(Integer projectId, Long companyId) {
+        String sql = "SELECT 1 FROM public.tasks WHERE project_id = ? AND company_id = ? LIMIT 1";
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, projectId);
+            ps.setLong(2, companyId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not check project tasks", e);
+        }
+    }
+
     public boolean deleteProject(Integer id, Long companyId) {
         try (Connection con = dataSource.getConnection();
              PreparedStatement ps = con.prepareStatement(

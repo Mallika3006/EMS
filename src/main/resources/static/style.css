@@ -147,3 +147,21 @@ footer { color: var(--muted); }
   .app-topbar { align-items: flex-start; flex-direction: column; }
 }
 @media (max-width: 420px) { .app-nav { grid-template-columns: 1fr; } }
+
+/* Data-management module controls */
+.btn-secondary { background: #fff; color: #344054; border-color: #cfd6e2; }
+.btn-secondary:hover { background: #f2f4f7; color: #182230; }
+.btn-small { min-height: 34px; padding: 6px 10px; margin: 2px 4px 2px 0; font-size: .82rem; }
+.btn-danger { background: #fff; border-color: #fecdca; color: #b42318; }
+.btn-danger:hover { background: #fff1f0; color: #912018; }
+.module-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 18px; flex-wrap: wrap; margin-bottom: 12px; }
+.module-toolbar > div:first-child { flex: 1 1 260px; max-width: 440px; }
+.module-toolbar input { margin-bottom: 0; }
+.toolbar-actions, .form-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 18px; }
+.form-field { min-width: 0; }
+.form-field input, .form-field select, .form-field textarea { margin-bottom: 12px; }
+.form-field input[type="checkbox"] { width: 20px; height: 20px; margin-top: 10px; }
+.form-actions { padding-top: 12px; }
+[hidden] { display: none !important; }
+@media (max-width: 620px) { .form-grid { grid-template-columns: 1fr; } .toolbar-actions { width: 100%; } .toolbar-actions button { flex: 1; } }

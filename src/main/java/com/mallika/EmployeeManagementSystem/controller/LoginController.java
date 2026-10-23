@@ -4,6 +4,7 @@ import com.mallika.EmployeeManagementSystem.dto.LoginRequest;
 import com.mallika.EmployeeManagementSystem.service.JwtService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,6 +21,9 @@ public class LoginController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+
+    @Value("${app.security.cookie-secure:false}")
+    private boolean secureCookie;
 
     public LoginController(
             AuthenticationManager authenticationManager,
@@ -88,7 +92,7 @@ public class LoginController {
         ResponseCookie jwtCookie = ResponseCookie
                 .from("jwt", token)
                 .httpOnly(true)
-                .secure(false) // Set true when deployed over HTTPS
+                .secure(secureCookie) // Enable in HTTPS deployments
                 .path("/")
                 .maxAge(60 * 60)
                 .sameSite("Lax")

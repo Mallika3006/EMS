@@ -2,6 +2,7 @@ package com.mallika.EmployeeManagementSystem.repository;
 
 import com.mallika.EmployeeManagementSystem.model.Employee;
 import com.mallika.EmployeeManagementSystem.model.Payroll;
+import com.mallika.EmployeeManagementSystem.service.CompanyContext;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -20,9 +21,11 @@ import java.util.Optional;
 public class PayrollRepository {
 
     private final DataSource dataSource;
+    private final CompanyContext companyContext;
 
-    public PayrollRepository(DataSource dataSource) {
+    public PayrollRepository(DataSource dataSource, CompanyContext companyContext) {
         this.dataSource = dataSource;
+        this.companyContext = companyContext;
     }
 
 
@@ -31,6 +34,9 @@ public class PayrollRepository {
     // =========================================================
 
     public Payroll createPayroll(Payroll payroll) {
+        Integer employeeId = payroll.getEmployee() == null
+                ? null : payroll.getEmployee().getEmployeeId();
+        validateEmployeeInCompany(employeeId);
 
         String sql =
                 "SELECT * FROM create_payroll(?, ?, ?, ?, ?, ?, ?)";
@@ -145,7 +151,7 @@ public class PayrollRepository {
             );
         }
 
-        return payrolls;
+        return filterPayrollsByCompany(payrolls);
     }
 
 
@@ -170,9 +176,13 @@ public class PayrollRepository {
                          statement.executeQuery()) {
 
                 if (resultSet.next()) {
-                    return Optional.of(
-                            mapPayroll(resultSet)
-                    );
+                    Payroll payroll = mapPayroll(resultSet);
+                    if (isEmployeeInCompany(
+                            payroll.getEmployee() == null ? null : payroll.getEmployee().getEmployeeId(),
+                            companyContext.getCompanyId())) {
+                        return Optional.of(payroll);
+                    }
+                    return Optional.empty();
                 }
             }
 
@@ -195,6 +205,10 @@ public class PayrollRepository {
     public Payroll updatePayroll(
             Integer id,
             Payroll payrollDetails) {
+        ensurePayrollInCompany(id);
+        Integer employeeId = payrollDetails.getEmployee() == null
+                ? null : payrollDetails.getEmployee().getEmployeeId();
+        validateEmployeeInCompany(employeeId);
 
         String sql =
                 "SELECT * FROM update_payroll(?, ?, ?, ?, ?, ?, ?, ?)";
@@ -287,6 +301,7 @@ public class PayrollRepository {
     // =========================================================
 
     public boolean deletePayroll(Integer id) {
+        ensurePayrollInCompany(id);
 
         String sql =
                 "SELECT delete_payroll(?)";
@@ -625,6 +640,64 @@ public class PayrollRepository {
         }
 
         return payrolls;
+    }
+
+
+    // Payroll records are tenant-owned through their employee relationship.
+    private List<Payroll> filterPayrollsByCompany(List<Payroll> payrolls) {
+        Long companyId = companyContext.getCompanyId();
+        List<Payroll> scoped = new ArrayList<>();
+        for (Payroll payroll : payrolls) {
+            Integer employeeId = payroll.getEmployee() == null
+                    ? null : payroll.getEmployee().getEmployeeId();
+            if (employeeId != null && isEmployeeInCompany(employeeId, companyId)) {
+                scoped.add(payroll);
+            }
+        }
+        return scoped;
+    }
+
+    private void ensurePayrollInCompany(Integer payrollId) {
+        String sql = """
+            SELECT 1 FROM public.payroll p
+            JOIN public.employees e ON e.employee_id = p.employee_id
+            WHERE p.payroll_id = ? AND e.company_id = ?
+            """;
+        try (Connection con = dataSource.getConnection();
+             java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, payrollId);
+            ps.setLong(2, companyContext.getCompanyId());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    throw new org.springframework.security.access.AccessDeniedException(
+                            "Payroll does not belong to your company");
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not validate payroll company", e);
+        }
+    }
+
+    private void validateEmployeeInCompany(Integer employeeId) {
+        if (employeeId == null || !isEmployeeInCompany(employeeId, companyContext.getCompanyId())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Employee does not belong to your company");
+        }
+    }
+
+    private boolean isEmployeeInCompany(Integer employeeId, Long companyId) {
+        if (employeeId == null) return false;
+        String sql = "SELECT 1 FROM public.employees WHERE employee_id = ? AND company_id = ?";
+        try (Connection con = dataSource.getConnection();
+             java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, employeeId);
+            ps.setLong(2, companyId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not validate employee company", e);
+        }
     }
 
 }

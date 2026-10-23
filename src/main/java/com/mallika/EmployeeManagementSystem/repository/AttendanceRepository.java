@@ -114,7 +114,7 @@ public class AttendanceRepository {
                 String findSql = """
                     SELECT a.attendance_id, a.status, a.check_in_time
                     FROM attendance a
-                    JOIN employees e ON e.employee_id = a.employee_id
+                    JOIN employees e ON e.employee_id = a.employee_id AND a.company_id = e.company_id
                     JOIN users u ON u.employee_id = e.employee_id AND u.company_id = e.company_id
                     WHERE a.employee_id = ? AND a.att_date = CURRENT_DATE
                       AND e.company_id = ? AND u.is_active = TRUE
@@ -280,6 +280,13 @@ public class AttendanceRepository {
                     AND new_e.company_id = ?
                     AND u.is_active = TRUE
               )
+              AND NOT EXISTS (
+                  SELECT 1 FROM attendance other
+                  WHERE other.employee_id = ?
+                    AND other.att_date = ?
+                    AND other.company_id = ?
+                    AND other.attendance_id <> a.attendance_id
+              )
             """;
 
         try (Connection con = dataSource.getConnection();
@@ -292,6 +299,9 @@ public class AttendanceRepository {
             ps.setLong(8, companyId());
             ps.setInt(9, details.getEmployee().getEmployeeId());
             ps.setLong(10, companyId());
+            ps.setInt(11, details.getEmployee().getEmployeeId());
+            ps.setDate(12, Date.valueOf(details.getAttDate()));
+            ps.setLong(13, companyId());
 
             if (ps.executeUpdate() == 0) {
                 throw new IllegalArgumentException(

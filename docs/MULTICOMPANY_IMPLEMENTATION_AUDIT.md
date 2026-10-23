@@ -44,7 +44,7 @@ Working branch: agent/multicompany-hardening
 ## Migration and local verification
 
 1. Back up the `employee_management_system` database before applying schema changes.
-2. Review `sql/multicompany_hardening.sql` against the actual live schema and resolve any orphan or cross-company rows it reports.
+2. Review `sql/multicompany_hardening.sql` against the actual live schema. Resolve duplicate usernames, orphan records, or cross-company relationships it reports before retrying.
 3. Run `sql/multicompany_hardening.sql` first, then re-run the current `sql/attendance_functions.sql`, `sql/leave_functions.sql`, and `sql/payroll_functions.sql` definitions so inserts/updates populate `company_id`.
 4. Configure `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, and `JWT_SECRET` from `.env.example` in the environment used to start Spring Boot. Do not commit actual values.
 5. Run `mvn clean test` and exercise each role with two companies before deploying.

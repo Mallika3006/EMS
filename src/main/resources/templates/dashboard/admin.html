@@ -13,16 +13,16 @@
             <span class="nav-section">Workspace</span>
             <a th:href="@{/admin-dashboard}" aria-current="page"><span aria-hidden="true">⌂</span> Overview</a>
             <a th:href="@{/admin/employees}"><span aria-hidden="true">♙</span> Employees</a>
-            <a th:href="@{/users}"><span aria-hidden="true">♧</span> User accounts</a>
+            <a th:href="@{/admin/users}"><span aria-hidden="true">♧</span> User accounts</a>
             <span class="nav-section">Organization</span>
-            <a th:href="@{/departments}"><span aria-hidden="true">▦</span> Departments</a>
-            <a th:href="@{/designations}"><span aria-hidden="true">▤</span> Designations</a>
+            <a th:href="@{/admin/departments}"><span aria-hidden="true">▦</span> Departments</a>
+            <a th:href="@{/admin/designations}"><span aria-hidden="true">▤</span> Designations</a>
             <span class="nav-section">Operations</span>
-            <a th:href="@{/attendance}"><span aria-hidden="true">◷</span> Attendance</a>
-            <a th:href="@{/leaves}"><span aria-hidden="true">▣</span> Leaves</a>
-            <a th:href="@{/payrolls}"><span aria-hidden="true">₹</span> Payroll</a>
-            <a th:href="@{/projects}"><span aria-hidden="true">▱</span> Projects</a>
-            <a th:href="@{/tasks}"><span aria-hidden="true">☷</span> Tasks</a>
+            <a th:href="@{/admin/attendance}"><span aria-hidden="true">◷</span> Attendance</a>
+            <a th:href="@{/admin/leaves}"><span aria-hidden="true">▣</span> Leaves</a>
+            <a th:href="@{/admin/payroll}"><span aria-hidden="true">₹</span> Payroll</a>
+            <a th:href="@{/admin/projects}"><span aria-hidden="true">▱</span> Projects</a>
+            <a th:href="@{/admin/tasks}"><span aria-hidden="true">☷</span> Tasks</a>
         </nav>
         <div class="app-sidebar-footer">
             <form th:action="@{/logout}" method="post"><button type="submit"><span aria-hidden="true">↪</span> Log out</button></form>

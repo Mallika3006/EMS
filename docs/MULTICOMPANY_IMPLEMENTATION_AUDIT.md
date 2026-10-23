@@ -11,6 +11,7 @@ Working branch: agent/multicompany-hardening
 - Existing SQL scripts include company-aware and legacy unscoped functions.
 - Project and task repositories now use company-scoped SQL reads/writes, avoiding the legacy unscoped project/task function signatures.
 - Task create/update validates project and assigned-employee tenant ownership; manager task lists are company-scoped and exclude inactive employees.
+- Managers can assign their own projects to active direct reports through `POST /projects/{projectId}/members/{employeeId}`; the existing `employee_project` table is used.
 - Leave and payroll repository operations validate employee/record ownership against the authenticated company and filter list results by employee company. Attendance repository operations use company-scoped employee joins and persist `company_id`.
 - The original `application.properties` contained database credentials, a JWT signing secret, and a default Spring Security user. This branch now expects environment variables instead. Rotate any credentials or signing secrets that were committed previously.
 
@@ -30,6 +31,7 @@ Working branch: agent/multicompany-hardening
 - [x] Add environment-variable example.
 - [x] Add a company registry and SQL migration to backfill tenant IDs for existing data, add tenant indexes, and add company/relationship constraints.
 - [x] Scope task/project CRUD and list/search/filter/sort paths by authenticated company context.
+- [x] Add company-scoped manager project-member assignment using `employee_project`.
 - [x] Add company ownership checks to leave and payroll repository operations; attendance writes are company-scoped.
 - [x] Restrict project writes to Admin, general task APIs to Admin/Manager, and general leave administration to Admin; preserve manager/HR-specific leave routes.
 - [x] Fail closed if a username resolves to multiple users, because the current JWT subject identifies a user by username only.
@@ -49,7 +51,9 @@ Working branch: agent/multicompany-hardening
 4. Configure `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, and `JWT_SECRET` from `.env.example` in the environment used to start Spring Boot. Do not commit actual values.
 5. Run `mvn clean test` and exercise each role with two companies before deploying.
 
-The migration intentionally stops rather than silently assigning company IDs to orphan attendance/leave/payroll rows or accepting cross-company `employee_project` rows. It creates no team-related tables.
+The migration intentionally stops rather than silently assigning company IDs to orphan attendance/leave/payroll rows, accepting cross-company relationships, or allowing duplicate usernames (the JWT subject is username-only). It creates no team-related tables.
+
+New-company onboarding is currently a database/bootstrap operation: create a row in `companies`, then provision the first Admin user with that company ID through a trusted administrative process. Do not accept a company ID from a public login or employee-create request.
 
 ## Verification status
 

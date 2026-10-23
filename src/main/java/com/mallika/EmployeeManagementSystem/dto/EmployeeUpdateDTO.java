@@ -19,11 +19,15 @@ public class EmployeeUpdateDTO {
 
     private LocalDate dateOfBirth;
 
+    private LocalDate hireDate;
+
     private String address;
 
     private String profilePhoto;
 
     private Integer departmentId;
+
+    private Integer designationId;
 
     private Integer managerId;
 

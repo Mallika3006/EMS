@@ -83,7 +83,7 @@ BEGIN
     NEW.company_id := employee_company;
     RETURN NEW;
 END;
-$;
+$$;
 
 DROP TRIGGER IF EXISTS trg_attendance_company_id ON public.attendance;
 CREATE TRIGGER trg_attendance_company_id

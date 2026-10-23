@@ -64,7 +64,7 @@ WHERE e.employee_id = p.employee_id AND p.company_id IS NULL;
 CREATE OR REPLACE FUNCTION public.sync_employee_owned_company_id()
 RETURNS TRIGGER
 LANGUAGE plpgsql
-AS $
+AS $$
 DECLARE
     employee_company BIGINT;
 BEGIN

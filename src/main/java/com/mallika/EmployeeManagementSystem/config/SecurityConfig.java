@@ -180,13 +180,22 @@ public class SecurityConfig {
                         .requestMatchers("/payrolls/**")
                         .hasAnyRole("ADMIN", "HR")
 
-                        // Project APIs
-                        .requestMatchers("/projects/**")
-                        .hasAnyRole("ADMIN", "HR", "MANAGER")
+                        // Only Admin creates, edits, or deletes projects.
+                        // Managers can read projects in their company and employees use /projects/me.
+                        .requestMatchers(HttpMethod.POST, "/projects/**")
+                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/projects/**")
+                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/projects/**")
+                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/projects/**")
+                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/projects/**")
+                        .hasAnyRole("ADMIN", "MANAGER")
 
-                        // Task APIs
+                        // HR does not manage tasks; Admin and Manager do.
                         .requestMatchers("/tasks/**")
-                        .hasAnyRole("ADMIN", "HR", "MANAGER")
+                        .hasAnyRole("ADMIN", "MANAGER")
 
                         // Remaining leave APIs
                         .requestMatchers("/leaves/**")

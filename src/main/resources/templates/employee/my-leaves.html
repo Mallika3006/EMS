@@ -562,26 +562,31 @@
             fetch('/leaves', {
 
                 method: 'POST',
+                credentials: 'same-origin',
 
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
 
                 body: JSON.stringify(leave)
 
             })
 
-                .then(response => {
-
+                .then(async response => {
+                    const text = await response.text();
+                    let result = {};
+                    try { result = text ? JSON.parse(text) : {}; }
+                    catch { result = { message: text }; }
                     if (!response.ok) {
-
-                        throw new Error(
-                            "Failed to apply for leave"
-                        );
+                        const message = response.status === 401
+                            ? "Your session has expired. Please sign in again."
+                            : response.status === 403
+                                ? "Your account is not permitted to apply for leave."
+                                : result.message || result.error || "Failed to apply for leave.";
+                        throw new Error(message);
                     }
-
-                    return response.json();
-
+                    return result;
                 })
 
 
@@ -604,7 +609,7 @@
                 .catch(error => {
 
                     formMessage.innerText =
-                        "Unable to apply for leave.";
+                        error instanceof Error ? error.message : "Unable to apply for leave.";
 
                     console.error(error);
 

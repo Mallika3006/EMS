@@ -78,9 +78,40 @@ public class AttendanceService {
         return getCurrentUser().getEmployee().getEmployeeId();
     }
 
-    // CREATE: company membership is checked by the repository.
+    private void validateAttendance(Attendance attendance) {
+        if (attendance == null || attendance.getEmployee() == null
+                || attendance.getEmployee().getEmployeeId() == null) {
+            throw new IllegalArgumentException("Employee is required");
+        }
+        if (attendance.getAttDate() == null) throw new IllegalArgumentException("Attendance date is required");
+        if (attendance.getStatus() == null) throw new IllegalArgumentException("Attendance status is required");
+        switch (attendance.getStatus().trim().toLowerCase()) {
+            case "present" -> attendance.setStatus("Present");
+            case "absent" -> attendance.setStatus("Absent");
+            case "late" -> attendance.setStatus("Late");
+            case "leave" -> attendance.setStatus("Leave");
+            default -> throw new IllegalArgumentException("Status must be Present, Absent, Late, or Leave");
+        }
+        if (attendance.getCheckInTime() != null && attendance.getCheckOutTime() != null
+                && attendance.getCheckOutTime().isBefore(attendance.getCheckInTime())) {
+            throw new IllegalArgumentException("Check-out time cannot be earlier than check-in time");
+        }
+    }
+
+    // Manual attendance entry; repository enforces company and active-account membership.
     public Attendance createAttendance(Attendance attendance) {
+        validateAttendance(attendance);
         return attendanceRepository.createAttendance(attendance);
+    }
+
+    public Attendance checkIn() {
+        User user = getCurrentUser();
+        return attendanceRepository.checkIn(user.getEmployee().getEmployeeId());
+    }
+
+    public Attendance checkOut() {
+        User user = getCurrentUser();
+        return attendanceRepository.checkOut(user.getEmployee().getEmployeeId());
     }
 
     public List<Attendance> getAllAttendance() {
@@ -96,6 +127,7 @@ public class AttendanceService {
 
     public Attendance updateAttendance(
             Integer id, Attendance attendanceDetails) {
+        validateAttendance(attendanceDetails);
         return attendanceRepository.updateAttendance(id, attendanceDetails);
     }
 
@@ -166,6 +198,8 @@ public class AttendanceService {
                 || attendance.getEmployee().getEmployeeId() == null) {
             throw new IllegalArgumentException("Employee is required");
         }
+
+        validateAttendance(attendance);
 
         Integer managerId = manager.getEmployee().getEmployeeId();
         Integer employeeId = attendance.getEmployee().getEmployeeId();

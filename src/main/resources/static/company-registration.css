@@ -1,0 +1,11 @@
+.registration-container { width: min(100%, 480px); }
+.registration-container h2 { margin-top: 18px; }
+.registration-container form { display: grid; gap: 0; }
+.registration-container label { margin-top: 8px; }
+.registration-container input { margin-bottom: 9px; }
+.registration-container button[type="submit"] { margin-top: 16px; }
+.registration-back { display: inline-block; color: var(--brand); font-weight: 650; text-decoration: none; }
+.registration-back:hover { text-decoration: underline; }
+.registration-note { margin: 18px 0 0; color: var(--muted); font-size: .8rem; line-height: 1.55; }
+.registration-container .success-message { color: var(--success); }
+@media (max-width: 760px) { .registration-container { width: 100%; } }

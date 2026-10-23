@@ -166,8 +166,75 @@ public class TaskRepository {
     }
 
     public List<Task> getTasksByManagerId(Integer managerId) {
-        return queryTasks("SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id JOIN public.employees e ON e.employee_id=t.assigned_to AND e.company_id=t.company_id JOIN public.users u ON u.employee_id=e.employee_id AND u.company_id=e.company_id AND u.is_active=TRUE WHERE e.manager_id=? AND t.company_id=? ORDER BY t.task_id DESC",
-                ps -> { ps.setInt(1, managerId); ps.setLong(2, companyContext.getCompanyId()); });
+        return queryTasks("SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id JOIN public.employees e ON e.employee_id=t.assigned_to AND e.company_id=t.company_id JOIN public.users u ON u.employee_id=e.employee_id AND u.company_id=e.company_id AND u.is_active=TRUE WHERE t.company_id=? AND (e.manager_id=? OR p.manager_id=?) ORDER BY t.task_id DESC",
+                ps -> { long companyId = companyContext.getCompanyId(); ps.setLong(1, companyId); ps.setInt(2, managerId); ps.setInt(3, managerId); });
+    }
+
+    public boolean isTaskAccessibleToManager(Integer taskId, Integer managerId, Long companyId) {
+        String sql = """
+            SELECT 1
+            FROM public.tasks t
+            LEFT JOIN public.projects p
+              ON p.project_id = t.project_id AND p.company_id = t.company_id
+            WHERE t.task_id = ? AND t.company_id = ?
+              AND (
+                p.manager_id = ?
+                OR EXISTS (
+                    SELECT 1 FROM public.employees e
+                    WHERE e.employee_id = t.assigned_to
+                      AND e.company_id = t.company_id
+                      AND e.manager_id = ?
+                )
+              )
+            """;
+        try (Connection c = dataSource.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, taskId);
+            ps.setLong(2, companyId);
+            ps.setInt(3, managerId);
+            ps.setInt(4, managerId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not validate manager task access", e);
+        }
+    }
+
+    public boolean isEmployeeManagedBy(Integer employeeId, Integer managerId, Long companyId) {
+        String sql = """
+            SELECT 1 FROM public.employees
+            WHERE employee_id = ? AND manager_id = ? AND company_id = ?
+            """;
+        try (Connection c = dataSource.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, employeeId);
+            ps.setInt(2, managerId);
+            ps.setLong(3, companyId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not validate manager employee relationship", e);
+        }
+    }
+
+    public boolean isProjectManagedBy(Integer projectId, Integer managerId, Long companyId) {
+        String sql = """
+            SELECT 1 FROM public.projects
+            WHERE project_id = ? AND manager_id = ? AND company_id = ?
+            """;
+        try (Connection c = dataSource.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, projectId);
+            ps.setInt(2, managerId);
+            ps.setLong(3, companyId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not validate manager project relationship", e);
+        }
     }
 
     private List<Task> queryTasks(String sql, SqlBinder binder) {

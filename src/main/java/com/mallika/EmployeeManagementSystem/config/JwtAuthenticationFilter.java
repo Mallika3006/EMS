@@ -37,10 +37,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
 
-        System.out.println(
-                ">>> REQUEST: " + request.getRequestURI()
-        );
-
         String token = null;
 
         // ==========================================
@@ -55,9 +51,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             token = authHeader.substring(7);
 
-            System.out.println(
-                    ">>> JWT FOUND IN AUTHORIZATION HEADER"
-            );
         }
 
         // ==========================================
@@ -73,10 +66,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     token = cookie.getValue();
 
-                    System.out.println(
-                            ">>> JWT FOUND IN COOKIE"
-                    );
-
                     break;
                 }
             }
@@ -87,10 +76,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // ==========================================
 
         if (token == null) {
-
-            System.out.println(
-                    ">>> NO JWT TOKEN FOUND"
-            );
 
             filterChain.doFilter(request, response);
             return;
@@ -105,10 +90,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String username =
                     jwtService.extractUsername(token);
 
-            System.out.println(
-                    ">>> JWT USERNAME: " + username
-            );
-
             if (username != null &&
                     SecurityContextHolder
                             .getContext()
@@ -118,16 +99,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         userDetailsService
                                 .loadUserByUsername(username);
 
-                System.out.println(
-                        ">>> USER AUTHORITIES: "
-                                + userDetails.getAuthorities()
-                );
-
                 if (jwtService.isTokenValid(token)) {
-
-                    System.out.println(
-                            ">>> JWT IS VALID"
-                    );
 
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
@@ -145,24 +117,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             .getContext()
                             .setAuthentication(authentication);
 
-                    System.out.println(
-                            ">>> USER AUTHENTICATED: "
-                                    + username
-                    );
-
                 } else {
 
-                    System.out.println(
-                            ">>> JWT IS INVALID"
-                    );
                 }
             }
 
         } catch (Exception e) {
 
-            System.out.println(
-                    ">>> JWT ERROR: " + e.getMessage()
-            );
         }
 
         filterChain.doFilter(request, response);

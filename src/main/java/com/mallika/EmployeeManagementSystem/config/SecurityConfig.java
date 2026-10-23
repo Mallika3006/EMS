@@ -1,5 +1,6 @@
 package com.mallika.EmployeeManagementSystem.config;
 
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,10 +16,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CookieOriginValidationFilter cookieOriginValidationFilter;
 
     public SecurityConfig(
-            JwtAuthenticationFilter jwtAuthenticationFilter) {
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            CookieOriginValidationFilter cookieOriginValidationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.cookieOriginValidationFilter = cookieOriginValidationFilter;
     }
 
     @Bean
@@ -51,11 +55,11 @@ public class SecurityConfig {
                                 "/favicon.ico"
                         ).permitAll()
 
-                        // First user creation
+                        // User creation is company-scoped and requires an Admin.
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/users"
-                        ).permitAll()
+                        ).hasRole("ADMIN")
 
                         // Admin dashboard and pages
                         .requestMatchers("/admin-dashboard")
@@ -150,15 +154,28 @@ public class SecurityConfig {
                         ).hasAnyRole("EMPLOYEE", "HR", "MANAGER", "ADMIN")
 
                         // Leave management
+                        .requestMatchers("/leaves/manager/**")
+                        .hasRole("MANAGER")
+
+                        .requestMatchers("/leaves/hr/**")
+                        .hasRole("HR")
+
+                        // Cross-employee leave administration is Admin-only.
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/leaves/*"
-                        ).hasAnyRole("ADMIN", "HR", "MANAGER")
+                        ).hasRole("ADMIN")
 
                         .requestMatchers(
                                 HttpMethod.DELETE,
                                 "/leaves/*"
-                        ).hasAnyRole("ADMIN", "HR", "MANAGER")
+                        ).hasRole("ADMIN")
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/leaves",
+                                "/leaves/*"
+                        ).hasRole("ADMIN")
 
                         // Employee APIs
                         .requestMatchers("/employees/**")
@@ -180,17 +197,30 @@ public class SecurityConfig {
                         .requestMatchers("/payrolls/**")
                         .hasAnyRole("ADMIN", "HR")
 
-                        // Project APIs
-                        .requestMatchers("/projects/**")
-                        .hasAnyRole("ADMIN", "HR", "MANAGER")
+                        // Admin creates projects. Manager writes are restricted by ProjectService to owned projects.
+                        // Employees use /projects/me.
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/projects/*/members/*"
+                        ).hasRole("MANAGER")
+                        .requestMatchers(HttpMethod.POST, "/projects/**")
+                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/projects/**")
+                        .hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.PATCH, "/projects/**")
+                        .hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.DELETE, "/projects/**")
+                        .hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.GET, "/projects/**")
+                        .hasAnyRole("ADMIN", "MANAGER")
 
-                        // Task APIs
+                        // HR does not manage tasks; Admin and Manager do.
                         .requestMatchers("/tasks/**")
-                        .hasAnyRole("ADMIN", "HR", "MANAGER")
+                        .hasAnyRole("ADMIN", "MANAGER")
 
-                        // Remaining leave APIs
+                        // Remaining leave administration endpoints are Admin-only.
                         .requestMatchers("/leaves/**")
-                        .hasAnyRole("ADMIN", "HR", "MANAGER")
+                        .hasRole("ADMIN")
 
                         // Everything else requires authentication
                         .anyRequest().authenticated()
@@ -206,9 +236,31 @@ public class SecurityConfig {
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
+                )
+                .addFilterBefore(
+                        cookieOriginValidationFilter,
+                        JwtAuthenticationFilter.class
                 );
 
         return http.build();
+    }
+
+    @Bean
+    public FilterRegistrationBean<JwtAuthenticationFilter> jwtFilterServletRegistration(
+            JwtAuthenticationFilter filter) {
+        FilterRegistrationBean<JwtAuthenticationFilter> registration =
+                new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
+    public FilterRegistrationBean<CookieOriginValidationFilter> cookieOriginFilterServletRegistration(
+            CookieOriginValidationFilter filter) {
+        FilterRegistrationBean<CookieOriginValidationFilter> registration =
+                new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Bean

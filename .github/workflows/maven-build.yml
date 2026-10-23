@@ -1,0 +1,74 @@
+name: Maven build
+
+on:
+  push:
+    branches:
+      - main
+      - agent/multicompany-hardening
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Java 26
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '26'
+          cache: maven
+
+      - name: Compile and package
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/employee_management_system
+          DB_USERNAME: postgres
+          DB_PASSWORD: ci-placeholder-password
+          JWT_SECRET: ci-only-placeholder-secret-at-least-32-characters
+          COOKIE_SECURE: 'false'
+        run: bash ./mvnw --batch-mode --no-transfer-progress verify
+
+  migration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: ems_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ems_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+
+      - name: Apply migration and verify tenant constraints
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ems_test
+        run: |
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/tests/multicompany_migration_fixture.sql
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/multicompany_hardening.sql
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/tests/multicompany_migration_assertions.sql
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/department_company_functions.sql
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/department_functions.sql
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/task_functions.sql
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/attendance_functions.sql
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/leave_functions.sql
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/payroll_functions.sql
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/tenant_scoped_leave_payroll_functions.sql
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/tests/tenant_function_assertions.sql

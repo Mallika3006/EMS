@@ -2,6 +2,7 @@ package com.mallika.EmployeeManagementSystem.repository;
 
 import com.mallika.EmployeeManagementSystem.model.Employee;
 import com.mallika.EmployeeManagementSystem.model.Leave;
+import com.mallika.EmployeeManagementSystem.service.CompanyContext;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -18,9 +19,11 @@ import java.util.Optional;
 public class LeaveRepository {
 
     private final DataSource dataSource;
+    private final CompanyContext companyContext;
 
-    public LeaveRepository(DataSource dataSource) {
+    public LeaveRepository(DataSource dataSource, CompanyContext companyContext) {
         this.dataSource = dataSource;
+        this.companyContext = companyContext;
     }
 
     // =========================================================
@@ -28,9 +31,12 @@ public class LeaveRepository {
     // =========================================================
 
     public Leave createLeave(Leave leave) {
+        Integer employeeId = leave.getEmployee() == null
+                ? null : leave.getEmployee().getEmployeeId();
+        validateEmployeeInCompany(employeeId);
 
         String sql =
-                "SELECT * FROM create_leave(?, ?, ?, ?, ?)";
+                "SELECT * FROM public.create_leave(?, ?, ?, ?, ?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement =
@@ -87,6 +93,7 @@ public class LeaveRepository {
                 );
             }
 
+            statement.setLong(6, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -117,18 +124,16 @@ public class LeaveRepository {
         List<Leave> leaves = new ArrayList<>();
 
         String sql =
-                "SELECT * FROM get_all_leaves()";
+                "SELECT * FROM public.get_all_leaves(?)";
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement =
-                     connection.prepareCall(sql);
-             ResultSet resultSet =
-                     statement.executeQuery()) {
-
-            while (resultSet.next()) {
-                leaves.add(mapLeave(resultSet));
+             CallableStatement statement = connection.prepareCall(sql)) {
+            statement.setLong(1, companyContext.getCompanyId());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    leaves.add(mapLeave(resultSet));
+                }
             }
-
         } catch (SQLException e) {
             throw new RuntimeException(
                     "Error fetching leaves",
@@ -147,7 +152,7 @@ public class LeaveRepository {
     public Optional<Leave> getLeaveById(Integer id) {
 
         String sql =
-                "SELECT * FROM get_leave_by_id(?)";
+                "SELECT * FROM public.get_leave_by_id(?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement =
@@ -155,13 +160,18 @@ public class LeaveRepository {
 
             statement.setInt(1, id);
 
+            statement.setLong(2, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
                 if (resultSet.next()) {
-                    return Optional.of(
-                            mapLeave(resultSet)
-                    );
+                    Leave leave = mapLeave(resultSet);
+                    Integer employeeId = leave.getEmployee() == null
+                            ? null : leave.getEmployee().getEmployeeId();
+                    if (employeeId != null
+                            && isEmployeeInCompany(employeeId, companyContext.getCompanyId())) {
+                        return Optional.of(leave);
+                    }
                 }
             }
 
@@ -183,9 +193,13 @@ public class LeaveRepository {
     public Leave updateLeave(
             Integer id,
             Leave leaveDetails) {
+        ensureLeaveInCompany(id);
+        Integer employeeId = leaveDetails.getEmployee() == null
+                ? null : leaveDetails.getEmployee().getEmployeeId();
+        if (employeeId != null) validateEmployeeInCompany(employeeId);
 
         String sql =
-                "SELECT * FROM update_leave(?, ?, ?, ?, ?, ?)";
+                "SELECT * FROM public.update_leave(?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement =
@@ -251,6 +265,7 @@ public class LeaveRepository {
                 );
             }
 
+            statement.setLong(7, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -276,9 +291,10 @@ public class LeaveRepository {
 // =========================================================
 
     public Leave withdrawLeave(Integer id) {
+        ensureLeaveInCompany(id);
 
         String sql =
-                "SELECT * FROM withdraw_leave(?)";
+                "SELECT * FROM public.withdraw_leave(?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement =
@@ -286,6 +302,7 @@ public class LeaveRepository {
 
             statement.setInt(1, id);
 
+            statement.setLong(2, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -316,9 +333,10 @@ public class LeaveRepository {
     // =========================================================
 
     public boolean deleteLeave(Integer id) {
+        ensureLeaveInCompany(id);
 
         String sql =
-                "SELECT delete_leave(?)";
+                "SELECT public.delete_leave(?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement =
@@ -326,6 +344,7 @@ public class LeaveRepository {
 
             statement.setInt(1, id);
 
+            statement.setLong(2, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -355,7 +374,7 @@ public class LeaveRepository {
         List<Leave> leaves = new ArrayList<>();
 
         String sql =
-                "SELECT * FROM get_leaves_by_employee(?)";
+                "SELECT * FROM public.get_leaves_by_employee(?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement =
@@ -363,6 +382,7 @@ public class LeaveRepository {
 
             statement.setInt(1, employeeId);
 
+            statement.setLong(2, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -392,7 +412,7 @@ public class LeaveRepository {
         List<Leave> leaves = new ArrayList<>();
 
         String sql =
-                "SELECT * FROM get_leaves_by_status(?)";
+                "SELECT * FROM public.get_leaves_by_status(?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement =
@@ -400,6 +420,7 @@ public class LeaveRepository {
 
             statement.setString(1, status);
 
+            statement.setLong(2, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -431,7 +452,7 @@ public class LeaveRepository {
         List<Leave> leaves = new ArrayList<>();
 
         String sql =
-                "SELECT * FROM get_employee_leaves_by_status(?, ?)";
+                "SELECT * FROM public.get_employee_leaves_by_status(?, ?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement =
@@ -440,6 +461,7 @@ public class LeaveRepository {
             statement.setInt(1, employeeId);
             statement.setString(2, status);
 
+            statement.setLong(3, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -469,7 +491,7 @@ public class LeaveRepository {
         List<Leave> leaves = new ArrayList<>();
 
         String sql =
-                "SELECT * FROM get_leaves_by_from_date(?)";
+                "SELECT * FROM public.get_leaves_by_from_date(?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement =
@@ -480,6 +502,7 @@ public class LeaveRepository {
                     Date.valueOf(fromDate)
             );
 
+            statement.setLong(2, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -509,7 +532,7 @@ public class LeaveRepository {
         List<Leave> leaves = new ArrayList<>();
 
         String sql =
-                "SELECT * FROM get_leaves_by_to_date(?)";
+                "SELECT * FROM public.get_leaves_by_to_date(?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement =
@@ -520,6 +543,7 @@ public class LeaveRepository {
                     Date.valueOf(toDate)
             );
 
+            statement.setLong(2, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -550,7 +574,7 @@ public class LeaveRepository {
         List<Leave> leaves = new ArrayList<>();
 
         String sql =
-                "SELECT * FROM get_leaves_between_dates(?, ?)";
+                "SELECT * FROM public.get_leaves_between_dates(?, ?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement =
@@ -566,6 +590,7 @@ public class LeaveRepository {
                     Date.valueOf(endDate)
             );
 
+            statement.setLong(3, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -592,9 +617,11 @@ public class LeaveRepository {
             Integer leaveId,
             Integer managerId,
             String status) {
+        ensureLeaveInCompany(leaveId);
+        validateEmployeeInCompany(managerId);
 
         String sql =
-                "SELECT * FROM update_manager_leave_status(?, ?, ?)";
+                "SELECT * FROM public.update_manager_leave_status(?, ?, ?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement =
@@ -604,6 +631,7 @@ public class LeaveRepository {
             statement.setInt(2, managerId);
             statement.setString(3, status);
 
+            statement.setLong(4, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -673,12 +701,17 @@ public class LeaveRepository {
             Employee employee = new Employee();
 
             employee.setEmployeeId(employeeId);
-            employee.setFirstName(
-                    rs.getString("employee_first_name")
-            );
-            employee.setLastName(
-                    rs.getString("employee_last_name")
-            );
+            // Legacy SETOF leaves functions do not all return employee name columns.
+            try {
+                employee.setFirstName(rs.getString("employee_first_name"));
+            } catch (SQLException ignored) {
+                // Name is optional for this result shape.
+            }
+            try {
+                employee.setLastName(rs.getString("employee_last_name"));
+            } catch (SQLException ignored) {
+                // Name is optional for this result shape.
+            }
 
             leave.setEmployee(employee);
         }
@@ -687,16 +720,18 @@ public class LeaveRepository {
     }
 
     public List<Leave> getManagerLeaveRequests(Integer managerId) {
+        validateEmployeeInCompany(managerId);
 
         List<Leave> leaves = new ArrayList<>();
 
-        String sql = "SELECT * FROM get_manager_leave_requests(?)";
+        String sql = "SELECT * FROM public.get_manager_leave_requests(?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement = connection.prepareCall(sql)) {
 
             statement.setInt(1, managerId);
 
+            statement.setLong(2, companyContext.getCompanyId());
             ResultSet rs = statement.executeQuery();
 
             while (rs.next()) {
@@ -715,16 +750,18 @@ public class LeaveRepository {
 // =========================================================
 
     public List<Leave> getLeavesByHr(Integer hrId) {
+        validateEmployeeInCompany(hrId);
 
         List<Leave> leaves = new ArrayList<>();
 
-        String sql = "SELECT * FROM get_leaves_by_hr(?)";
+        String sql = "SELECT * FROM public.get_leaves_by_hr(?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement = connection.prepareCall(sql)) {
 
             statement.setInt(1, hrId);
 
+            statement.setLong(2, companyContext.getCompanyId());
             try (ResultSet resultSet = statement.executeQuery()) {
 
                 while (resultSet.next()) {
@@ -745,8 +782,10 @@ public class LeaveRepository {
 // =========================================================
 
     public boolean deleteLeaveByHr(Integer leaveId, Integer hrId) {
+        ensureLeaveInCompany(leaveId);
+        validateEmployeeInCompany(hrId);
 
-        String sql = "SELECT delete_leave_by_hr(?, ?)";
+        String sql = "SELECT public.delete_leave_by_hr(?, ?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement = connection.prepareCall(sql)) {
@@ -754,6 +793,7 @@ public class LeaveRepository {
             statement.setInt(1, leaveId);
             statement.setInt(2, hrId);
 
+            statement.setLong(3, companyContext.getCompanyId());
             try (ResultSet resultSet = statement.executeQuery()) {
 
                 if (resultSet.next()) {
@@ -776,9 +816,11 @@ public class LeaveRepository {
             Integer leaveId,
             Integer hrId,
             String status) {
+        ensureLeaveInCompany(leaveId);
+        validateEmployeeInCompany(hrId);
 
         String sql =
-                "SELECT * FROM update_hr_leave_status(?, ?, ?)";
+                "SELECT * FROM public.update_hr_leave_status(?, ?, ?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement =
@@ -788,6 +830,7 @@ public class LeaveRepository {
             statement.setInt(2, hrId);
             statement.setString(3, status);
 
+            statement.setLong(4, companyContext.getCompanyId());
             try (ResultSet resultSet = statement.executeQuery()) {
 
                 if (resultSet.next()) {
@@ -808,4 +851,48 @@ public class LeaveRepository {
                         "or not assigned to this HR"
         );
     }
+
+    private void ensureLeaveInCompany(Integer leaveId) {
+        String sql = """
+            SELECT 1
+            FROM public.leaves l
+            JOIN public.employees e ON e.employee_id = l.employee_id
+            WHERE l.leave_id = ? AND e.company_id = ?
+            """;
+        try (Connection con = dataSource.getConnection();
+             java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, leaveId);
+            ps.setLong(2, companyContext.getCompanyId());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    throw new org.springframework.security.access.AccessDeniedException(
+                            "Leave does not belong to your company");
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not validate leave company", e);
+        }
+    }
+
+    private void validateEmployeeInCompany(Integer employeeId) {
+        if (employeeId == null || !isEmployeeInCompany(employeeId, companyContext.getCompanyId())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Employee does not belong to your company");
+        }
+    }
+
+    private boolean isEmployeeInCompany(Integer employeeId, Long companyId) {
+        String sql = "SELECT 1 FROM public.employees WHERE employee_id = ? AND company_id = ?";
+        try (Connection con = dataSource.getConnection();
+             java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, employeeId);
+            ps.setLong(2, companyId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not validate employee company", e);
+        }
+    }
+
 }

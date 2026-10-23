@@ -35,6 +35,7 @@
             <th>Project Name</th>
             <th>Start Date</th>
             <th>End Date</th>
+            <th>Assign Member</th>
             <th>Actions</th>
         </tr>
         </thead>
@@ -63,8 +64,13 @@
                 throw new Error("Failed to fetch team projects");
             }
 
-            const projects =
-                await response.json();
+            const projects = await response.json();
+
+            const teamResponse = await fetch("/employees/manager/my-team");
+            if (!teamResponse.ok) {
+                throw new Error("Failed to load your direct reports");
+            }
+            const teamMembers = await teamResponse.json();
 
             tableBody.innerHTML = "";
 
@@ -72,7 +78,7 @@
 
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="5">
+                        <td colspan="6">
                             No projects assigned to your team.
                         </td>
                     </tr>
@@ -96,6 +102,15 @@
                     <td>${project.endDate ?? "-"}</td>
 
                     <td>
+                        <select id="project-member-${project.projectId}">
+                            <option value="">Select team member</option>
+                        </select>
+                        <button onclick="assignProjectMember(${project.projectId})">
+                            Assign
+                        </button>
+                    </td>
+
+                    <td>
                         <button
                             onclick="viewProjectTasks(${project.projectId})">
                             View Tasks
@@ -115,6 +130,19 @@
 
                 tableBody.appendChild(row);
 
+                const memberSelect = document.getElementById(
+                    "project-member-" + project.projectId
+                );
+                teamMembers.forEach(member => {
+                    const option = document.createElement("option");
+                    option.value = String(member.employeeId);
+                    option.textContent =
+                        (member.firstName ?? "") + " " +
+                        (member.lastName ?? "") +
+                        " (ID: " + member.employeeId + ")";
+                    memberSelect.appendChild(option);
+                });
+
             });
 
         } catch (error) {
@@ -123,13 +151,39 @@
 
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="5">
+                    <td colspan="6">
                         Failed to load team projects.
                     </td>
                 </tr>
             `;
 
             alert(error.message);
+        }
+    }
+
+
+    // Assign this manager-owned project to one of the manager's active direct reports.
+    async function assignProjectMember(projectId) {
+        const select = document.getElementById("project-member-" + projectId);
+        const employeeId = select ? select.value : "";
+        if (!employeeId) {
+            alert("Select a team member first.");
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                "/projects/" + projectId + "/members/" + employeeId,
+                { method: "POST", credentials: "same-origin" }
+            );
+            if (!response.ok) {
+                throw new Error(
+                    (await response.text()) || "Project assignment failed"
+                );
+            }
+            alert("Project assigned to team member.");
+        } catch (error) {
+            alert("Could not assign project: " + error.message);
         }
     }
 

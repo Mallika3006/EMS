@@ -210,12 +210,19 @@ public class UserRepository {
             ps.setString(1, username);
 
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapUser(rs));
+                if (!rs.next()) {
+                    return Optional.empty();
                 }
-            }
 
-            return Optional.empty();
+                User matchedUser = mapUser(rs);
+                if (rs.next()) {
+                    // Login tokens currently identify users by username only.
+                    // Fail closed if data contains cross-company duplicates.
+                    throw new IllegalStateException(
+                            "Username is not globally unique; resolve duplicate usernames before login");
+                }
+                return Optional.of(matchedUser);
+            }
 
         } catch (SQLException e) {
             throw new RuntimeException("Error finding user for login", e);

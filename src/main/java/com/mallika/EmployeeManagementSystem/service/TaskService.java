@@ -6,6 +6,9 @@ import com.mallika.EmployeeManagementSystem.model.User;
 import com.mallika.EmployeeManagementSystem.repository.TaskRepository;
 import com.mallika.EmployeeManagementSystem.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -40,6 +43,11 @@ public class TaskService {
                     "No company is assigned to this user");
         }
 
+        if (isManager()) {
+            Integer managerId = requireEmployeeId(user);
+            validateManagerTaskAssignments(task, managerId, user.getCompanyId());
+        }
+
         return taskRepository.createTask(task, user.getCompanyId());
     }
 
@@ -49,6 +57,10 @@ public class TaskService {
     // =========================================================
 
     public List<Task> getAllTasks() {
+        User user = currentUser();
+        if (isManager()) {
+            return taskRepository.getTasksByManagerId(requireEmployeeId(user));
+        }
         return taskRepository.getAllTasks();
     }
 
@@ -59,11 +71,13 @@ public class TaskService {
 
     public Task getTaskById(Integer id) {
 
-        return taskRepository.getTaskById(id)
+        Task task = taskRepository.getTaskById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Task not found with id: " + id
                         ));
+        ensureManagerTaskAccess(id);
+        return task;
     }
 
 
@@ -83,6 +97,11 @@ public class TaskService {
             throw new IllegalStateException("User has no company assigned");
         }
 
+        ensureManagerTaskAccess(id);
+        if (isManager()) {
+            validateManagerTaskAssignments(
+                    taskDetails, requireEmployeeId(user), companyId);
+        }
         return taskRepository.updateTask(id, taskDetails, companyId);
     }
 
@@ -103,6 +122,7 @@ public class TaskService {
             throw new IllegalStateException("User has no company assigned");
         }
 
+        ensureManagerTaskAccess(id);
         boolean deleted = taskRepository.deleteTask(id, companyId);
 
         if (!deleted) {
@@ -119,8 +139,7 @@ public class TaskService {
     public List<Task> searchByTaskName(
             String taskName) {
 
-        return taskRepository
-                .searchByTaskName(taskName);
+        return scopeManagerTasks(taskRepository.searchByTaskName(taskName));
     }
 
 
@@ -131,8 +150,7 @@ public class TaskService {
     public List<Task> getTasksByProject(
             Integer projectId) {
 
-        return taskRepository
-                .findByProjectProjectId(projectId);
+        return scopeManagerTasks(taskRepository.findByProjectProjectId(projectId));
     }
 
 
@@ -143,8 +161,7 @@ public class TaskService {
     public List<Task> getTasksByEmployee(
             Integer employeeId) {
 
-        return taskRepository
-                .findByAssignedToEmployeeId(employeeId);
+        return scopeManagerTasks(taskRepository.findByAssignedToEmployeeId(employeeId));
     }
 
 
@@ -155,8 +172,7 @@ public class TaskService {
     public List<Task> getTasksByStatus(
             String status) {
 
-        return taskRepository
-                .findByStatusIgnoreCase(status);
+        return scopeManagerTasks(taskRepository.findByStatusIgnoreCase(status));
     }
 
 
@@ -167,8 +183,7 @@ public class TaskService {
     public List<Task> getTasksByPriority(
             String priority) {
 
-        return taskRepository
-                .findByPriorityIgnoreCase(priority);
+        return scopeManagerTasks(taskRepository.findByPriorityIgnoreCase(priority));
     }
 
 
@@ -180,11 +195,7 @@ public class TaskService {
             Integer employeeId,
             String status) {
 
-        return taskRepository
-                .findByAssignedToEmployeeIdAndStatusIgnoreCase(
-                        employeeId,
-                        status
-                );
+        return scopeManagerTasks(taskRepository.findByAssignedToEmployeeIdAndStatusIgnoreCase(employeeId, status));
     }
 
 
@@ -196,11 +207,7 @@ public class TaskService {
             Integer projectId,
             String status) {
 
-        return taskRepository
-                .findByProjectProjectIdAndStatusIgnoreCase(
-                        projectId,
-                        status
-                );
+        return scopeManagerTasks(taskRepository.findByProjectProjectIdAndStatusIgnoreCase(projectId, status));
     }
 
 
@@ -211,8 +218,7 @@ public class TaskService {
     public List<Task> getTasksByDueDate(
             LocalDate dueDate) {
 
-        return taskRepository
-                .findByDueDate(dueDate);
+        return scopeManagerTasks(taskRepository.findByDueDate(dueDate));
     }
 
 
@@ -224,11 +230,7 @@ public class TaskService {
             LocalDate startDate,
             LocalDate endDate) {
 
-        return taskRepository
-                .findByDueDateBetween(
-                        startDate,
-                        endDate
-                );
+        return scopeManagerTasks(taskRepository.findByDueDateBetween(startDate, endDate));
     }
 
 
@@ -239,11 +241,7 @@ public class TaskService {
     public List<Task> getOverdueTasks(
             LocalDate date) {
 
-        return taskRepository
-                .findByDueDateBeforeAndStatusNotIgnoreCase(
-                        date,
-                        "Completed"
-                );
+        return scopeManagerTasks(taskRepository.findByDueDateBeforeAndStatusNotIgnoreCase(date, "Completed"));
     }
 
 
@@ -255,11 +253,7 @@ public class TaskService {
             String field,
             String direction) {
 
-        return taskRepository
-                .sortTasks(
-                        field,
-                        direction
-                );
+        return scopeManagerTasks(taskRepository.sortTasks(field, direction));
     }
 
 
@@ -288,8 +282,7 @@ public class TaskService {
         Integer employeeId =
                 user.getEmployee().getEmployeeId();
 
-        return taskRepository
-                .findByAssignedToEmployeeId(employeeId);
+        return scopeManagerTasks(taskRepository.findByAssignedToEmployeeId(employeeId));
     }
 
     // =========================================================
@@ -317,7 +310,73 @@ public class TaskService {
         Integer managerId =
                 user.getEmployee().getEmployeeId();
 
-        return taskRepository
-                .getTasksByManagerId(managerId);
+        return scopeManagerTasks(taskRepository.getTasksByManagerId(managerId));
     }
+
+    private User currentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getName() == null) {
+            throw new AccessDeniedException("Authenticated user required");
+        }
+        return userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "User not found: " + authentication.getName()));
+    }
+
+    private boolean isManager() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_MANAGER".equals(authority.getAuthority()));
+    }
+
+    private Integer requireEmployeeId(User user) {
+        if (user.getEmployee() == null || user.getEmployee().getEmployeeId() == null) {
+            throw new ResourceNotFoundException("Employee is not assigned to this user");
+        }
+        return user.getEmployee().getEmployeeId();
+    }
+
+    private void ensureManagerTaskAccess(Integer taskId) {
+        if (!isManager()) return;
+        User user = currentUser();
+        Integer managerId = requireEmployeeId(user);
+        if (user.getCompanyId() == null
+                || !taskRepository.isTaskAccessibleToManager(
+                        taskId, managerId, user.getCompanyId())) {
+            throw new ResourceNotFoundException(
+                    "Task not found in your managed projects or team");
+        }
+    }
+
+    private void validateManagerTaskAssignments(
+            Task task, Integer managerId, Long companyId) {
+        if (task.getProject() != null && task.getProject().getProjectId() != null
+                && !taskRepository.isProjectManagedBy(
+                        task.getProject().getProjectId(), managerId, companyId)) {
+            throw new AccessDeniedException(
+                    "Managers can only assign tasks to their own projects");
+        }
+        if (task.getAssignedTo() != null && task.getAssignedTo().getEmployeeId() != null
+                && !taskRepository.isEmployeeManagedBy(
+                        task.getAssignedTo().getEmployeeId(), managerId, companyId)) {
+            throw new AccessDeniedException(
+                    "Managers can only assign tasks to their direct reports");
+        }
+    }
+
+    private List<Task> scopeManagerTasks(List<Task> tasks) {
+        if (!isManager()) return tasks;
+        User user = currentUser();
+        Integer managerId = requireEmployeeId(user);
+        Long companyId = user.getCompanyId();
+        if (companyId == null) {
+            throw new AccessDeniedException("No company assigned to manager");
+        }
+        return tasks.stream()
+                .filter(task -> task.getTaskId() != null
+                        && taskRepository.isTaskAccessibleToManager(
+                                task.getTaskId(), managerId, companyId))
+                .toList();
+    }
+
 }

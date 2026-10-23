@@ -75,17 +75,7 @@
     const API = "/employees";
 
     function getHeaders() {
-        const token = localStorage.getItem("token");
-
-        const headers = {
-            "Content-Type": "application/json"
-        };
-
-        if (token) {
-            headers["Authorization"] = "Bearer " + token;
-        }
-
-        return headers;
+        return { "Content-Type": "application/json" };
     }
 
     function showMessage(message, isError = false) {
@@ -252,36 +242,8 @@
     }
 
 
-    async function openAddEmployeePage() {
-        const token = localStorage.getItem("token");
-
-        if (!token) {
-            showMessage("Please log in again.", true);
-            return;
-        }
-
-        try {
-            const response = await fetch("/admin/employees/add", {
-                method: "GET",
-                headers: {
-                    "Authorization": "Bearer " + token
-                },
-                credentials: "same-origin"
-            });
-
-            if (!response.ok) {
-                throw new Error("Unable to open Add Employee page. HTTP " + response.status);
-            }
-
-            const html = await response.text();
-
-            document.open();
-            document.write(html);
-            document.close();
-
-        } catch (error) {
-            showMessage(error.message, true);
-        }
+    function openAddEmployeePage() {
+        window.location.href = "/admin/employees/add";
     }
 
 

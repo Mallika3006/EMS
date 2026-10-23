@@ -3,928 +3,295 @@ package com.mallika.EmployeeManagementSystem.repository;
 import com.mallika.EmployeeManagementSystem.model.Employee;
 import com.mallika.EmployeeManagementSystem.model.Project;
 import com.mallika.EmployeeManagementSystem.model.Task;
+import com.mallika.EmployeeManagementSystem.service.CompanyContext;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
-import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public class TaskRepository {
-
     private final DataSource dataSource;
+    private final CompanyContext companyContext;
 
-    public TaskRepository(DataSource dataSource) {
+    public TaskRepository(DataSource dataSource, CompanyContext companyContext) {
         this.dataSource = dataSource;
+        this.companyContext = companyContext;
     }
 
-    // =========================================================
-    // CREATE
-    // =========================================================
-
     public Task createTask(Task task, Long companyId) {
-
-        String sql = "SELECT * FROM create_task(?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-        try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
-
-            statement.setString(1, task.getTaskName());
-            statement.setString(2, task.getDescription());
-            statement.setString(3, task.getPriority());
-            statement.setString(4, task.getStatus());
-
-            if (task.getStartDate() != null) {
-                statement.setDate(5, Date.valueOf(task.getStartDate()));
-            } else {
-                statement.setNull(5, java.sql.Types.DATE);
+        String sql = "SELECT * FROM public.create_task(?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (Connection c = dataSource.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, task.getTaskName());
+            ps.setString(2, task.getDescription());
+            ps.setString(3, task.getPriority());
+            ps.setString(4, task.getStatus());
+            setDate(ps, 5, task.getStartDate());
+            setDate(ps, 6, task.getDueDate());
+            setNullableInt(ps, 7, task.getProject() == null ? null : task.getProject().getProjectId());
+            setNullableInt(ps, 8, task.getAssignedTo() == null ? null : task.getAssignedTo().getEmployeeId());
+            ps.setLong(9, companyId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapTask(rs);
             }
-
-            if (task.getDueDate() != null) {
-                statement.setDate(6, Date.valueOf(task.getDueDate()));
-            } else {
-                statement.setNull(6, java.sql.Types.DATE);
-            }
-
-            if (task.getProject() != null
-                    && task.getProject().getProjectId() != null) {
-                statement.setInt(7, task.getProject().getProjectId());
-            } else {
-                statement.setNull(7, java.sql.Types.INTEGER);
-            }
-
-            if (task.getAssignedTo() != null
-                    && task.getAssignedTo().getEmployeeId() != null) {
-                statement.setInt(8, task.getAssignedTo().getEmployeeId());
-            } else {
-                statement.setNull(8, java.sql.Types.INTEGER);
-            }
-
-            statement.setLong(9, companyId);
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    return mapTask(resultSet);
-                }
-            }
-
         } catch (SQLException e) {
             throw new RuntimeException("Error creating task", e);
         }
-
         throw new RuntimeException("Task could not be created");
     }
 
-    // =========================================================
-    // GET ALL
-    // =========================================================
-
     public List<Task> getAllTasks() {
-
-        List<Task> tasks = new ArrayList<>();
-
-        String sql =
-                "SELECT * FROM get_all_tasks()";
-
-        try (Connection connection =
-                     dataSource.getConnection();
-
-             CallableStatement statement =
-                     connection.prepareCall(sql);
-
-             ResultSet resultSet =
-                     statement.executeQuery()) {
-
-            while (resultSet.next()) {
-
-                tasks.add(
-                        mapTask(resultSet)
-                );
-            }
-
-        } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error fetching tasks",
-                    e
-            );
-        }
-
-        return tasks;
+        return queryTasks("SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id WHERE t.company_id=? ORDER BY t.task_id",
+                ps -> ps.setLong(1, companyContext.getCompanyId()));
     }
 
-
-    // =========================================================
-    // GET BY ID
-    // =========================================================
-
-    public Optional<Task> getTaskById(
-            Integer id) {
-
-        String sql =
-                "SELECT * FROM get_task_by_id(?)";
-
-        try (Connection connection =
-                     dataSource.getConnection();
-
-             CallableStatement statement =
-                     connection.prepareCall(sql)) {
-
-            statement.setInt(1, id);
-
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
-
-                if (resultSet.next()) {
-
-                    return Optional.of(
-                            mapTask(resultSet)
-                    );
-                }
-            }
-
-        } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error fetching task with id: "
-                            + id,
-                    e
-            );
-        }
-
-        return Optional.empty();
+    public Optional<Task> getTaskById(Integer id) {
+        List<Task> found = queryTasks("SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id WHERE t.task_id=? AND t.company_id=?",
+                ps -> { ps.setInt(1, id); ps.setLong(2, companyContext.getCompanyId()); });
+        return found.stream().findFirst();
     }
 
-
-    // =========================================================
-    // UPDATE
-    // =========================================================
-
-    public Task updateTask(Integer id, Task taskDetails, Long companyId) {
-
-        String sql = "SELECT * FROM update_task(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-        try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
-
-            statement.setInt(1, id);
-            statement.setString(2, taskDetails.getTaskName());
-            statement.setString(3, taskDetails.getDescription());
-            statement.setString(4, taskDetails.getPriority());
-            statement.setString(5, taskDetails.getStatus());
-
-            if (taskDetails.getStartDate() != null) {
-                statement.setDate(6, Date.valueOf(taskDetails.getStartDate()));
-            } else {
-                statement.setNull(6, java.sql.Types.DATE);
+    public Task updateTask(Integer id, Task details, Long companyId) {
+        String sql = "UPDATE public.tasks t SET task_name=?, description=?, priority=?, status=?, start_date=?, due_date=?, project_id=?, assigned_to=? WHERE task_id=? AND company_id=? AND (project_id IS NULL OR EXISTS (SELECT 1 FROM public.projects p WHERE p.project_id=? AND p.company_id=?)) AND (assigned_to IS NULL OR EXISTS (SELECT 1 FROM public.employees e WHERE e.employee_id=? AND e.company_id=?)) RETURNING t.*";
+        try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, details.getTaskName());
+            ps.setString(2, details.getDescription());
+            ps.setString(3, details.getPriority());
+            ps.setString(4, details.getStatus());
+            setDate(ps, 5, details.getStartDate());
+            setDate(ps, 6, details.getDueDate());
+            Integer projectId = details.getProject() == null ? null : details.getProject().getProjectId();
+            Integer employeeId = details.getAssignedTo() == null ? null : details.getAssignedTo().getEmployeeId();
+            setNullableInt(ps, 7, projectId);
+            setNullableInt(ps, 8, employeeId);
+            ps.setInt(9, id);
+            ps.setLong(10, companyId);
+            setNullableInt(ps, 11, projectId);
+            ps.setLong(12, companyId);
+            setNullableInt(ps, 13, employeeId);
+            ps.setLong(14, companyId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapTask(rs);
             }
-
-            if (taskDetails.getDueDate() != null) {
-                statement.setDate(7, Date.valueOf(taskDetails.getDueDate()));
-            } else {
-                statement.setNull(7, java.sql.Types.DATE);
-            }
-
-            if (taskDetails.getProject() != null
-                    && taskDetails.getProject().getProjectId() != null) {
-                statement.setInt(8, taskDetails.getProject().getProjectId());
-            } else {
-                statement.setNull(8, java.sql.Types.INTEGER);
-            }
-
-            if (taskDetails.getAssignedTo() != null
-                    && taskDetails.getAssignedTo().getEmployeeId() != null) {
-                statement.setInt(9, taskDetails.getAssignedTo().getEmployeeId());
-            } else {
-                statement.setNull(9, java.sql.Types.INTEGER);
-            }
-
-            statement.setLong(10, companyId);
-
-            try (ResultSet rs = statement.executeQuery()) {
-                if (rs.next()) {
-                    return mapTask(rs);
-                }
-            }
-
         } catch (SQLException e) {
             throw new RuntimeException("Error updating task with id: " + id, e);
         }
-
-        throw new RuntimeException("Task not found with id: " + id);
+        throw new RuntimeException("Task not found in current company or project/employee belongs to another company: " + id);
     }
 
-    // =========================================================
-    // DELETE
-    // =========================================================
-
     public boolean deleteTask(Integer id, Long companyId) {
-
-        String sql = "SELECT delete_task(?, ?)";
-
-        try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
-
-            statement.setInt(1, id);
-            statement.setLong(2, companyId);
-
-            try (ResultSet rs = statement.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getBoolean(1);
-                }
-            }
-
+        String sql = "DELETE FROM public.tasks WHERE task_id=? AND company_id=?";
+        try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.setLong(2, companyId);
+            return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new RuntimeException("Error deleting task with id: " + id, e);
         }
-
-        return false;
     }
 
+    public List<Task> searchByTaskName(String taskName) {
+        return queryTasks("SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id WHERE t.company_id=? AND t.task_name ILIKE ? ORDER BY t.task_id",
+                ps -> { ps.setLong(1, companyContext.getCompanyId()); ps.setString(2, "%" + taskName + "%"); });
+    }
 
-    // =========================================================
-    // SEARCH BY TASK NAME
-    // =========================================================
+    public List<Task> findByProjectProjectId(Integer projectId) {
+        return queryTasks("SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id WHERE t.project_id=? AND t.company_id=? ORDER BY t.task_id",
+                ps -> { ps.setInt(1, projectId); ps.setLong(2, companyContext.getCompanyId()); });
+    }
 
-    public List<Task> searchByTaskName(
-            String taskName) {
+    public List<Task> findByAssignedToEmployeeId(Integer employeeId) {
+        return queryTasks("SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id WHERE t.assigned_to=? AND t.company_id=? AND EXISTS (SELECT 1 FROM public.employees e WHERE e.employee_id=? AND e.company_id=?) ORDER BY t.task_id",
+                ps -> { long companyId = companyContext.getCompanyId(); ps.setInt(1, employeeId); ps.setLong(2, companyId); ps.setInt(3, employeeId); ps.setLong(4, companyId); });
+    }
 
-        List<Task> tasks =
-                new ArrayList<>();
+    public List<Task> findByStatusIgnoreCase(String status) {
+        return queryTasks("SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id WHERE t.company_id=? AND LOWER(t.status)=LOWER(?) ORDER BY t.task_id",
+                ps -> { ps.setLong(1, companyContext.getCompanyId()); ps.setString(2, status); });
+    }
 
-        String sql =
-                "SELECT * FROM search_tasks_by_name(?)";
+    public List<Task> findByPriorityIgnoreCase(String priority) {
+        return queryTasks("SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id WHERE t.company_id=? AND LOWER(t.priority)=LOWER(?) ORDER BY t.task_id",
+                ps -> { ps.setLong(1, companyContext.getCompanyId()); ps.setString(2, priority); });
+    }
 
-        try (Connection connection =
-                     dataSource.getConnection();
+    public List<Task> findByAssignedToEmployeeIdAndStatusIgnoreCase(Integer employeeId, String status) {
+        return queryTasks("SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id WHERE t.assigned_to=? AND t.company_id=? AND LOWER(t.status)=LOWER(?) AND EXISTS (SELECT 1 FROM public.employees e WHERE e.employee_id=? AND e.company_id=?) ORDER BY t.task_id",
+                ps -> { long companyId = companyContext.getCompanyId(); ps.setInt(1, employeeId); ps.setLong(2, companyId); ps.setString(3, status); ps.setInt(4, employeeId); ps.setLong(5, companyId); });
+    }
 
-             CallableStatement statement =
-                     connection.prepareCall(sql)) {
+    public List<Task> findByProjectProjectIdAndStatusIgnoreCase(Integer projectId, String status) {
+        return queryTasks("SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id WHERE t.project_id=? AND t.company_id=? AND LOWER(t.status)=LOWER(?) AND EXISTS (SELECT 1 FROM public.projects x WHERE x.project_id=? AND x.company_id=?) ORDER BY t.task_id",
+                ps -> { long companyId = companyContext.getCompanyId(); ps.setInt(1, projectId); ps.setLong(2, companyId); ps.setString(3, status); ps.setInt(4, projectId); ps.setLong(5, companyId); });
+    }
 
-            statement.setString(1, taskName);
+    public List<Task> findByDueDate(LocalDate dueDate) {
+        return queryTasks("SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id WHERE t.company_id=? AND t.due_date=? ORDER BY t.task_id",
+                ps -> { ps.setLong(1, companyContext.getCompanyId()); ps.setDate(2, Date.valueOf(dueDate)); });
+    }
 
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
+    public List<Task> findByDueDateBetween(LocalDate startDate, LocalDate endDate) {
+        return queryTasks("SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id WHERE t.company_id=? AND t.due_date BETWEEN ? AND ? ORDER BY t.due_date, t.task_id",
+                ps -> { ps.setLong(1, companyContext.getCompanyId()); ps.setDate(2, Date.valueOf(startDate)); ps.setDate(3, Date.valueOf(endDate)); });
+    }
 
-                while (resultSet.next()) {
+    public List<Task> findByDueDateBeforeAndStatusNotIgnoreCase(LocalDate date, String status) {
+        return queryTasks("SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id WHERE t.company_id=? AND t.due_date<? AND LOWER(t.status)<>LOWER(?) ORDER BY t.due_date, t.task_id",
+                ps -> { ps.setLong(1, companyContext.getCompanyId()); ps.setDate(2, Date.valueOf(date)); ps.setString(3, status); });
+    }
 
-                    tasks.add(
-                            mapTask(resultSet)
-                    );
-                }
+    public List<Task> sortTasks(String field, String direction) {
+        String column = switch (field == null ? "" : field.toLowerCase()) {
+            case "task_id", "id" -> "task_id";
+            case "task_name", "name" -> "task_name";
+            case "priority" -> "priority";
+            case "status" -> "status";
+            case "start_date" -> "start_date";
+            case "due_date" -> "due_date";
+            default -> throw new IllegalArgumentException("Unsupported task sort field: " + field);
+        };
+        String order = "desc".equalsIgnoreCase(direction) ? "DESC" : "ASC";
+        return queryTasks("SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id WHERE t.company_id=? ORDER BY t." + column + " " + order,
+                ps -> ps.setLong(1, companyContext.getCompanyId()));
+    }
+
+    public List<Task> getTasksByManagerId(Integer managerId) {
+        return queryTasks("SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id LEFT JOIN public.employees e ON e.employee_id=t.assigned_to AND e.company_id=t.company_id LEFT JOIN public.users u ON u.employee_id=e.employee_id AND u.company_id=e.company_id WHERE t.company_id=? AND (e.employee_id IS NULL OR u.is_active=TRUE) AND (e.manager_id=? OR p.manager_id=?) ORDER BY t.task_id DESC",
+                ps -> { long companyId = companyContext.getCompanyId(); ps.setLong(1, companyId); ps.setInt(2, managerId); ps.setInt(3, managerId); });
+    }
+
+    public boolean isTaskAccessibleToManager(Integer taskId, Integer managerId, Long companyId) {
+        String sql = """
+            SELECT 1
+            FROM public.tasks t
+            LEFT JOIN public.projects p
+              ON p.project_id = t.project_id AND p.company_id = t.company_id
+            WHERE t.task_id = ? AND t.company_id = ?
+              AND (
+                p.manager_id = ?
+                OR EXISTS (
+                    SELECT 1 FROM public.employees e
+                    WHERE e.employee_id = t.assigned_to
+                      AND e.company_id = t.company_id
+                      AND e.manager_id = ?
+                )
+              )
+            """;
+        try (Connection c = dataSource.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, taskId);
+            ps.setLong(2, companyId);
+            ps.setInt(3, managerId);
+            ps.setInt(4, managerId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
             }
-
         } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error searching tasks by name",
-                    e
-            );
+            throw new RuntimeException("Could not validate manager task access", e);
         }
+    }
 
+    public boolean isEmployeeManagedBy(Integer employeeId, Integer managerId, Long companyId) {
+        String sql = """
+            SELECT 1 FROM public.employees
+            WHERE employee_id = ? AND manager_id = ? AND company_id = ?
+            """;
+        try (Connection c = dataSource.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, employeeId);
+            ps.setInt(2, managerId);
+            ps.setLong(3, companyId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not validate manager employee relationship", e);
+        }
+    }
+
+    public boolean isProjectManagedBy(Integer projectId, Integer managerId, Long companyId) {
+        String sql = """
+            SELECT 1 FROM public.projects
+            WHERE project_id = ? AND manager_id = ? AND company_id = ?
+            """;
+        try (Connection c = dataSource.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, projectId);
+            ps.setInt(2, managerId);
+            ps.setLong(3, companyId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not validate manager project relationship", e);
+        }
+    }
+
+    private List<Task> queryTasks(String sql, SqlBinder binder) {
+        List<Task> tasks = new ArrayList<>();
+        try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            binder.bind(ps);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) tasks.add(mapTask(rs));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error querying tasks for current company", e);
+        }
         return tasks;
     }
 
-
-    // =========================================================
-    // BY PROJECT
-    // =========================================================
-
-    public List<Task> findByProjectProjectId(
-            Integer projectId) {
-
-        List<Task> tasks =
-                new ArrayList<>();
-
-        String sql =
-                "SELECT * FROM get_tasks_by_project(?)";
-
-        try (Connection connection =
-                     dataSource.getConnection();
-
-             CallableStatement statement =
-                     connection.prepareCall(sql)) {
-
-            statement.setInt(1, projectId);
-
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
-
-                while (resultSet.next()) {
-
-                    tasks.add(
-                            mapTask(resultSet)
-                    );
-                }
-            }
-
-        } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error fetching tasks by project",
-                    e
-            );
-        }
-
-        return tasks;
+    private void setDate(PreparedStatement ps, int index, LocalDate value) throws SQLException {
+        if (value == null) ps.setNull(index, Types.DATE);
+        else ps.setDate(index, Date.valueOf(value));
     }
 
-
-    // =========================================================
-    // BY EMPLOYEE
-    // =========================================================
-
-    public List<Task> findByAssignedToEmployeeId(
-            Integer employeeId) {
-
-        List<Task> tasks =
-                new ArrayList<>();
-
-        String sql =
-                "SELECT * FROM get_tasks_by_employee(?)";
-
-        try (Connection connection =
-                     dataSource.getConnection();
-
-             CallableStatement statement =
-                     connection.prepareCall(sql)) {
-
-            statement.setInt(1, employeeId);
-
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
-
-                while (resultSet.next()) {
-
-                    tasks.add(
-                            mapTask(resultSet)
-                    );
-                }
-            }
-
-        } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error fetching tasks by employee",
-                    e
-            );
-        }
-
-        return tasks;
+    private void setNullableInt(PreparedStatement ps, int index, Integer value) throws SQLException {
+        if (value == null) ps.setNull(index, Types.INTEGER);
+        else ps.setInt(index, value);
     }
 
-
-    // =========================================================
-    // BY STATUS
-    // =========================================================
-
-    public List<Task> findByStatusIgnoreCase(
-            String status) {
-
-        List<Task> tasks =
-                new ArrayList<>();
-
-        String sql =
-                "SELECT * FROM get_tasks_by_status(?)";
-
-        try (Connection connection =
-                     dataSource.getConnection();
-
-             CallableStatement statement =
-                     connection.prepareCall(sql)) {
-
-            statement.setString(1, status);
-
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
-
-                while (resultSet.next()) {
-
-                    tasks.add(
-                            mapTask(resultSet)
-                    );
-                }
-            }
-
-        } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error fetching tasks by status",
-                    e
-            );
-        }
-
-        return tasks;
-    }
-
-
-    // =========================================================
-    // BY PRIORITY
-    // =========================================================
-
-    public List<Task> findByPriorityIgnoreCase(
-            String priority) {
-
-        List<Task> tasks =
-                new ArrayList<>();
-
-        String sql =
-                "SELECT * FROM get_tasks_by_priority(?)";
-
-        try (Connection connection =
-                     dataSource.getConnection();
-
-             CallableStatement statement =
-                     connection.prepareCall(sql)) {
-
-            statement.setString(1, priority);
-
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
-
-                while (resultSet.next()) {
-
-                    tasks.add(
-                            mapTask(resultSet)
-                    );
-                }
-            }
-
-        } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error fetching tasks by priority",
-                    e
-            );
-        }
-
-        return tasks;
-    }
-
-
-    // =========================================================
-    // EMPLOYEE + STATUS
-    // =========================================================
-
-    public List<Task>
-    findByAssignedToEmployeeIdAndStatusIgnoreCase(
-            Integer employeeId,
-            String status) {
-
-        List<Task> tasks =
-                new ArrayList<>();
-
-        String sql =
-                "SELECT * FROM get_employee_tasks_by_status(?, ?)";
-
-        try (Connection connection =
-                     dataSource.getConnection();
-
-             CallableStatement statement =
-                     connection.prepareCall(sql)) {
-
-            statement.setInt(1, employeeId);
-            statement.setString(2, status);
-
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
-
-                while (resultSet.next()) {
-
-                    tasks.add(
-                            mapTask(resultSet)
-                    );
-                }
-            }
-
-        } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error fetching employee tasks by status",
-                    e
-            );
-        }
-
-        return tasks;
-    }
-
-
-    // =========================================================
-    // PROJECT + STATUS
-    // =========================================================
-
-    public List<Task>
-    findByProjectProjectIdAndStatusIgnoreCase(
-            Integer projectId,
-            String status) {
-
-        List<Task> tasks =
-                new ArrayList<>();
-
-        String sql =
-                "SELECT * FROM get_project_tasks_by_status(?, ?)";
-
-        try (Connection connection =
-                     dataSource.getConnection();
-
-             CallableStatement statement =
-                     connection.prepareCall(sql)) {
-
-            statement.setInt(1, projectId);
-            statement.setString(2, status);
-
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
-
-                while (resultSet.next()) {
-
-                    tasks.add(
-                            mapTask(resultSet)
-                    );
-                }
-            }
-
-        } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error fetching project tasks by status",
-                    e
-            );
-        }
-
-        return tasks;
-    }
-
-
-    // =========================================================
-    // BY DUE DATE
-    // =========================================================
-
-    public List<Task> findByDueDate(
-            java.time.LocalDate dueDate) {
-
-        List<Task> tasks =
-                new ArrayList<>();
-
-        String sql =
-                "SELECT * FROM get_tasks_by_due_date(?)";
-
-        try (Connection connection =
-                     dataSource.getConnection();
-
-             CallableStatement statement =
-                     connection.prepareCall(sql)) {
-
-            statement.setDate(
-                    1,
-                    Date.valueOf(dueDate)
-            );
-
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
-
-                while (resultSet.next()) {
-
-                    tasks.add(
-                            mapTask(resultSet)
-                    );
-                }
-            }
-
-        } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error fetching tasks by due date",
-                    e
-            );
-        }
-
-        return tasks;
-    }
-
-
-    // =========================================================
-    // BETWEEN DUE DATES
-    // =========================================================
-
-    public List<Task> findByDueDateBetween(
-            java.time.LocalDate startDate,
-            java.time.LocalDate endDate) {
-
-        List<Task> tasks =
-                new ArrayList<>();
-
-        String sql =
-                "SELECT * FROM get_tasks_between_due_dates(?, ?)";
-
-        try (Connection connection =
-                     dataSource.getConnection();
-
-             CallableStatement statement =
-                     connection.prepareCall(sql)) {
-
-            statement.setDate(
-                    1,
-                    Date.valueOf(startDate)
-            );
-
-            statement.setDate(
-                    2,
-                    Date.valueOf(endDate)
-            );
-
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
-
-                while (resultSet.next()) {
-
-                    tasks.add(
-                            mapTask(resultSet)
-                    );
-                }
-            }
-
-        } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error fetching tasks between due dates",
-                    e
-            );
-        }
-
-        return tasks;
-    }
-
-
-    // =========================================================
-    // OVERDUE TASKS
-    // =========================================================
-
-    public List<Task>
-    findByDueDateBeforeAndStatusNotIgnoreCase(
-            java.time.LocalDate date,
-            String status) {
-
-        List<Task> tasks =
-                new ArrayList<>();
-
-        String sql =
-                "SELECT * FROM get_overdue_tasks(?, ?)";
-
-        try (Connection connection =
-                     dataSource.getConnection();
-
-             CallableStatement statement =
-                     connection.prepareCall(sql)) {
-
-            statement.setDate(
-                    1,
-                    Date.valueOf(date)
-            );
-
-            statement.setString(2, status);
-
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
-
-                while (resultSet.next()) {
-
-                    tasks.add(
-                            mapTask(resultSet)
-                    );
-                }
-            }
-
-        } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error fetching overdue tasks",
-                    e
-            );
-        }
-
-        return tasks;
-    }
-
-
-    // =========================================================
-    // SORT
-    // =========================================================
-
-    public List<Task> sortTasks(
-            String field,
-            String direction) {
-
-        List<Task> tasks =
-                new ArrayList<>();
-
-        String sql =
-                "SELECT * FROM sort_tasks(?, ?)";
-
-        try (Connection connection =
-                     dataSource.getConnection();
-
-             CallableStatement statement =
-                     connection.prepareCall(sql)) {
-
-            statement.setString(1, field);
-            statement.setString(2, direction);
-
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
-
-                while (resultSet.next()) {
-
-                    tasks.add(
-                            mapTask(resultSet)
-                    );
-                }
-            }
-
-        } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error sorting tasks",
-                    e
-            );
-        }
-
-        return tasks;
-    }
-
-
-    // =========================================================
-    // MAP RESULT SET TO TASK
-    // =========================================================
-
-    private Task mapTask(
-            ResultSet rs) throws SQLException {
-
+    private Task mapTask(ResultSet rs) throws SQLException {
         Task task = new Task();
+        task.setTaskId(rs.getInt("task_id"));
+        task.setTaskName(rs.getString("task_name"));
+        task.setDescription(rs.getString("description"));
+        task.setPriority(rs.getString("priority"));
+        task.setStatus(rs.getString("status"));
+        Date startDate = rs.getDate("start_date");
+        if (startDate != null) task.setStartDate(startDate.toLocalDate());
+        Date dueDate = rs.getDate("due_date");
+        if (dueDate != null) task.setDueDate(dueDate.toLocalDate());
 
-        task.setTaskId(
-                rs.getInt("task_id")
-        );
-
-        task.setTaskName(
-                rs.getString("task_name")
-        );
-
-        task.setDescription(
-                rs.getString("description")
-        );
-
-        task.setPriority(
-                rs.getString("priority")
-        );
-
-        task.setStatus(
-                rs.getString("status")
-        );
-
-
-        // =====================================================
-        // START DATE
-        // =====================================================
-
-        Date startDate =
-                rs.getDate("start_date");
-
-        if (startDate != null) {
-
-            task.setStartDate(
-                    startDate.toLocalDate()
-            );
-        }
-
-
-        // =====================================================
-        // DUE DATE
-        // =====================================================
-
-        Date dueDate =
-                rs.getDate("due_date");
-
-        if (dueDate != null) {
-
-            task.setDueDate(
-                    dueDate.toLocalDate()
-            );
-        }
-
-
-        // =====================================================
-        // PROJECT
-        // =====================================================
-
-        int projectId =
-                rs.getInt("project_id");
-
+        int projectId = rs.getInt("project_id");
         if (!rs.wasNull()) {
-
-            Project project =
-                    new Project();
-
-            project.setProjectId(
-                    projectId
-            );
-
-            /*
-             * Only get project_name when the
-             * ResultSet contains that column.
-             *
-             * get_tasks_by_employee() now returns it.
-             * Other existing task functions may not.
-             */
-
-            try {
-
-                String projectName =
-                        rs.getString("project_name");
-
-                project.setProjectName(
-                        projectName
-                );
-
-            } catch (SQLException ignored) {
-
-                // project_name not returned
-                // by this particular function
-            }
-
+            Project project = new Project();
+            project.setProjectId(projectId);
+            try { project.setProjectName(rs.getString("project_name")); }
+            catch (SQLException ignored) { }
             task.setProject(project);
         }
 
-
-        // =====================================================
-        // EMPLOYEE
-        // =====================================================
-
-        int employeeId =
-                rs.getInt("assigned_to");
-
+        int employeeId = rs.getInt("assigned_to");
         if (!rs.wasNull()) {
-
-            Employee employee =
-                    new Employee();
-
-            employee.setEmployeeId(
-                    employeeId
-            );
-
-            task.setAssignedTo(
-                    employee
-            );
+            Employee employee = new Employee();
+            employee.setEmployeeId(employeeId);
+            task.setAssignedTo(employee);
         }
-
         return task;
     }
 
-    // =========================================================
-// GET TEAM TASKS BY MANAGER
-// =========================================================
-
-    public List<Task> getTasksByManagerId(Integer managerId) {
-
-        List<Task> tasks = new ArrayList<>();
-
-        String sql =
-                "SELECT * FROM get_tasks_by_manager(?)";
-
-        try (Connection connection =
-                     dataSource.getConnection();
-
-             CallableStatement statement =
-                     connection.prepareCall(sql)) {
-
-            statement.setInt(1, managerId);
-
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
-
-                while (resultSet.next()) {
-
-                    tasks.add(
-                            mapTask(resultSet)
-                    );
-                }
-            }
-
-        } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error fetching team tasks for manager: "
-                            + managerId,
-                    e
-            );
-        }
-
-        return tasks;
+    @FunctionalInterface
+    private interface SqlBinder {
+        void bind(PreparedStatement statement) throws SQLException;
     }
 }

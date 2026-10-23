@@ -37,8 +37,7 @@ public class SecurityConfig {
                         // Login pages
                         .requestMatchers(
                                 HttpMethod.GET,
-                                "/admin-login",
-                                "/user-login"
+                                "/", "/login", "/admin-login", "/user-login"
                         ).permitAll()
 
                         .requestMatchers(

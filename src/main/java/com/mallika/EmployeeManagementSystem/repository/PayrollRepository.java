@@ -370,7 +370,7 @@ public class PayrollRepository {
             );
         }
 
-        return payrolls;
+        return filterPayrollsByCompany(payrolls);
     }
 
 
@@ -411,7 +411,7 @@ public class PayrollRepository {
             );
         }
 
-        return payrolls;
+        return filterPayrollsByCompany(payrolls);
     }
 
 
@@ -455,7 +455,7 @@ public class PayrollRepository {
             );
         }
 
-        return payrolls;
+        return filterPayrollsByCompany(payrolls);
     }
 
 
@@ -499,7 +499,7 @@ public class PayrollRepository {
             );
         }
 
-        return payrolls;
+        return filterPayrollsByCompany(payrolls);
     }
 
 
@@ -547,7 +547,7 @@ public class PayrollRepository {
             );
         }
 
-        return payrolls;
+        return filterPayrollsByCompany(payrolls);
     }
 
 
@@ -639,7 +639,7 @@ public class PayrollRepository {
                     "Error fetching HR employee payrolls", e);
         }
 
-        return payrolls;
+        return filterPayrollsByCompany(payrolls);
     }
 
 

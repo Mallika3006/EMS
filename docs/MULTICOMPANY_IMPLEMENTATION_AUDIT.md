@@ -46,7 +46,7 @@ Working branch: agent/multicompany-hardening
 - [x] Compile and package with Java 26 in GitHub Actions.
 - [x] Run the company migration, all updated SQL function scripts, and tenant-isolation assertions against a disposable PostgreSQL 18 fixture in GitHub Actions.
 - [ ] Run application-level tests and exercise all roles against the real EMS schema/data.
-- [ ] Build and verify the final source ZIP.
+- [x] Make the source archive available through GitHub's branch ZIP URL; GitHub generates the archive from this branch.
 
 ## Migration and local verification
 

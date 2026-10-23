@@ -105,7 +105,7 @@ public class SecurityConfig {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType("application/json");
                     response.setCharacterEncoding("UTF-8");
-                    response.getWriter().write("{\\"message\\":\\"Authentication required. Please sign in again.\\"}");
+                    response.getWriter().write("{\"message\":\"Authentication required. Please sign in again.\"}");
                 })
                 .accessDeniedHandler((request, response, exception) -> {
                     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

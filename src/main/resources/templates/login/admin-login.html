@@ -56,7 +56,9 @@
             const loginButton =
                 document.getElementById("loginButton");
 
-            errorMessage.textContent = "";
+            errorMessage.textContent = new URLSearchParams(window.location.search).has("expired")
+                ? "Your session has expired or you are signed out. Please sign in again."
+                : "";
             loginButton.disabled = true;
 
             try {

@@ -133,6 +133,12 @@ FROM (
 WHERE company_id IS NOT NULL
 ON CONFLICT (company_id) DO NOTHING;
 
+ALTER TABLE public.employees ALTER COLUMN company_id SET NOT NULL;
+ALTER TABLE public.users ALTER COLUMN company_id SET NOT NULL;
+ALTER TABLE public.department ALTER COLUMN company_id SET NOT NULL;
+ALTER TABLE public.designation ALTER COLUMN company_id SET NOT NULL;
+ALTER TABLE public.projects ALTER COLUMN company_id SET NOT NULL;
+ALTER TABLE public.tasks ALTER COLUMN company_id SET NOT NULL;
 ALTER TABLE public.attendance ALTER COLUMN company_id SET NOT NULL;
 ALTER TABLE public.leaves ALTER COLUMN company_id SET NOT NULL;
 ALTER TABLE public.payroll ALTER COLUMN company_id SET NOT NULL;

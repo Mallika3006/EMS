@@ -74,6 +74,13 @@ public class AttendanceService {
         return user;
     }
 
+    private boolean hasRole(String roleName) {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equalsIgnoreCase("ROLE_" + roleName));
+    }
+
     private Integer currentEmployeeId() {
         return getCurrentUser().getEmployee().getEmployeeId();
     }
@@ -173,8 +180,7 @@ public class AttendanceService {
     public List<Attendance> getMyTeamAttendance() {
         User manager = getCurrentUser();
 
-        if (!"MANAGER".equalsIgnoreCase(
-                manager.getRole().getRoleName())) {
+        if (!hasRole("MANAGER")) {
             throw new AccessDeniedException(
                     "Only managers can view team attendance");
         }
@@ -187,8 +193,7 @@ public class AttendanceService {
     public Attendance createTeamAttendance(Attendance attendance) {
         User manager = getCurrentUser();
 
-        if (!"MANAGER".equalsIgnoreCase(
-                manager.getRole().getRoleName())) {
+        if (!hasRole("MANAGER")) {
             throw new AccessDeniedException(
                     "Only managers can add team attendance");
         }
@@ -224,7 +229,7 @@ public class AttendanceService {
     public List<Attendance> getHrEmployeeAttendance() {
         User hr = getCurrentUser();
 
-        if (!"HR".equalsIgnoreCase(hr.getRole().getRoleName())) {
+        if (!hasRole("HR")) {
             throw new AccessDeniedException(
                     "Only HR users can view assigned employee attendance");
         }

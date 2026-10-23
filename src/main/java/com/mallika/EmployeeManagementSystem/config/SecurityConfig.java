@@ -15,10 +15,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CookieOriginValidationFilter cookieOriginValidationFilter;
 
     public SecurityConfig(
-            JwtAuthenticationFilter jwtAuthenticationFilter) {
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            CookieOriginValidationFilter cookieOriginValidationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.cookieOriginValidationFilter = cookieOriginValidationFilter;
     }
 
     @Bean
@@ -229,6 +232,10 @@ public class SecurityConfig {
                         .invalidateHttpSession(true)
                 )
 
+                .addFilterBefore(
+                        cookieOriginValidationFilter,
+                        JwtAuthenticationFilter.class
+                )
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class

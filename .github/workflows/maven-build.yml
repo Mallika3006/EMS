@@ -25,7 +25,7 @@ jobs:
           java-version: '26'
           cache: maven
 
-      - name: Validate Admin module inline JavaScript
+      - name: Validate inline JavaScript in Thymeleaf templates
         run: |
           python3 - <<'PY'
           from html.parser import HTMLParser
@@ -34,8 +34,8 @@ jobs:
               def __init__(self):
                   super().__init__()
                   self.active = False
-                  self.parts = []
                   self.current = []
+                  self.parts = []
               def handle_starttag(self, tag, attrs):
                   if tag.lower() == "script":
                       self.active = True
@@ -47,14 +47,21 @@ jobs:
                   if tag.lower() == "script" and self.active:
                       self.parts.append("".join(self.current))
                       self.active = False
-          parser = Scripts()
-          parser.feed(Path("src/main/resources/templates/admin/module.html").read_text(encoding="utf-8"))
-          scripts = [s for s in parser.parts if s.strip()]
-          if not scripts:
-              raise SystemExit("No inline script found in admin/module.html")
-          Path("/tmp/ems-admin-module.js").write_text("\n".join(scripts), encoding="utf-8")
+          output = Path("/tmp/ems-inline-js")
+          output.mkdir(exist_ok=True)
+          count = 0
+          for html in Path("src/main/resources/templates").rglob("*.html"):
+              parser = Scripts()
+              parser.feed(html.read_text(encoding="utf-8"))
+              for script in parser.parts:
+                  if script.strip():
+                      count += 1
+                      (output / f"script-{count}.js").write_text(script, encoding="utf-8")
+          if count == 0:
+              raise SystemExit("No inline scripts found")
+          print(f"Extracted {count} inline scripts for syntax checks")
           PY
-          node --check /tmp/ems-admin-module.js
+          for script in /tmp/ems-inline-js/*.js; do node --check "$script"; done
 
       - name: Compile and package
         env:

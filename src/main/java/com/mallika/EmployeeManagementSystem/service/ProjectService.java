@@ -6,6 +6,8 @@ import com.mallika.EmployeeManagementSystem.model.User;
 import com.mallika.EmployeeManagementSystem.repository.ProjectRepository;
 import com.mallika.EmployeeManagementSystem.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 
@@ -42,17 +44,30 @@ public class ProjectService {
     }
 
     public List<Project> getAllProjects(String username) {
-        Long companyId = getCompanyId(username);
+        User user = getUser(username);
+        Long companyId = requireCompanyId(user);
+        if (isManager()) {
+            return projectRepository.getProjectsVisibleToManager(
+                    requireEmployeeId(user), companyId);
+        }
         return projectRepository.getAllProjects(companyId);
     }
 
     public Project getProjectById(Integer id, String username) {
-        Long companyId = getCompanyId(username);
+        User user = getUser(username);
+        Long companyId = requireCompanyId(user);
 
-        return projectRepository.getProjectById(id, companyId)
+        Project project = projectRepository.getProjectById(id, companyId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Project not found with id: " + id));
+
+        if (isManager() && project.getManagerId() != null
+                && !project.getManagerId().equals(requireEmployeeId(user))) {
+            throw new ResourceNotFoundException(
+                    "Project not found in your managed projects");
+        }
+        return project;
     }
 
     public Project updateProject(
@@ -110,6 +125,33 @@ public class ProjectService {
         return projectRepository.getProjectsByEmployee(
                 user.getEmployee().getEmployeeId(),
                 user.getCompanyId());
+    }
+
+
+    private User getUser(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "User not found: " + username));
+    }
+
+    private Long requireCompanyId(User user) {
+        if (user.getCompanyId() == null) {
+            throw new IllegalStateException("No company is assigned to this user");
+        }
+        return user.getCompanyId();
+    }
+
+    private Integer requireEmployeeId(User user) {
+        if (user.getEmployee() == null || user.getEmployee().getEmployeeId() == null) {
+            throw new ResourceNotFoundException("Employee is not assigned to this user");
+        }
+        return user.getEmployee().getEmployeeId();
+    }
+
+    private boolean isManager() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_MANAGER".equals(authority.getAuthority()));
     }
 
 }

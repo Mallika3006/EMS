@@ -37,10 +37,11 @@ Working branch: agent/multicompany-hardening
 - [x] Add company ownership checks and company-scoped SQL overloads for leave/payroll operations; attendance writes are company-scoped.
 - [x] Restrict project writes to Admin, general task APIs to Admin/Manager, and general leave administration to Admin; preserve manager/HR-specific leave routes.
 - [x] Fail closed if a username resolves to multiple users, because the current JWT subject identifies a user by username only.
-- [x] Remove authentication debug output and externalize database/JWT secrets.
+- [x] Remove authentication debug output externalize database/JWT secrets, and validate Origin/Referer for unsafe cookie-authenticated requests.
 - [ ] Inventory every table, column, SQL function, and repository invocation completely.
 - [ ] Review all legacy SQL function behavior against the new migration and verify trigger/constraint behavior on a real database.
-- [ ] Review JWT user/company status validation, cookie flags, logout, expiration, and CSRF.
+- [x] Keep browser JWTs in HttpOnly cookies, configure the Secure flag, and reject unsafe cookie-authenticated requests whose Origin/Referer does not match `APP_ORIGIN`.
+- [ ] Complete a production reverse-proxy/cookie/CSRF review against the deployed domain.
 - [x] Add database-level tenant-isolation assertions for migration, project membership, and leave/payroll queries.
 - [ ] Add application-level role-authorization tests.
 - [x] Compile and package with Java 26 in GitHub Actions.
@@ -53,7 +54,7 @@ Working branch: agent/multicompany-hardening
 1. Back up the `employee_management_system` database before applying schema changes.
 2. Review `sql/multicompany_hardening.sql` against the actual live schema. Resolve duplicate usernames, orphan records, or cross-company relationships it reports before retrying.
 3. Run `sql/multicompany_hardening.sql` first. Then run `sql/department_company_functions.sql`, `sql/department_functions.sql` (company-aware designation overloads), `sql/task_functions.sql` (company-aware create function), the updated `sql/attendance_functions.sql`, `sql/leave_functions.sql`, and `sql/payroll_functions.sql`, and finally `sql/tenant_scoped_leave_payroll_functions.sql` so leave/payroll repositories use company-ID-bearing overloads.
-4. Configure `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, and `JWT_SECRET` from `.env.example` in the environment used to start Spring Boot. Do not commit actual values.
+4. Configure `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `COOKIE_SECURE`, and `APP_ORIGIN` from `.env.example` in the environment used to start Spring Boot. `APP_ORIGIN` must be the exact public origin (for example, `https://ems.example.com`) so the browser-origin guard works behind a reverse proxy. Do not commit actual values.
 5. Run `mvn clean test` and exercise each role with two companies before deploying.
 
 The migration intentionally stops rather than silently assigning company IDs to orphan attendance/leave/payroll rows, accepting cross-company relationships, or allowing duplicate usernames (the JWT subject is username-only). It creates no team-related tables.

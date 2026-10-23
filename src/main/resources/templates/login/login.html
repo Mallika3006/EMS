@@ -99,7 +99,7 @@
             }
 
             // Authentication remains in the server-issued HttpOnly cookie. Only the UI role is retained.
-            localStorage.setItem("role", data.role);
+            // Role is used only to choose the initial redirect; auth remains in the HttpOnly cookie.
             window.location.assign(destination);
         } catch (error) {
             errorMessage.textContent = error instanceof Error

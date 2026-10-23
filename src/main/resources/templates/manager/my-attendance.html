@@ -1,231 +1,126 @@
 <!DOCTYPE html>
-
-<html xmlns:th="http://www.thymeleaf.org">
-
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>My Attendance - Employee Management System</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>My Attendance | Employee Management System</title>
     <link rel="stylesheet" th:href="@{/style.css}">
-    <link rel="icon" type="image/x-icon" th:href="@{/favicon.ico}">
+    <style>
+        .attendance-actions{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}
+        .attendance-actions button{padding:10px 18px}
+        .attendance-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:18px 0}
+        .attendance-box{padding:16px;border:1px solid #ddd;border-radius:10px}
+        .attendance-box strong{display:block;font-size:1.5rem;margin-top:6px}
+        .filters{display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin:16px 0}
+        .filters label{display:grid;gap:6px}
+        #feedback{margin:12px 0}
+        .table-wrap{overflow-x:auto}
+    </style>
 </head>
-
 <body>
-
 <div class="container">
-
     <h1>My Attendance</h1>
-
-    <div class="card" id="attendance">
-
-        <p class="loading">
-            Loading attendance...
-        </p>
-
-    </div>
-
-    <br>
-
-    <a class="back-link" href="/manager-dashboard">
-        ← Back to Manager Dashboard
-    </a>
-
+    <p>Check in when your workday begins and check out when it ends. You can view and filter your attendance history below.</p>
+    <section class="card">
+        <h2>Today's attendance</h2>
+        <p id="todayState">Loading today's attendance…</p>
+        <div class="attendance-actions">
+            <button id="checkInButton" type="button">Check in</button>
+            <button id="checkOutButton" type="button" disabled>Check out</button>
+            <button id="refreshButton" type="button">Refresh</button>
+        </div>
+        <p id="feedback" role="status" aria-live="polite"></p>
+    </section>
+    <section class="card">
+        <h2>Attendance summary</h2>
+        <div class="attendance-summary">
+            <div class="attendance-box">Present days<strong id="presentCount">0</strong></div>
+            <div class="attendance-box">Absent days<strong id="absentCount">0</strong></div>
+            <div class="attendance-box">Late days<strong id="lateCount">0</strong></div>
+            <div class="attendance-box">Recorded hours<strong id="hoursTotal">0h 0m</strong></div>
+        </div>
+        <div class="filters">
+            <label>From date<input type="date" id="fromDate"></label>
+            <label>To date<input type="date" id="toDate"></label>
+            <button type="button" id="filterButton">Apply filters</button>
+            <button type="button" id="resetButton">Reset</button>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Date</th><th>Status</th><th>Check in</th><th>Check out</th><th>Working time</th></tr></thead>
+                <tbody id="attendanceRows"><tr><td colspan="5">Loading records…</td></tr></tbody>
+            </table>
+        </div>
+    </section>
+    <p><a class="back-link" href="/manager-dashboard">← Back to Dashboard</a></p>
 </div>
-
-
 <script>
-
-    fetch('/attendance/me')
-
-        .then(response => {
-
-            if (!response.ok) {
-                throw new Error("Failed to load attendance");
+(() => {
+    const $ = id => document.getElementById(id);
+    let allRecords = [];
+    const today = () => {
+        const now = new Date();
+        return now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0") + "-" + String(now.getDate()).padStart(2,"0");
+    };
+    const timeMinutes = value => {
+        if (!value) return null;
+        const parts = String(value).split(":").map(Number);
+        return parts.length >= 2 ? parts[0]*60+parts[1] : null;
+    };
+    const duration = record => {
+        const start=timeMinutes(record.checkInTime), end=timeMinutes(record.checkOutTime);
+        if(start===null||end===null) return "—";
+        let minutes=end-start;
+        if(minutes<0) minutes+=24*60;
+        return Math.floor(minutes/60)+"h "+(minutes%60)+"m";
+    };
+    function feedback(message,error=false){$("feedback").textContent=message;$("feedback").className=error?"error-message":"success-message";}
+    async function api(url,options={}) {
+        const response=await fetch(url,{credentials:"same-origin",...options,headers:{"Accept":"application/json","Content-Type":"application/json",...(options.headers||{})}});
+        const body=await response.text();
+        let data;try{data=body?JSON.parse(body):null}catch{data=body}
+        if(!response.ok) throw new Error(data?.error||data?.message||data||("Request failed (HTTP "+response.status+")"));
+        return data;
+    }
+    function render(){
+        const filtered=allRecords.filter(r=>(!$("fromDate").value||String(r.attDate||"")>=$("fromDate").value)&&(!$("toDate").value||String(r.attDate||"")<=$("toDate").value));
+        $("presentCount").textContent=filtered.filter(r=>String(r.status||"").toLowerCase()==="present").length;
+        $("absentCount").textContent=filtered.filter(r=>String(r.status||"").toLowerCase()==="absent").length;
+        $("lateCount").textContent=filtered.filter(r=>String(r.status||"").toLowerCase()==="late").length;
+        const minutes=filtered.reduce((sum,r)=>{const start=timeMinutes(r.checkInTime),end=timeMinutes(r.checkOutTime);if(start===null||end===null)return sum;let d=end-start;if(d<0)d+=1440;return sum+d;},0);
+        $("hoursTotal").textContent=Math.floor(minutes/60)+"h "+(minutes%60)+"m";
+        const body=$("attendanceRows");body.replaceChildren();
+        if(!filtered.length){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=5;td.textContent="No attendance records for this period.";tr.appendChild(td);body.appendChild(tr);return;}
+        filtered.forEach(record=>{const tr=document.createElement("tr");[record.attDate||"—",record.status||"—",record.checkInTime||"—",record.checkOutTime||"—",duration(record)].forEach(value=>{const td=document.createElement("td");td.textContent=value;tr.appendChild(td)});body.appendChild(tr);});
+    }
+    async function load(){
+        $("refreshButton").disabled=true;
+        try{
+            allRecords=await api("/attendance/me")||[];
+            const todayRecord=allRecords.find(r=>String(r.attDate||"")===today());
+            if(!todayRecord){$("todayState").textContent="No attendance has been recorded today."; $("checkInButton").disabled=false;$("checkOutButton").disabled=true;}
+            else{
+                $("todayState").textContent="Status: "+(todayRecord.status||"—")+" · Check in: "+(todayRecord.checkInTime||"not recorded")+" · Check out: "+(todayRecord.checkOutTime||"not recorded");
+                $("checkInButton").disabled=Boolean(todayRecord.checkInTime);
+                $("checkOutButton").disabled=!todayRecord.checkInTime||Boolean(todayRecord.checkOutTime);
             }
-
-            return response.json();
-
-        })
-
-
-        .then(attendanceList => {
-
-            const attendanceDiv =
-                document.getElementById("attendance");
-
-
-            // =====================================================
-            // HANDLE NO ATTENDANCE RECORDS
-            // =====================================================
-
-            if (!attendanceList || attendanceList.length === 0) {
-
-                attendanceDiv.innerHTML = `
-
-                    <h3>Attendance Summary</h3>
-
-                    <p>No attendance records found.</p>
-
-                `;
-
-                return;
-            }
-
-
-            // =====================================================
-            // COUNT PRESENT DAYS
-            // =====================================================
-
-            const presentDays =
-                attendanceList.filter(attendance =>
-
-                    attendance.status &&
-
-                    attendance.status.toLowerCase() === "present"
-
-                ).length;
-
-
-            // =====================================================
-            // COUNT ABSENT DAYS
-            // =====================================================
-
-            const absentDays =
-                attendanceList.filter(attendance =>
-
-                    attendance.status &&
-
-                    attendance.status.toLowerCase() === "absent"
-
-                ).length;
-
-
-            // =====================================================
-            // COUNT LATE DAYS
-            // =====================================================
-
-            const lateDays =
-                attendanceList.filter(attendance =>
-
-                    attendance.status &&
-
-                    attendance.status.toLowerCase() === "late"
-
-                ).length;
-
-
-            // =====================================================
-            // DISPLAY SUMMARY
-            // =====================================================
-
-            let html = `
-
-                <h3>Attendance Summary</h3>
-
-                <div class="attendance-summary">
-
-                    <div class="attendance-box">
-                        <h4>Days Present</h4>
-                        <p>${presentDays}</p>
-                    </div>
-
-                    <div class="attendance-box">
-                        <h4>Days Absent</h4>
-                        <p>${absentDays}</p>
-                    </div>
-
-                    <div class="attendance-box">
-                        <h4>Days Late</h4>
-                        <p>${lateDays}</p>
-                    </div>
-
-                </div>
-
-
-                <h3>Attendance Records</h3>
-
-                <table>
-
-                    <thead>
-
-                        <tr>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th>Check In</th>
-                            <th>Check Out</th>
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-            `;
-
-
-            // =====================================================
-            // DISPLAY RECORDS
-            // =====================================================
-
-            attendanceList.forEach(attendance => {
-
-                html += `
-
-                    <tr>
-
-                        <td>
-                            ${attendance.attDate ?? "N/A"}
-                        </td>
-
-                        <td>
-                            ${attendance.status ?? "N/A"}
-                        </td>
-
-                        <td>
-                            ${attendance.checkInTime ?? "N/A"}
-                        </td>
-
-                        <td>
-                            ${attendance.checkOutTime ?? "N/A"}
-                        </td>
-
-                    </tr>
-
-                `;
-
-            });
-
-
-            html += `
-
-                    </tbody>
-
-                </table>
-
-            `;
-
-
-            attendanceDiv.innerHTML = html;
-
-        })
-
-
-        // =========================================================
-        // ERROR HANDLING
-        // =========================================================
-
-        .catch(error => {
-
-            document.getElementById("attendance").innerHTML =
-
-                "<p class='error-message'>" +
-                "Unable to load attendance." +
-                "</p>";
-
-            console.error(error);
-
-        });
-
+            render();
+        }catch(e){feedback(e.message,true);$("todayState").textContent="Unable to load today's attendance.";}
+        finally{$("refreshButton").disabled=false;}
+    }
+    async function punch(action){
+        const button=action==="check-in"?$("checkInButton"):$("checkOutButton");
+        button.disabled=true;feedback("Saving attendance…");
+        try{await api("/attendance/"+action,{method:"POST",body:"{}"});feedback(action==="check-in"?"Check-in recorded successfully.":"Check-out recorded successfully.");await load();}
+        catch(e){feedback(e.message,true);await load();}
+    }
+    $("checkInButton").addEventListener("click",()=>punch("check-in"));
+    $("checkOutButton").addEventListener("click",()=>punch("check-out"));
+    $("refreshButton").addEventListener("click",load);
+    $("filterButton").addEventListener("click",render);
+    $("resetButton").addEventListener("click",()=>{$("fromDate").value="";$("toDate").value="";render();});
+    load();
+})();
 </script>
-
 </body>
-
 </html>

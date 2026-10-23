@@ -100,33 +100,35 @@ VALUES (1, 'Engineering', 1), (2, 'Engineering', 2);
 INSERT INTO public.designation (designation_id, designation_title, company_id)
 VALUES (1, 'Manager', 1), (2, 'Manager', 2);
 INSERT INTO public.employees
-    (employee_id, first_name, last_name, email, department_id, designation_id, company_id)
+    (employee_id, first_name, last_name, email, department_id, designation_id, manager_id, hr_id, company_id)
 VALUES
-    (1, 'Admin', 'One', 'admin1@example.test', 1, 1, 1),
-    (2, 'Admin', 'Two', 'admin2@example.test', 2, 2, 2);
+    (1, 'Admin', 'One', 'admin1@example.test', 1, 1, NULL, NULL, 1),
+    (2, 'Admin', 'Two', 'admin2@example.test', 2, 2, NULL, NULL, 2),
+    (3, 'Employee', 'Three', 'employee3@example.test', 1, 1, 1, 1, 1);
 INSERT INTO public.users (user_id, username, employee_id, role_id, is_active, company_id)
 VALUES
     (1, 'admin-one', 1, 1, TRUE, 1),
-    (2, 'admin-two', 2, 1, TRUE, 2);
+    (2, 'admin-two', 2, 1, TRUE, 2),
+    (3, 'employee-three', 3, 4, TRUE, 1);
 INSERT INTO public.projects (project_id, project_name, manager_id, company_id)
 VALUES (1, 'Project One', 1, 1), (2, 'Project Two', 2, 2);
 INSERT INTO public.tasks (task_id, task_name, status, project_id, assigned_to, company_id)
 VALUES (1, 'Task One', 'Pending', 1, 1, 1), (2, 'Task Two', 'Pending', 2, 2, 2);
 INSERT INTO public.attendance (attendance_id, employee_id)
-VALUES (1, 1), (2, 2);
-INSERT INTO public.leaves (leave_id, employee_id)
-VALUES (1, 1), (2, 2);
+VALUES (1, 1), (2, 2), (3, 3);
+INSERT INTO public.leaves (leave_id, status, employee_id)
+VALUES (1, 'Approved', 1), (2, 'Approved', 2), (3, 'Pending', 3);
 INSERT INTO public.payroll (payroll_id, employee_id)
-VALUES (1, 1), (2, 2);
+VALUES (1, 1), (2, 2), (3, 3);
 INSERT INTO public.employee_project (employee_id, project_id)
-VALUES (1, 1), (2, 2);
+VALUES (1, 1), (2, 2), (3, 1);
 
 SELECT setval(pg_get_serial_sequence('public.department', 'department_id'), 2, TRUE);
 SELECT setval(pg_get_serial_sequence('public.designation', 'designation_id'), 2, TRUE);
-SELECT setval(pg_get_serial_sequence('public.employees', 'employee_id'), 2, TRUE);
-SELECT setval(pg_get_serial_sequence('public.users', 'user_id'), 2, TRUE);
+SELECT setval(pg_get_serial_sequence('public.employees', 'employee_id'), 3, TRUE);
+SELECT setval(pg_get_serial_sequence('public.users', 'user_id'), 3, TRUE);
 SELECT setval(pg_get_serial_sequence('public.projects', 'project_id'), 2, TRUE);
 SELECT setval(pg_get_serial_sequence('public.tasks', 'task_id'), 2, TRUE);
-SELECT setval(pg_get_serial_sequence('public.attendance', 'attendance_id'), 2, TRUE);
-SELECT setval(pg_get_serial_sequence('public.leaves', 'leave_id'), 2, TRUE);
-SELECT setval(pg_get_serial_sequence('public.payroll', 'payroll_id'), 2, TRUE);
+SELECT setval(pg_get_serial_sequence('public.attendance', 'attendance_id'), 3, TRUE);
+SELECT setval(pg_get_serial_sequence('public.leaves', 'leave_id'), 3, TRUE);
+SELECT setval(pg_get_serial_sequence('public.payroll', 'payroll_id'), 3, TRUE);

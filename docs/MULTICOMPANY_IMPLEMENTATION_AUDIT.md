@@ -41,7 +41,9 @@ Working branch: agent/multicompany-hardening
 - [ ] Review all legacy SQL function behavior against the new migration and verify trigger/constraint behavior on a real database.
 - [ ] Review JWT user/company status validation, cookie flags, logout, expiration, and CSRF.
 - [ ] Add tenant-isolation and role-authorization tests.
-- [ ] Run Maven compilation/tests and PostgreSQL integration tests in a configured environment.
+- [x] Compile and package with Java 26 in GitHub Actions.
+- [x] Run the company migration and tenant assertions against a disposable PostgreSQL 18 fixture in GitHub Actions.
+- [ ] Run application-level tests and exercise all roles against the real EMS schema/data.
 - [ ] Build and verify the final source ZIP.
 
 ## Migration and local verification
@@ -58,4 +60,8 @@ New-company onboarding is currently a database/bootstrap operation: create a row
 
 ## Verification status
 
-No Maven build or PostgreSQL integration test has been executed in this environment. GitHub APIs were used to inspect and update the remote branch; a local clone attempt failed because this environment could not resolve GitHub. The changes are committed, but compilation, migration execution, and integration behavior remain unverified until run against the real project/database.
+- **Maven package:** passed in GitHub Actions on Java 26. The workflow compiles production and test sources and packages the Spring Boot JAR; test execution is currently skipped.
+- **PostgreSQL migration:** passed against a disposable PostgreSQL 18 fixture containing two companies. The test validates company-ID backfill, foreign-key creation, and rejection of cross-company project membership. Company-scoped department and designation SQL functions also created successfully in that fixture.
+- **Not yet verified:** running the migration against the real EMS database, existing-data edge cases, application startup with the real schema, browser flows, and end-to-end role/tenant integration tests.
+
+The migration is intentionally tested against a representative fixture, not claimed safe for the live database until it is backed up and checked against its actual data.

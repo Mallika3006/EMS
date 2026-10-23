@@ -211,7 +211,7 @@ RETURNS TABLE (
     employee_last_name VARCHAR
 )
 LANGUAGE sql STABLE
-AS $
+AS $$
     SELECT l.leave_id, l.from_date, l.to_date, l.reason, l.status,
            l.employee_id, l.company_id,
            e.first_name AS employee_first_name,
@@ -226,7 +226,7 @@ AS $
       AND e.company_id = p_company_id
       AND l.company_id = p_company_id
     ORDER BY l.leave_id DESC;
-$;
+$$;
 
 CREATE OR REPLACE FUNCTION public.get_leaves_by_hr(
     p_hr_id INTEGER, p_company_id BIGINT
@@ -243,7 +243,7 @@ RETURNS TABLE (
     employee_last_name VARCHAR
 )
 LANGUAGE sql STABLE
-AS $
+AS $$
     SELECT l.leave_id, l.from_date, l.to_date, l.reason, l.status,
            l.employee_id, l.company_id,
            e.first_name AS employee_first_name,
@@ -258,7 +258,7 @@ AS $
       AND e.company_id = p_company_id
       AND l.company_id = p_company_id
     ORDER BY l.leave_id DESC;
-$;
+$$;
 
 CREATE OR REPLACE FUNCTION public.delete_leave_by_hr(
     p_leave_id INTEGER, p_hr_id INTEGER, p_company_id BIGINT

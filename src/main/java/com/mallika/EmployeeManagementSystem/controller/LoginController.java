@@ -39,7 +39,6 @@ public class LoginController {
 
     @GetMapping("/admin-login")
     public String adminLoginPage() {
-        System.out.println(">>> ADMIN LOGIN PAGE REACHED");
         return "login/admin-login";
     }
 
@@ -49,7 +48,6 @@ public class LoginController {
 
     @GetMapping("/user-login")
     public String userLoginPage() {
-        System.out.println(">>> USER LOGIN PAGE REACHED");
         return "login/user-login";
     }
 
@@ -103,11 +101,6 @@ public class LoginController {
                 HttpHeaders.SET_COOKIE,
                 jwtCookie.toString()
         );
-
-        System.out.println(">>> LOGIN SUCCESSFUL: "
-                + userDetails.getUsername());
-
-        System.out.println(">>> USER ROLE: " + role);
 
         // Return token and role to existing frontend
         return Map.of(

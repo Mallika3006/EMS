@@ -43,7 +43,7 @@ Working branch: agent/multicompany-hardening
 - [x] Keep browser JWTs in HttpOnly cookies, configure the Secure flag, and reject unsafe cookie-authenticated requests whose Origin/Referer does not match `APP_ORIGIN`.
 - [ ] Complete a production reverse-proxy/cookie/CSRF review against the deployed domain.
 - [x] Add database-level tenant-isolation assertions for migration, project membership, and leave/payroll queries.
-- [x] Add unit tests for cookie-origin validation (same-origin allowed, cross-origin/missing origin rejected, explicit Bearer requests allowed).
+- [x] Add unit tests for cookie-origin validation (same-origin allowed, cross-origin/missing origin rejected, login-CSRF rejected, explicit Bearer requests allowed).
 - [ ] Add application-level role-authorization tests.
 - [x] Compile and package with Java 26 in GitHub Actions.
 - [x] Run the company migration, all updated SQL function scripts, and tenant-isolation assertions against a disposable PostgreSQL 18 fixture in GitHub Actions.
@@ -64,7 +64,7 @@ New-company onboarding is currently a database/bootstrap operation: create a row
 
 ## Verification status
 
-- **Maven verify:** passed in GitHub Actions on Java 26. Production/test sources compile, the Spring Boot artifact packages, and all four `CookieOriginValidationFilterTest` cases pass.
+- **Maven verify:** passed in GitHub Actions on Java 26. Production/test sources compile, the Spring Boot artifact packages, and all six `CookieOriginValidationFilterTest` cases pass.
 - **PostgreSQL migration/functions:** passed against a disposable PostgreSQL 18 fixture containing two companies and a manager/HR hierarchy. The workflow validates company-ID backfill, foreign-key creation, rejection of cross-company project membership, company-scoped leave/payroll query overloads, manager/HR list filtering, and successful creation of the department/designation/task/attendance/leave/payroll SQL functions.
 - **Not yet verified:** running the migration against the real EMS database, existing-data edge cases, application startup with the real schema, browser flows, and end-to-end role/tenant integration tests.
 

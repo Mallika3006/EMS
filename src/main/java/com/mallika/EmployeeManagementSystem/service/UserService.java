@@ -13,12 +13,14 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
+    private final CompanyContext companyContext;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                       RoleRepository roleRepository) {
+                       RoleRepository roleRepository, CompanyContext companyContext) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.roleRepository = roleRepository;
+        this.companyContext = companyContext;
     }
 
     public User createUser(User user) {
@@ -90,7 +92,14 @@ public class UserService {
         return getUserById(id);
     }
 
-    public void deleteUser(Integer id) { getUserById(id); userRepository.deleteUser(id); }
+    public void deleteUser(Integer id) {
+        User existing = getUserById(id);
+        if (existing.getRole() != null && Integer.valueOf(1).equals(existing.getRole().getRoleId()))
+            throw new IllegalArgumentException("Built-in administrator accounts cannot be deleted");
+        if (existing.getUsername().equalsIgnoreCase(companyContext.getUsername()))
+            throw new IllegalArgumentException("You cannot delete your own signed-in account");
+        userRepository.deleteUser(id);
+    }
     public List<User> searchByUsername(String username) { return userRepository.findByUsernameContainingIgnoreCase(username); }
     public User getByUsername(String username) {
         return userRepository.findByUsernameIgnoreCase(username)

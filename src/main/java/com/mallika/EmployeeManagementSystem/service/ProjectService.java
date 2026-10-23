@@ -6,6 +6,7 @@ import com.mallika.EmployeeManagementSystem.model.User;
 import com.mallika.EmployeeManagementSystem.repository.ProjectRepository;
 import com.mallika.EmployeeManagementSystem.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -87,6 +88,25 @@ public class ProjectService {
         if (!deleted) {
             throw new ResourceNotFoundException(
                     "Project not found with id: " + id);
+        }
+    }
+
+    public void assignProjectToEmployee(
+            Integer projectId, Integer employeeId, String username) {
+        if (!isManager()) {
+            throw new AccessDeniedException(
+                    "Only a Manager can assign projects to their direct reports");
+        }
+
+        User manager = getUser(username);
+        Long companyId = requireCompanyId(manager);
+        Integer managerId = requireEmployeeId(manager);
+
+        boolean assigned = projectRepository.assignProjectToEmployee(
+                projectId, employeeId, managerId, companyId);
+        if (!assigned) {
+            throw new ResourceNotFoundException(
+                    "Project or employee not found in your company, or employee is not your direct report");
         }
     }
 

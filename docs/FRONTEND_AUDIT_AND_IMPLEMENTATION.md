@@ -3,8 +3,8 @@
 ## Scope and constraints
 
 Repository: `Mallika3006/EMS`  
-Base: `agent/multicompany-hardening`  
-Working branch: `frontend/multicompany-ui`
+Base: `main`  
+Working branch: `frontend/main-ui-final`
 
 This is an existing Spring Boot + Thymeleaf + JDBC + PostgreSQL application. This UI pass preserves the backend architecture and does not introduce a frontend framework, database migration, company selector, client-supplied trusted company ID, or new database dependency.
 
@@ -52,11 +52,11 @@ UI navigation is not an authorization boundary. Existing backend security and te
 ## Verification status and limitations
 
 - Repository files, controller mappings, service contracts, model fields, and security matchers were inspected through the GitHub repository API.
-- The working branch was created from `agent/multicompany-hardening`; changes were committed to the feature branch only.
-- GitHub Actions run `39910102507` completed successfully on commit `ddbc6990`: Maven verify/package, inline JavaScript syntax checks across the Thymeleaf templates, and PostgreSQL migration/tenant assertions all passed. A subsequent small fix makes the password optional when editing an existing Admin user account; its new CI run should be checked before merging.
+- This integration branch was created directly from `main`, so it layers the frontend on top of the multi-company hardening already merged into `main`.
+- The source UI branch passed GitHub Actions for Maven verify/package, inline JavaScript syntax checks across Thymeleaf templates, and PostgreSQL migration/tenant assertions. This main-based integration branch needs its own CI run to pass before merge.
 - Live browser verification against an actual configured company database has not been performed in this hosted repository-editing session. The CI migration fixture validates SQL migration/tenant constraints but is not a substitute for role-by-role UI testing.
 - The existing `/manager/team` controller mapping and legacy template predate this UI pass. The dashboard no longer advertises that route; the old server mapping/template are retained to avoid unrelated destructive cleanup. No new Team feature or Team database dependency was added.
-- The feature templates remain backed by existing controllers and repository behavior. Each workflow should still be verified locally against a configured PostgreSQL instance before the frontend is considered fully runtime-verified.
+- The templates remain backed by existing controllers and repository behavior. Each workflow should still be verified locally against a configured PostgreSQL instance before the frontend is considered fully runtime-verified.
 
 ## Local verification checklist
 

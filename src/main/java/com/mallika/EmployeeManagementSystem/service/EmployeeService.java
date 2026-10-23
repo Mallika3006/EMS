@@ -75,7 +75,19 @@ public class EmployeeService {
             throw new IllegalArgumentException(
                     "Employee accounts must use the HR, Manager or Employee role");
         }
-
+        if (!dto.getEmail().matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw new IllegalArgumentException("Enter a valid email address");
+        }
+        if (dto.getPassword().length() < 8) {
+            throw new IllegalArgumentException("Password must contain at least 8 characters");
+        }
+        dto.setFirstName(dto.getFirstName().trim());
+        dto.setLastName(dto.getLastName().trim());
+        dto.setEmail(dto.getEmail().trim());
+        dto.setUsername(dto.getUsername().trim());
+        if (userRepository.findByUsernameIgnoreCase(dto.getUsername()).isPresent()) {
+            throw new IllegalArgumentException("Username already exists in this company");
+        }
         if (employeeRepository.getEmployeeByEmail(
                 dto.getEmail(), companyId()).isPresent()) {
             throw new IllegalArgumentException(

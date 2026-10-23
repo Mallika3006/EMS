@@ -59,6 +59,50 @@ SET company_id = e.company_id
 FROM public.employees e
 WHERE e.employee_id = p.employee_id AND p.company_id IS NULL;
 
+-- These records inherit their company from the employee. Triggers keep the
+-- tenant column correct without changing the existing employee-delete policy.
+CREATE OR REPLACE FUNCTION public.sync_employee_owned_company_id()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $
+DECLARE
+    employee_company BIGINT;
+BEGIN
+    SELECT e.company_id INTO employee_company
+    FROM public.employees e
+    WHERE e.employee_id = NEW.employee_id;
+
+    IF employee_company IS NULL THEN
+        RAISE EXCEPTION 'A valid employee is required for this record';
+    END IF;
+
+    IF NEW.company_id IS NOT NULL AND NEW.company_id <> employee_company THEN
+        RAISE EXCEPTION 'Record and employee must belong to the same company';
+    END IF;
+
+    NEW.company_id := employee_company;
+    RETURN NEW;
+END;
+$;
+
+DROP TRIGGER IF EXISTS trg_attendance_company_id ON public.attendance;
+CREATE TRIGGER trg_attendance_company_id
+BEFORE INSERT OR UPDATE OF employee_id, company_id
+ON public.attendance
+FOR EACH ROW EXECUTE FUNCTION public.sync_employee_owned_company_id();
+
+DROP TRIGGER IF EXISTS trg_leaves_company_id ON public.leaves;
+CREATE TRIGGER trg_leaves_company_id
+BEFORE INSERT OR UPDATE OF employee_id, company_id
+ON public.leaves
+FOR EACH ROW EXECUTE FUNCTION public.sync_employee_owned_company_id();
+
+DROP TRIGGER IF EXISTS trg_payroll_company_id ON public.payroll;
+CREATE TRIGGER trg_payroll_company_id
+BEFORE INSERT OR UPDATE OF employee_id, company_id
+ON public.payroll
+FOR EACH ROW EXECUTE FUNCTION public.sync_employee_owned_company_id();
+
 -- The relation table is tenant-owned too; enforce that employee and project
 -- assignments cannot cross company boundaries.
 ALTER TABLE public.employee_project ADD COLUMN IF NOT EXISTS company_id BIGINT;
@@ -118,6 +162,22 @@ BEGIN
        OR EXISTS (SELECT 1 FROM public.leaves WHERE company_id IS NULL)
        OR EXISTS (SELECT 1 FROM public.payroll WHERE company_id IS NULL) THEN
         RAISE EXCEPTION 'Attendance, leave, or payroll rows have no matching company employee; resolve orphan rows before rerunning this migration';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM public.attendance a
+        JOIN public.employees e ON e.employee_id = a.employee_id
+        WHERE a.company_id <> e.company_id
+    ) OR EXISTS (
+        SELECT 1 FROM public.leaves l
+        JOIN public.employees e ON e.employee_id = l.employee_id
+        WHERE l.company_id <> e.company_id
+    ) OR EXISTS (
+        SELECT 1 FROM public.payroll p
+        JOIN public.employees e ON e.employee_id = p.employee_id
+        WHERE p.company_id <> e.company_id
+    ) THEN
+        RAISE EXCEPTION 'Attendance, leave, or payroll rows have mismatched employee company IDs; resolve them before rerunning this migration';
     END IF;
 END $$;
 
@@ -188,7 +248,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_department_id_company
 CREATE UNIQUE INDEX IF NOT EXISTS uq_designation_id_company
     ON public.designation (designation_id, company_id);
 
-DO $$
+-- Replace prior draft composite FKs that would override existing employee-delete behavior.
+ALTER TABLE public.attendance DROP CONSTRAINT IF EXISTS fk_attendance_employee_company;
+ALTER TABLE public.leaves DROP CONSTRAINT IF EXISTS fk_leaves_employee_company;
+ALTER TABLE public.payroll DROP CONSTRAINT IF EXISTS fk_payroll_employee_company;
+ALTER TABLE public.employee_project DROP CONSTRAINT IF EXISTS fk_employee_project_employee_company;
+ALTER TABLE public.employee_project DROP CONSTRAINT IF EXISTS fk_employee_project_project_company;
+
+DO $
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_employees_company') THEN
         ALTER TABLE public.employees ADD CONSTRAINT fk_employees_company
@@ -230,30 +297,15 @@ BEGIN
         ALTER TABLE public.employee_project ADD CONSTRAINT fk_employee_project_company
             FOREIGN KEY (company_id) REFERENCES public.companies(company_id) ON DELETE RESTRICT;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_attendance_employee_company') THEN
-        ALTER TABLE public.attendance ADD CONSTRAINT fk_attendance_employee_company
-            FOREIGN KEY (employee_id, company_id)
-            REFERENCES public.employees(employee_id, company_id) ON DELETE RESTRICT;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_leaves_employee_company') THEN
-        ALTER TABLE public.leaves ADD CONSTRAINT fk_leaves_employee_company
-            FOREIGN KEY (employee_id, company_id)
-            REFERENCES public.employees(employee_id, company_id) ON DELETE RESTRICT;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_payroll_employee_company') THEN
-        ALTER TABLE public.payroll ADD CONSTRAINT fk_payroll_employee_company
-            FOREIGN KEY (employee_id, company_id)
-            REFERENCES public.employees(employee_id, company_id) ON DELETE RESTRICT;
-    END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_employee_project_employee_company') THEN
         ALTER TABLE public.employee_project ADD CONSTRAINT fk_employee_project_employee_company
             FOREIGN KEY (employee_id, company_id)
-            REFERENCES public.employees(employee_id, company_id) ON DELETE RESTRICT;
+            REFERENCES public.employees(employee_id, company_id) ON DELETE CASCADE;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_employee_project_project_company') THEN
         ALTER TABLE public.employee_project ADD CONSTRAINT fk_employee_project_project_company
             FOREIGN KEY (project_id, company_id)
-            REFERENCES public.projects(project_id, company_id) ON DELETE RESTRICT;
+            REFERENCES public.projects(project_id, company_id) ON DELETE CASCADE;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_users_employee_company') THEN
         ALTER TABLE public.users ADD CONSTRAINT fk_users_employee_company

@@ -150,7 +150,7 @@ CREATE INDEX IF NOT EXISTS idx_users_company_username
     ON public.users (company_id, username);
 
 -- JWT subject is username only, so usernames must remain unique across tenants.
-DO $
+DO $$
 BEGIN
     IF EXISTS (
         SELECT LOWER(username)

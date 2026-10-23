@@ -148,6 +148,22 @@ CREATE INDEX IF NOT EXISTS idx_employees_company_employee
     ON public.employees (company_id, employee_id);
 CREATE INDEX IF NOT EXISTS idx_users_company_username
     ON public.users (company_id, username);
+
+-- JWT subject is username only, so usernames must remain unique across tenants.
+DO $
+BEGIN
+    IF EXISTS (
+        SELECT LOWER(username)
+        FROM public.users
+        GROUP BY LOWER(username)
+        HAVING COUNT(*) > 1
+    ) THEN
+        RAISE EXCEPTION 'Duplicate usernames exist across companies; rename duplicates before applying multi-company authentication';
+    END IF;
+END $;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_users_username_case_insensitive
+    ON public.users (LOWER(username));
 CREATE INDEX IF NOT EXISTS idx_projects_company_project
     ON public.projects (company_id, project_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_company_task

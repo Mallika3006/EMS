@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Team Projects</title>
+    <title>Assigned Projects | Employee Management System</title>
 
     <link rel="stylesheet" href="/style.css">
 </head>
@@ -13,9 +13,9 @@
 
 <div class="container">
 
-    <h1>Team Projects</h1>
+    <h1>Assigned Projects</h1>
 
-    <p>Manage projects assigned to your team.</p>
+    <p>View projects associated with your manager account and assign them to permitted employees.</p>
 
     <button onclick="loadProjects()">
         Refresh
@@ -49,7 +49,7 @@
 
 <script>
 
-    // Load projects assigned to the manager's team
+    // Load projects associated with the manager account
     async function loadProjects() {
 
         const tableBody =
@@ -61,7 +61,7 @@
                 await fetch("/projects/manager/team");
 
             if (!response.ok) {
-                throw new Error("Failed to fetch team projects");
+                throw new Error("Failed to fetch manager projects");
             }
 
             const projects = await response.json();
@@ -70,7 +70,7 @@
             if (!teamResponse.ok) {
                 throw new Error("Failed to load your direct reports");
             }
-            const teamMembers = await teamResponse.json();
+            const employees = await teamResponse.json();
 
             tableBody.innerHTML = "";
 
@@ -79,7 +79,7 @@
                 tableBody.innerHTML = `
                     <tr>
                         <td colspan="6">
-                            No projects assigned to your team.
+                            No projects are currently available for your account.
                         </td>
                     </tr>
                 `;
@@ -103,7 +103,7 @@
 
                     <td>
                         <select id="project-member-${project.projectId}">
-                            <option value="">Select team member</option>
+                            <option value="">Select employee</option>
                         </select>
                         <button onclick="assignProjectMember(${project.projectId})">
                             Assign
@@ -133,7 +133,7 @@
                 const memberSelect = document.getElementById(
                     "project-member-" + project.projectId
                 );
-                teamMembers.forEach(member => {
+                employees.forEach(member => {
                     const option = document.createElement("option");
                     option.value = String(member.employeeId);
                     option.textContent =
@@ -152,7 +152,7 @@
             tableBody.innerHTML = `
                 <tr>
                     <td colspan="6">
-                        Failed to load team projects.
+                        Unable to load projects. Check your access and try again.
                     </td>
                 </tr>
             `;
@@ -167,7 +167,7 @@
         const select = document.getElementById("project-member-" + projectId);
         const employeeId = select ? select.value : "";
         if (!employeeId) {
-            alert("Select a team member first.");
+            alert("Select a employee first.");
             return;
         }
 
@@ -181,7 +181,7 @@
                     (await response.text()) || "Project assignment failed"
                 );
             }
-            alert("Project assigned to team member.");
+            alert("Project assigned to employee.");
         } catch (error) {
             alert("Could not assign project: " + error.message);
         }

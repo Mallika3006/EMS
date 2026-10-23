@@ -48,16 +48,16 @@ public class CompanyRegistrationService {
             throw new IllegalArgumentException("Passwords do not match.");
         }
 
-        Integer existingCompany = jdbcTemplate.queryForObject(
+        Long existingCompany = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM companies WHERE LOWER(company_name) = LOWER(?)",
-                Integer.class, normalizedCompanyName);
+                Long.class, normalizedCompanyName);
         if (existingCompany != null && existingCompany > 0) {
             throw new RegistrationConflictException("A company with that name is already registered.");
         }
 
-        Integer existingUsername = jdbcTemplate.queryForObject(
+        Long existingUsername = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM users WHERE LOWER(username) = LOWER(?)",
-                Integer.class, normalizedUsername);
+                Long.class, normalizedUsername);
         if (existingUsername != null && existingUsername > 0) {
             throw new RegistrationConflictException(
                     "That username is already in use. Choose another username.");

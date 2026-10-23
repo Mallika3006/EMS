@@ -39,7 +39,7 @@ public class PayrollRepository {
         validateEmployeeInCompany(employeeId);
 
         String sql =
-                "SELECT * FROM create_payroll(?, ?, ?, ?, ?, ?, ?)";
+                "SELECT * FROM public.create_payroll(?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection connection =
                      dataSource.getConnection();
@@ -98,6 +98,7 @@ public class PayrollRepository {
                 );
             }
 
+            statement.setLong(8, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -129,21 +130,16 @@ public class PayrollRepository {
                 new ArrayList<>();
 
         String sql =
-                "SELECT * FROM get_all_payrolls()";
+                "SELECT * FROM public.get_all_payrolls(?)";
 
-        try (Connection connection =
-                     dataSource.getConnection();
-             CallableStatement statement =
-                     connection.prepareCall(sql);
-             ResultSet resultSet =
-                     statement.executeQuery()) {
-
-            while (resultSet.next()) {
-                payrolls.add(
-                        mapPayroll(resultSet)
-                );
+        try (Connection connection = dataSource.getConnection();
+             CallableStatement statement = connection.prepareCall(sql)) {
+            statement.setLong(1, companyContext.getCompanyId());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    payrolls.add(mapPayroll(resultSet));
+                }
             }
-
         } catch (SQLException e) {
             throw new RuntimeException(
                     "Error fetching payrolls",
@@ -163,7 +159,7 @@ public class PayrollRepository {
             Integer id) {
 
         String sql =
-                "SELECT * FROM get_payroll_by_id(?)";
+                "SELECT * FROM public.get_payroll_by_id(?, ?)";
 
         try (Connection connection =
                      dataSource.getConnection();
@@ -172,6 +168,7 @@ public class PayrollRepository {
 
             statement.setInt(1, id);
 
+            statement.setLong(2, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -211,7 +208,7 @@ public class PayrollRepository {
         validateEmployeeInCompany(employeeId);
 
         String sql =
-                "SELECT * FROM update_payroll(?, ?, ?, ?, ?, ?, ?, ?)";
+                "SELECT * FROM public.update_payroll(?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection connection =
                      dataSource.getConnection();
@@ -274,6 +271,7 @@ public class PayrollRepository {
                 );
             }
 
+            statement.setLong(9, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -304,7 +302,7 @@ public class PayrollRepository {
         ensurePayrollInCompany(id);
 
         String sql =
-                "SELECT delete_payroll(?)";
+                "SELECT public.delete_payroll(?, ?)";
 
         try (Connection connection =
                      dataSource.getConnection();
@@ -313,6 +311,7 @@ public class PayrollRepository {
 
             statement.setInt(1, id);
 
+            statement.setLong(2, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -344,7 +343,7 @@ public class PayrollRepository {
                 new ArrayList<>();
 
         String sql =
-                "SELECT * FROM get_payrolls_by_employee(?)";
+                "SELECT * FROM public.get_payrolls_by_employee(?, ?)";
 
         try (Connection connection =
                      dataSource.getConnection();
@@ -353,6 +352,7 @@ public class PayrollRepository {
 
             statement.setInt(1, employeeId);
 
+            statement.setLong(2, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -385,7 +385,7 @@ public class PayrollRepository {
                 new ArrayList<>();
 
         String sql =
-                "SELECT * FROM get_payrolls_by_month(?)";
+                "SELECT * FROM public.get_payrolls_by_month(?, ?)";
 
         try (Connection connection =
                      dataSource.getConnection();
@@ -394,6 +394,7 @@ public class PayrollRepository {
 
             statement.setString(1, payMonth);
 
+            statement.setLong(2, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -428,7 +429,7 @@ public class PayrollRepository {
                 new ArrayList<>();
 
         String sql =
-                "SELECT * FROM get_employee_payroll_by_month(?, ?)";
+                "SELECT * FROM public.get_employee_payroll_by_month(?, ?, ?)";
 
         try (Connection connection =
                      dataSource.getConnection();
@@ -438,6 +439,7 @@ public class PayrollRepository {
             statement.setInt(1, employeeId);
             statement.setString(2, payMonth);
 
+            statement.setLong(3, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -470,7 +472,7 @@ public class PayrollRepository {
                 new ArrayList<>();
 
         String sql =
-                "SELECT * FROM get_payrolls_by_payment_date(?)";
+                "SELECT * FROM public.get_payrolls_by_payment_date(?, ?)";
 
         try (Connection connection =
                      dataSource.getConnection();
@@ -482,6 +484,7 @@ public class PayrollRepository {
                     Date.valueOf(paymentDate)
             );
 
+            statement.setLong(2, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -516,7 +519,7 @@ public class PayrollRepository {
                 new ArrayList<>();
 
         String sql =
-                "SELECT * FROM get_employee_payroll_by_payment_date(?, ?)";
+                "SELECT * FROM public.get_employee_payroll_by_payment_date(?, ?, ?)";
 
         try (Connection connection =
                      dataSource.getConnection();
@@ -530,6 +533,7 @@ public class PayrollRepository {
                     Date.valueOf(paymentDate)
             );
 
+            statement.setLong(3, companyContext.getCompanyId());
             try (ResultSet resultSet =
                          statement.executeQuery()) {
 
@@ -621,13 +625,14 @@ public class PayrollRepository {
 
         List<Payroll> payrolls = new ArrayList<>();
 
-        String sql = "SELECT * FROM get_payrolls_by_hr(?)";
+        String sql = "SELECT * FROM public.get_payrolls_by_hr(?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              CallableStatement statement = connection.prepareCall(sql)) {
 
             statement.setInt(1, hrId);
 
+            statement.setLong(2, companyContext.getCompanyId());
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     payrolls.add(mapPayroll(resultSet));

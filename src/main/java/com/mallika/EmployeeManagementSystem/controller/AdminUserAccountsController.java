@@ -69,8 +69,7 @@ public class AdminUserAccountsController {
         if (existing.getUsername().equalsIgnoreCase(companyContext.getUsername()) && !active) {
             throw new IllegalArgumentException("You cannot deactivate your own account while signed in.");
         }
-        existing.setIsActive(active);
-        return view(userService.updateUser(id, existing));
+        return view(userService.setActiveStatus(id, active));
     }
 
     @DeleteMapping("/{id}")

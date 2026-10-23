@@ -3,6 +3,7 @@ package com.mallika.EmployeeManagementSystem.repository;
 import com.mallika.EmployeeManagementSystem.model.Employee;
 import com.mallika.EmployeeManagementSystem.model.Project;
 import com.mallika.EmployeeManagementSystem.model.Task;
+import com.mallika.EmployeeManagementSystem.service.CompanyContext;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -19,9 +20,11 @@ import java.util.Optional;
 public class TaskRepository {
 
     private final DataSource dataSource;
+    private final CompanyContext companyContext;
 
-    public TaskRepository(DataSource dataSource) {
+    public TaskRepository(DataSource dataSource, CompanyContext companyContext) {
         this.dataSource = dataSource;
+        this.companyContext = companyContext;
     }
 
     // =========================================================
@@ -85,82 +88,51 @@ public class TaskRepository {
     // GET ALL
     // =========================================================
 
+    // =========================================================
+    // GET ALL
+    // =========================================================
+
     public List<Task> getAllTasks() {
-
+        Long companyId = companyContext.getCompanyId();
         List<Task> tasks = new ArrayList<>();
+        String sql = "SELECT * FROM public.tasks WHERE company_id = ? ORDER BY task_id";
 
-        String sql =
-                "SELECT * FROM get_all_tasks()";
-
-        try (Connection connection =
-                     dataSource.getConnection();
-
-             CallableStatement statement =
-                     connection.prepareCall(sql);
-
-             ResultSet resultSet =
-                     statement.executeQuery()) {
-
-            while (resultSet.next()) {
-
-                tasks.add(
-                        mapTask(resultSet)
-                );
+        try (Connection connection = dataSource.getConnection();
+             CallableStatement statement = connection.prepareCall(sql)) {
+            statement.setLong(1, companyId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    tasks.add(mapTask(resultSet));
+                }
             }
-
         } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error fetching tasks",
-                    e
-            );
+            throw new RuntimeException("Error fetching tasks for current company", e);
         }
-
         return tasks;
     }
-
 
     // =========================================================
     // GET BY ID
     // =========================================================
 
-    public Optional<Task> getTaskById(
-            Integer id) {
+    public Optional<Task> getTaskById(Integer id) {
+        Long companyId = companyContext.getCompanyId();
+        String sql = "SELECT * FROM public.tasks WHERE task_id = ? AND company_id = ?";
 
-        String sql =
-                "SELECT * FROM get_task_by_id(?)";
-
-        try (Connection connection =
-                     dataSource.getConnection();
-
-             CallableStatement statement =
-                     connection.prepareCall(sql)) {
-
+        try (Connection connection = dataSource.getConnection();
+             CallableStatement statement = connection.prepareCall(sql)) {
             statement.setInt(1, id);
-
-            try (ResultSet resultSet =
-                         statement.executeQuery()) {
-
+            statement.setLong(2, companyId);
+            try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
-
-                    return Optional.of(
-                            mapTask(resultSet)
-                    );
+                    return Optional.of(mapTask(resultSet));
                 }
             }
-
         } catch (SQLException e) {
-
-            throw new RuntimeException(
-                    "Error fetching task with id: "
-                            + id,
-                    e
-            );
+            throw new RuntimeException("Error fetching task with id: " + id, e);
         }
-
         return Optional.empty();
     }
-
 
     // =========================================================
     // UPDATE

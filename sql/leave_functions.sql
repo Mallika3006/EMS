@@ -19,15 +19,18 @@ INSERT INTO leaves (
     to_date,
     reason,
     status,
-    employee_id
+    employee_id,
+    company_id
 )
-VALUES (
-           p_from_date,
-           p_to_date,
-           p_reason,
-           p_status,
-           p_employee_id
-       );
+SELECT
+    p_from_date,
+    p_to_date,
+    p_reason,
+    p_status,
+    e.employee_id,
+    e.company_id
+FROM public.employees e
+WHERE e.employee_id = p_employee_id;
 
 RETURN QUERY
 SELECT *
@@ -103,8 +106,16 @@ SET
     to_date = p_to_date,
     reason = p_reason,
     status = p_status,
-    employee_id = p_employee_id
-WHERE leave_id = p_leave_id;
+    employee_id = p_employee_id,
+    company_id = (
+        SELECT e.company_id FROM public.employees e
+        WHERE e.employee_id = p_employee_id
+    )
+WHERE leave_id = p_leave_id
+  AND company_id = (
+        SELECT e.company_id FROM public.employees e
+        WHERE e.employee_id = p_employee_id
+  );
 
 RETURN QUERY
 SELECT *

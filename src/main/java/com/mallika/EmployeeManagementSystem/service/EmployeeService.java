@@ -125,12 +125,17 @@ public class EmployeeService {
         dto.setEmail(details.getEmail());
         dto.setPhone(details.getPhone());
         dto.setDateOfBirth(details.getDateOfBirth());
+        dto.setHireDate(details.getHireDate());
         dto.setAddress(details.getAddress());
         dto.setProfilePhoto(existing.getProfilePhoto());
         dto.setDepartmentId(details.getDepartment() == null
                 ? existing.getDepartment() == null ? null
                   : existing.getDepartment().getDepartmentId()
                 : details.getDepartment().getDepartmentId());
+        dto.setDesignationId(details.getDesignation() == null
+                ? existing.getDesignation() == null ? null
+                  : existing.getDesignation().getDesignationId()
+                : details.getDesignation().getDesignationId());
         dto.setManagerId(details.getManagerId());
         dto.setHrId(details.getHrId());
 
@@ -217,10 +222,13 @@ public class EmployeeService {
         safe.setEmail(details.getEmail());
         safe.setPhone(details.getPhone());
         safe.setDateOfBirth(details.getDateOfBirth());
+        safe.setHireDate(existing.getHireDate());
         safe.setAddress(details.getAddress());
         safe.setProfilePhoto(existing.getProfilePhoto());
         safe.setDepartmentId(existing.getDepartment() == null ? null
                 : existing.getDepartment().getDepartmentId());
+        safe.setDesignationId(existing.getDesignation() == null ? null
+                : existing.getDesignation().getDesignationId());
         safe.setManagerId(existing.getManagerId());
         safe.setHrId(existing.getHrId());
 

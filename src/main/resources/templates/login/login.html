@@ -87,9 +87,6 @@
 
             const data = await response.json();
 
-            // Store JWT token
-            localStorage.setItem("token", data.token);
-
             // Store role
             localStorage.setItem("role", data.role);
 

@@ -24,17 +24,20 @@ BEGIN
         deductions,
         net_salary,
         payment_date,
-        employee_id
+        employee_id,
+        company_id
     )
-    VALUES (
+    SELECT
         p_pay_month,
         p_basic_salary,
         p_allowances,
         p_deductions,
         p_net_salary,
         p_payment_date,
-        p_employee_id
-    );
+        e.employee_id,
+        e.company_id
+    FROM public.employees e
+    WHERE e.employee_id = p_employee_id;
 
     RETURN QUERY
     SELECT *
@@ -114,8 +117,16 @@ BEGIN
         deductions = p_deductions,
         net_salary = p_net_salary,
         payment_date = p_payment_date,
-        employee_id = p_employee_id
-    WHERE payroll_id = p_payroll_id;
+        employee_id = p_employee_id,
+        company_id = (
+            SELECT e.company_id FROM public.employees e
+            WHERE e.employee_id = p_employee_id
+        )
+    WHERE payroll_id = p_payroll_id
+      AND company_id = (
+            SELECT e.company_id FROM public.employees e
+            WHERE e.employee_id = p_employee_id
+      );
 
     RETURN QUERY
     SELECT *

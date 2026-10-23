@@ -11,7 +11,7 @@ Working branch: agent/multicompany-hardening
 - Existing SQL scripts include company-aware and legacy unscoped functions. A new `sql/department_company_functions.sql` now supplies the company-scoped department functions called by `DepartmentRepository`; the existing `sql/department_functions.sql` contains the company's designation functions despite its filename.
 - Project and task repositories now use company-scoped SQL reads/writes, avoiding the legacy unscoped project/task function signatures.
 - Task create/update validates project and assigned-employee tenant ownership; manager task lists are company-scoped and exclude inactive employees.
-- Managers can assign their own projects to active direct reports through `POST /projects/{projectId}/members/{employeeId}`; the existing `employee_project` table is used.
+- Managers can edit/delete only projects assigned to them, and assign their own projects to active direct reports through `POST /projects/{projectId}/members/{employeeId}`. The manager projects page now includes a member-assignment control backed by the existing `employee_project` table.
 - Leave and payroll repository operations validate employee/record ownership against the authenticated company and filter list results by employee company. Attendance repository operations use company-scoped employee joins and persist `company_id`.
 - The original `application.properties` contained database credentials, a JWT signing secret, and a default Spring Security user. This branch now expects environment variables instead. Rotate any credentials or signing secrets that were committed previously.
 
@@ -31,7 +31,8 @@ Working branch: agent/multicompany-hardening
 - [x] Add environment-variable example.
 - [x] Add a company registry and SQL migration to backfill tenant IDs for existing data, add tenant indexes, and add company/relationship constraints.
 - [x] Scope task/project CRUD and list/search/filter/sort paths by authenticated company context.
-- [x] Add company-scoped manager project-member assignment using `employee_project`.
+- [x] Add company-scoped manager project-member assignment using `employee_project` and expose it in the manager projects page.
+- [x] Allow managers to edit/delete only projects assigned to them; Admin alone creates projects.
 - [x] Add the missing company-scoped department functions used by `DepartmentRepository`.
 - [x] Add company ownership checks to leave and payroll repository operations; attendance writes are company-scoped.
 - [x] Restrict project writes to Admin, general task APIs to Admin/Manager, and general leave administration to Admin; preserve manager/HR-specific leave routes.

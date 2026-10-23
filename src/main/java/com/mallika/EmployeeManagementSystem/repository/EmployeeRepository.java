@@ -209,6 +209,7 @@ public class EmployeeRepository {
 
         validateDepartmentInCompany(
                 details.getDepartmentId(), companyId);
+        validateDesignationInCompany(details.getDesignationId(), companyId);
 
         validateEmployeeInCompany(
                 details.getManagerId(), companyId, "Manager");
@@ -223,9 +224,11 @@ public class EmployeeRepository {
                 email = ?,
                 phone = ?,
                 date_of_birth = ?,
+                hire_date = ?,
                 address = ?,
                 profile_photo = ?,
                 department_id = ?,
+                designation_id = ?,
                 manager_id = ?,
                 hr_id = ?
             WHERE employee_id = ? AND company_id = ?
@@ -238,20 +241,16 @@ public class EmployeeRepository {
             ps.setString(2, details.getLastName());
             ps.setString(3, details.getEmail());
             ps.setString(4, details.getPhone());
-
-            if (details.getDateOfBirth() == null) {
-                ps.setNull(5, Types.DATE);
-            } else {
-                ps.setDate(5, Date.valueOf(details.getDateOfBirth()));
-            }
-
-            ps.setString(6, details.getAddress());
-            ps.setString(7, details.getProfilePhoto());
-            setNullableInteger(ps, 8, details.getDepartmentId());
-            setNullableInteger(ps, 9, details.getManagerId());
-            setNullableInteger(ps, 10, details.getHrId());
-            ps.setInt(11, employeeId);
-            ps.setLong(12, companyId);
+            setDate(ps, 5, details.getDateOfBirth());
+            setDate(ps, 6, details.getHireDate());
+            ps.setString(7, details.getAddress());
+            ps.setString(8, details.getProfilePhoto());
+            setNullableInteger(ps, 9, details.getDepartmentId());
+            setNullableInteger(ps, 10, details.getDesignationId());
+            setNullableInteger(ps, 11, details.getManagerId());
+            setNullableInteger(ps, 12, details.getHrId());
+            ps.setInt(13, employeeId);
+            ps.setLong(14, companyId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -278,10 +277,13 @@ public class EmployeeRepository {
         dto.setEmail(employee.getEmail());
         dto.setPhone(employee.getPhone());
         dto.setDateOfBirth(employee.getDateOfBirth());
+        dto.setHireDate(employee.getHireDate());
         dto.setAddress(employee.getAddress());
         dto.setProfilePhoto(profilePhoto);
         dto.setDepartmentId(employee.getDepartment() == null
                 ? null : employee.getDepartment().getDepartmentId());
+        dto.setDesignationId(employee.getDesignation() == null
+                ? null : employee.getDesignation().getDesignationId());
         dto.setManagerId(employee.getManagerId());
         dto.setHrId(employee.getHrId());
 
@@ -607,6 +609,32 @@ public class EmployeeRepository {
         } catch (SQLException e) {
             throw new RuntimeException(
                     "Failed to validate department", e);
+        }
+    }
+
+    private void validateDesignationInCompany(
+            Integer designationId, Long companyId) {
+        if (designationId == null) {
+            return;
+        }
+        String sql = """
+            SELECT EXISTS (
+                SELECT 1 FROM public.designation
+                WHERE designation_id = ? AND company_id = ?
+            )
+            """;
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, designationId);
+            ps.setLong(2, companyId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next() || !rs.getBoolean(1)) {
+                    throw new IllegalArgumentException(
+                            "Designation does not belong to your company");
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to validate designation", e);
         }
     }
 

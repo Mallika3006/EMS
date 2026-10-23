@@ -71,10 +71,25 @@ public class EmployeeService {
                             + "and role are required");
         }
 
-        if (dto.getRoleId() < 1 || dto.getRoleId() > 4) {
-            throw new IllegalArgumentException("Invalid role ID");
+        if (dto.getRoleId() < 2 || dto.getRoleId() > 4) {
+            throw new IllegalArgumentException(
+                    "Employee accounts must use the HR, Manager or Employee role");
         }
-
+        validateEmployeeRole(dto.getManagerId(), 3, "Manager");
+        validateEmployeeRole(dto.getHrId(), 2, "HR");
+        if (!dto.getEmail().matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw new IllegalArgumentException("Enter a valid email address");
+        }
+        if (dto.getPassword().length() < 8) {
+            throw new IllegalArgumentException("Password must contain at least 8 characters");
+        }
+        dto.setFirstName(dto.getFirstName().trim());
+        dto.setLastName(dto.getLastName().trim());
+        dto.setEmail(dto.getEmail().trim());
+        dto.setUsername(dto.getUsername().trim());
+        if (userRepository.findByUsernameIgnoreCase(dto.getUsername()).isPresent()) {
+            throw new IllegalArgumentException("Username already exists in this company");
+        }
         if (employeeRepository.getEmployeeByEmail(
                 dto.getEmail(), companyId()).isPresent()) {
             throw new IllegalArgumentException(
@@ -118,24 +133,39 @@ public class EmployeeService {
         }
 
         Employee existing = getEmployeeById(id);
+        if (blank(details.getFirstName()) || blank(details.getLastName())
+                || blank(details.getEmail())
+                || !details.getEmail().matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw new IllegalArgumentException(
+                    "First name, last name and a valid email are required");
+        }
+        employeeRepository.getEmployeeByEmail(details.getEmail().trim(), companyId())
+                .filter(found -> !found.getEmployeeId().equals(id))
+                .ifPresent(found -> { throw new IllegalArgumentException(
+                        "Email already exists in this company"); });
         EmployeeUpdateDTO dto = new EmployeeUpdateDTO();
 
-        dto.setFirstName(details.getFirstName());
-        dto.setLastName(details.getLastName());
-        dto.setEmail(details.getEmail());
+        dto.setFirstName(details.getFirstName().trim());
+        dto.setLastName(details.getLastName().trim());
+        dto.setEmail(details.getEmail().trim());
         dto.setPhone(details.getPhone());
         dto.setDateOfBirth(details.getDateOfBirth());
+        dto.setHireDate(details.getHireDate());
         dto.setAddress(details.getAddress());
         dto.setProfilePhoto(existing.getProfilePhoto());
         dto.setDepartmentId(details.getDepartment() == null
                 ? existing.getDepartment() == null ? null
                   : existing.getDepartment().getDepartmentId()
                 : details.getDepartment().getDepartmentId());
+        dto.setDesignationId(details.getDesignation() == null
+                ? existing.getDesignation() == null ? null
+                  : existing.getDesignation().getDesignationId()
+                : details.getDesignation().getDesignationId());
         dto.setManagerId(details.getManagerId());
         dto.setHrId(details.getHrId());
 
-        validateRelatedEmployee(dto.getManagerId());
-        validateRelatedEmployee(dto.getHrId());
+        validateEmployeeRole(dto.getManagerId(), 3, "Manager");
+        validateEmployeeRole(dto.getHrId(), 2, "HR");
 
         return employeeRepository.updateMyProfile(id, dto);
     }
@@ -217,10 +247,13 @@ public class EmployeeService {
         safe.setEmail(details.getEmail());
         safe.setPhone(details.getPhone());
         safe.setDateOfBirth(details.getDateOfBirth());
+        safe.setHireDate(existing.getHireDate());
         safe.setAddress(details.getAddress());
         safe.setProfilePhoto(existing.getProfilePhoto());
         safe.setDepartmentId(existing.getDepartment() == null ? null
                 : existing.getDepartment().getDepartmentId());
+        safe.setDesignationId(existing.getDesignation() == null ? null
+                : existing.getDesignation().getDesignationId());
         safe.setManagerId(existing.getManagerId());
         safe.setHrId(existing.getHrId());
 
@@ -261,6 +294,23 @@ public class EmployeeService {
     private void validateRelatedEmployee(Integer id) {
         if (id != null) {
             getEmployeeById(id);
+        }
+    }
+
+    private void validateEmployeeRole(Integer employeeId, Integer expectedRoleId,
+                                      String relationship) {
+        if (employeeId == null) {
+            return;
+        }
+        getEmployeeById(employeeId);
+        User relatedUser = userRepository.findByEmployeeEmployeeId(employeeId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        relationship + " must have a linked login account"));
+        if (relatedUser.getRole() == null
+                || !expectedRoleId.equals(relatedUser.getRole().getRoleId())
+                || !Boolean.TRUE.equals(relatedUser.getIsActive())) {
+            throw new IllegalArgumentException(
+                    relationship + " must be an active account with the correct role");
         }
     }
 

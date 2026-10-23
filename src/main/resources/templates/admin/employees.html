@@ -1,254 +1,366 @@
 <!DOCTYPE html>
-
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Employees | Employee Management System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Employee Management | Employee Management System</title>
     <link rel="stylesheet" th:href="@{/style.css}">
+    <style>
+        .employee-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:18px 0}
+        .employee-toolbar label,.employee-form label{display:block;font-weight:600;margin:8px 0 5px}
+        .employee-toolbar input,.employee-toolbar select,.employee-form input,.employee-form select,.employee-form textarea{max-width:100%;box-sizing:border-box}
+        .employee-toolbar .search-field{flex:1;min-width:220px}
+        .employee-table-wrap{overflow-x:auto}
+        .employee-table{width:100%;border-collapse:collapse}
+        .employee-table th,.employee-table td{padding:11px;text-align:left;border-bottom:1px solid #ddd;vertical-align:top}
+        .employee-table th{white-space:nowrap}
+        .employee-actions{display:flex;flex-wrap:wrap;gap:6px}
+        .employee-actions button{margin:0}
+        .status-pill{display:inline-block;padding:4px 9px;border-radius:999px;font-size:.85rem;background:#e8f5e9;color:#1b5e20}
+        .status-pill.inactive{background:#ffebee;color:#b71c1c}
+        .feedback{min-height:1.5em}
+        .feedback.error{color:#b71c1c}.feedback.success{color:#1b5e20}
+        dialog{width:min(680px,calc(100% - 32px));max-height:85vh;overflow:auto;border:0;border-radius:12px;padding:24px;box-shadow:0 12px 50px #0003}
+        dialog::backdrop{background:#0006}
+        .employee-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}
+        .employee-form-grid .full{grid-column:1/-1}
+        .employee-form input,.employee-form select,.employee-form textarea{width:100%}
+        .dialog-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+        .muted{color:#666}
+        @media(max-width:600px){.employee-form-grid{grid-template-columns:1fr}.employee-form-grid .full{grid-column:auto}}
+    </style>
 </head>
 <body>
-
 <div class="dashboard-container">
-
     <header>
         <h1>Employee Management System</h1>
-        <h2>Manage Employees</h2>
-        <p>View and manage employee records.</p>
+        <h2>Employee Management</h2>
+        <p>Manage employees and their linked login accounts for your company.</p>
     </header>
-
     <main>
-        <p id="message"></p>
+        <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+        <section class="employee-toolbar" aria-label="Employee controls">
+            <div class="search-field">
+                <label for="searchInput">Search employees</label>
+                <input id="searchInput" type="search" placeholder="Name, email, username, department…" autocomplete="off">
+            </div>
+            <div>
+                <label for="statusFilter">Account status</label>
+                <select id="statusFilter">
+                    <option value="all">All employees</option>
+                    <option value="active">Active accounts</option>
+                    <option value="inactive">Inactive / no account</option>
+                </select>
+            </div>
+            <button type="button" id="refreshButton">Refresh</button>
+            <button type="button" id="exportButton">Export CSV</button>
+            <button type="button" id="addButton">Add Employee</button>
+        </section>
 
-        <div>
-            <input type="text" id="searchName"
-                   placeholder="Search employee by name">
-
-            <button type="button" onclick="searchEmployees()">
-                Search
-            </button>
-
-            <button type="button" onclick="loadEmployees()">
-                View All
-            </button>
-
-
-            <button type="button" onclick="openAddEmployeePage()">
-                Add Employee
-            </button>
-
-        </div>
-
-        <br>
-
-        <div style="overflow-x: auto;">
-            <table>
-                <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>First Name</th>
-                    <th>Last Name</th>
-                    <th>Email</th>
-                    <th>Phone</th>
-                    <th>Actions</th>
-                </tr>
-                </thead>
-                <tbody id="employeeTable">
-                <tr>
-                    <td colspan="6">Loading employees...</td>
-                </tr>
-                </tbody>
+        <div class="employee-table-wrap">
+            <table class="employee-table">
+                <thead><tr>
+                    <th><button type="button" data-sort="employeeId">ID ↕</button></th>
+                    <th><button type="button" data-sort="firstName">Name ↕</button></th>
+                    <th>Email</th><th>Department</th><th>Designation</th>
+                    <th>Login account</th><th>Status</th><th>Actions</th>
+                </tr></thead>
+                <tbody id="employeeTable"><tr><td colspan="8">Loading employees…</td></tr></tbody>
             </table>
         </div>
-
-        <br>
-
-        <button type="button"
-                onclick="window.location.href='/admin-dashboard'">
-            Back to Dashboard
-        </button>
+        <p id="resultCount" class="muted"></p>
+        <button type="button" id="backButton">Back to Dashboard</button>
     </main>
-
 </div>
 
+<dialog id="detailsDialog" aria-labelledby="detailsTitle">
+    <h2 id="detailsTitle">Employee details</h2>
+    <div id="detailsContent"></div>
+    <div class="dialog-actions"><button type="button" id="closeDetailsButton">Close</button></div>
+</dialog>
+
+<dialog id="editDialog" aria-labelledby="editTitle">
+    <h2 id="editTitle">Edit employee</h2>
+    <p class="muted">Update employee profile and employment details. Login username and role are managed in User Accounts.</p>
+    <form id="editForm" class="employee-form">
+        <input type="hidden" id="editEmployeeId">
+        <div class="employee-form-grid">
+            <div><label for="editFirstName">First name *</label><input id="editFirstName" required maxlength="100"></div>
+            <div><label for="editLastName">Last name *</label><input id="editLastName" required maxlength="100"></div>
+            <div><label for="editEmail">Email *</label><input id="editEmail" type="email" required maxlength="254"></div>
+            <div><label for="editPhone">Phone</label><input id="editPhone" type="tel" maxlength="30"></div>
+            <div><label for="editDob">Date of birth</label><input id="editDob" type="date"></div>
+            <div><label for="editHireDate">Hire date</label><input id="editHireDate" type="date" required></div>
+            <div><label for="editDepartment">Department</label><select id="editDepartment"><option value="">No department</option></select></div>
+            <div><label for="editDesignation">Designation</label><select id="editDesignation"><option value="">No designation</option></select></div>
+            <div><label for="editManager">Manager</label><select id="editManager"><option value="">No manager</option></select></div>
+            <div><label for="editHr">HR contact</label><select id="editHr"><option value="">No HR contact</option></select></div>
+            <div class="full"><label for="editAddress">Address</label><textarea id="editAddress" rows="3" maxlength="1000"></textarea></div>
+        </div>
+        <p id="editFeedback" class="feedback" role="alert" aria-live="polite"></p>
+        <div class="dialog-actions">
+            <button type="submit" id="saveEditButton">Save changes</button>
+            <button type="button" id="cancelEditButton">Cancel</button>
+        </div>
+    </form>
+</dialog>
+
 <script>
-    const API = "/employees";
+(() => {
+    const API = "/admin/api/employees";
+    const $ = id => document.getElementById(id);
+    let employees = [];
+    let departments = [];
+    let designations = [];
+    let managers = [];
+    let hrs = [];
+    let sortField = "employeeId";
+    let sortDirection = "asc";
 
-    function getHeaders() {
-        return { "Content-Type": "application/json" };
+    function message(text, type = "success") {
+        $("feedback").textContent = text;
+        $("feedback").className = "feedback " + (type === "error" ? "error" : "success");
     }
-
-    function showMessage(message, isError = false) {
-        const element = document.getElementById("message");
-        element.textContent = message;
-        element.style.color = isError ? "red" : "green";
+    function editMessage(text, type = "error") {
+        $("editFeedback").textContent = text;
+        $("editFeedback").className = "feedback " + type;
     }
-
+    async function request(url, options = {}) {
+        const response = await fetch(url, {
+            credentials: "same-origin",
+            ...options,
+            headers: { "Accept": "application/json", ...(options.body ? {"Content-Type":"application/json"} : {}), ...(options.headers || {}) }
+        });
+        if (!response.ok) {
+            let detail = "";
+            try { const body = await response.json(); detail = body.message || body.error || ""; } catch (_) {}
+            if (response.status === 401) throw new Error("Your session has expired. Please sign in again.");
+            if (response.status === 403) throw new Error("Access denied. Sign in with an Admin account.");
+            if (response.status === 404) throw new Error("The employee or linked login account was not found.");
+            if (response.status === 409) throw new Error(detail || "A record with these details already exists.");
+            throw new Error(detail || ("Request failed (HTTP " + response.status + ")."));
+        }
+        if (response.status === 204) return null;
+        const text = await response.text();
+        if (!text) return null;
+        try { return JSON.parse(text); } catch (_) { return text; }
+    }
+    function safeText(value) { return value == null || value === "" ? "—" : String(value); }
+    function makeCell(row, value) {
+        const cell = document.createElement("td");
+        cell.textContent = safeText(value);
+        row.appendChild(cell);
+        return cell;
+    }
+    function makeButton(label, action, secondary = false) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+        if (secondary) button.className = "btn-secondary";
+        button.addEventListener("click", action);
+        return button;
+    }
+    function filteredEmployees() {
+        const query = $("searchInput").value.trim().toLocaleLowerCase();
+        const status = $("statusFilter").value;
+        return employees.filter(e => {
+            const active = e.hasLoginAccount && e.isActive;
+            if (status === "active" && !active) return false;
+            if (status === "inactive" && active) return false;
+            const haystack = [e.employeeId,e.firstName,e.lastName,e.email,e.phone,e.departmentName,e.designationName,e.username]
+                .map(v => v == null ? "" : String(v).toLocaleLowerCase()).join(" ");
+            return !query || haystack.includes(query);
+        }).sort((a,b) => {
+            const av = a[sortField] == null ? "" : a[sortField];
+            const bv = b[sortField] == null ? "" : b[sortField];
+            const cmp = typeof av === "number" && typeof bv === "number" ? av-bv : String(av).localeCompare(String(bv), undefined, {numeric:true,sensitivity:"base"});
+            return sortDirection === "asc" ? cmp : -cmp;
+        });
+    }
+    function render() {
+        const body = $("employeeTable");
+        body.replaceChildren();
+        const visible = filteredEmployees();
+        $("resultCount").textContent = visible.length + " of " + employees.length + " employees";
+        if (!visible.length) {
+            const row = document.createElement("tr");
+            const cell = document.createElement("td");
+            cell.colSpan = 8;
+            cell.textContent = employees.length ? "No employees match these filters." : "No employees found for this company.";
+            row.appendChild(cell); body.appendChild(row); return;
+        }
+        visible.forEach(employee => {
+            const row = document.createElement("tr");
+            makeCell(row, employee.employeeId);
+            makeCell(row, [employee.firstName,employee.lastName].filter(Boolean).join(" "));
+            makeCell(row, employee.email);
+            makeCell(row, employee.departmentName);
+            makeCell(row, employee.designationName);
+            makeCell(row, employee.hasLoginAccount ? employee.username : "No login account");
+            const statusCell = document.createElement("td");
+            const pill = document.createElement("span");
+            const active = employee.hasLoginAccount && employee.isActive;
+            pill.className = "status-pill" + (active ? "" : " inactive");
+            pill.textContent = active ? "Active" : "Inactive";
+            statusCell.appendChild(pill); row.appendChild(statusCell);
+            const actions = document.createElement("td");
+            actions.className = "employee-actions";
+            actions.append(
+                makeButton("View", () => viewEmployee(employee.employeeId), true),
+                makeButton("Edit", () => openEdit(employee.employeeId), true)
+            );
+            if (employee.hasLoginAccount) {
+                actions.appendChild(makeButton(active ? "Deactivate" : "Activate",
+                    () => changeStatus(employee, !active), true));
+            }
+            row.appendChild(actions); body.appendChild(row);
+        });
+    }
     async function loadEmployees() {
-        document.getElementById("searchName").value = "";
-        await fetchEmployees(API);
-    }
-
-    async function searchEmployees() {
-        const name = document.getElementById("searchName")
-            .value.trim();
-
-        if (!name) {
-            showMessage("Enter a name to search.", true);
-            return;
-        }
-
-        await fetchEmployees(
-            API + "/search?name=" + encodeURIComponent(name)
-        );
-    }
-
-    async function fetchEmployees(url) {
-        const table = document.getElementById("employeeTable");
-        table.innerHTML =
-            '<tr><td colspan="6">Loading...</td></tr>';
-
+        $("employeeTable").innerHTML = '<tr><td colspan="8">Loading employees…</td></tr>';
+        $("refreshButton").disabled = true;
         try {
-            const response = await fetch(url, {
-                method: "GET",
-                headers: getHeaders(),
-                credentials: "same-origin"
-            });
-
-            if (!response.ok) {
-                throw new Error(
-                    "Unable to load employees. HTTP " + response.status
-                );
-            }
-
-            const employees = await response.json();
-
-            table.innerHTML = "";
-
-            if (!employees.length) {
-                table.innerHTML =
-                    '<tr><td colspan="6">No employees found.</td></tr>';
-                showMessage("No matching employees.");
-                return;
-            }
-
-            employees.forEach(employee => {
-                const row = document.createElement("tr");
-
-                const values = [
-                    employee.employeeId,
-                    employee.firstName,
-                    employee.lastName,
-                    employee.email,
-                    employee.phone
-                ];
-
-                values.forEach(value => {
-                    const cell = document.createElement("td");
-                    cell.textContent = value ?? "-";
-                    row.appendChild(cell);
-                });
-
-                const actions = document.createElement("td");
-
-                const viewButton = document.createElement("button");
-                viewButton.textContent = "View";
-                viewButton.onclick = () =>
-                    viewEmployee(employee.employeeId);
-
-                const deleteButton = document.createElement("button");
-                deleteButton.textContent = "Delete";
-                deleteButton.style.marginLeft = "5px";
-                deleteButton.onclick = () =>
-                    deleteEmployee(employee.employeeId);
-
-                actions.appendChild(viewButton);
-                actions.appendChild(deleteButton);
-                row.appendChild(actions);
-
-                table.appendChild(row);
-            });
-
-            showMessage("Employee records loaded successfully.");
-
+            employees = await request(API);
+            if (!Array.isArray(employees)) throw new Error("Unexpected employee response.");
+            render();
+            message("Employee list loaded.");
         } catch (error) {
-            table.innerHTML =
-                '<tr><td colspan="6">Could not load employees.</td></tr>';
-            showMessage(error.message, true);
-        }
+            $("employeeTable").innerHTML = '<tr><td colspan="8">Could not load employees.</td></tr>';
+            message(error.message, "error");
+        } finally { $("refreshButton").disabled = false; }
     }
-
+    async function loadChoices() {
+        const results = await Promise.allSettled([
+            request("/departments"),
+            request("/designations"),
+            request("/employees/managers"),
+            request("/employees/hr-options")
+        ]);
+        departments = results[0].status === "fulfilled" && Array.isArray(results[0].value) ? results[0].value : [];
+        designations = results[1].status === "fulfilled" && Array.isArray(results[1].value) ? results[1].value : [];
+        managers = results[2].status === "fulfilled" && Array.isArray(results[2].value) ? results[2].value : [];
+        hrs = results[3].status === "fulfilled" && Array.isArray(results[3].value) ? results[3].value : [];
+        fillSelect("editDepartment", departments, "departmentId", "departmentName", "No department");
+        fillSelect("editDesignation", designations, "designationId", "designationTitle", "No designation");
+        fillSelect("editManager", managers, "employeeId", null, "No manager");
+        fillSelect("editHr", hrs, "employeeId", null, "No HR contact");
+    }
+    function fillSelect(id, records, idField, nameField, placeholder) {
+        const select = $(id);
+        select.replaceChildren();
+        const empty = document.createElement("option");
+        empty.value = ""; empty.textContent = placeholder; select.appendChild(empty);
+        records.forEach(item => {
+            const option = document.createElement("option");
+            option.value = item[idField];
+            option.textContent = nameField ? item[nameField] : [item.firstName,item.lastName].filter(Boolean).join(" ");
+            select.appendChild(option);
+        });
+    }
     async function viewEmployee(id) {
         try {
-            const response = await fetch(API + "/" + id + "/details", {                headers: getHeaders(),
-                credentials: "same-origin"
+            const e = await request(API + "/" + id);
+            const fields = [
+                ["Employee ID",e.employeeId],["Name",[e.firstName,e.lastName].filter(Boolean).join(" ")],
+                ["Email",e.email],["Phone",e.phone],["Date of birth",e.dateOfBirth],
+                ["Hire date",e.hireDate],["Department",e.departmentName],["Designation",e.designationName],
+                ["Manager ID",e.managerId],["HR ID",e.hrId],["Username",e.username],
+                ["Role ID",e.roleId],["Login account",e.hasLoginAccount ? "Created" : "Not linked"],
+                ["Account status",e.hasLoginAccount && e.isActive ? "Active" : "Inactive"],["Address",e.address]
+            ];
+            const content = $("detailsContent"); content.replaceChildren();
+            const dl = document.createElement("dl");
+            fields.forEach(([label,value]) => {
+                const dt = document.createElement("dt"); dt.textContent = label;
+                const dd = document.createElement("dd"); dd.textContent = safeText(value);
+                dl.append(dt,dd);
             });
-
-            if (!response.ok) {
-                throw new Error("Unable to load employee details.");
-            }
-
-            const employee = await response.json();
-
-            alert(
-                "Employee ID: " + (employee.employeeId ?? "-") +
-                "\nFirst Name: " + (employee.firstName ?? "-") +
-                "\nLast Name: " + (employee.lastName ?? "-") +
-                "\nEmail: " + (employee.email ?? "-") +
-                "\nPhone: " + (employee.phone ?? "-") +
-
-                "\nDepartment ID: " + (employee.departmentId ?? "-") +
-                "\nDepartment Name: " + (employee.departmentName ?? "-") +
-
-                "\nDesignation ID: " + (employee.designationId ?? "-") +
-                "\nDesignation Name: " + (employee.designationName ?? "-") +
-
-                "\nManager ID: " + (employee.managerId ?? "-") +
-                "\nManager Name: " + (employee.managerName ?? "-") +
-
-                "\nHR ID: " + (employee.hrId ?? "-") +
-                "\nHR Name: " + (employee.hrName ?? "-")
-            );
-
-        } catch (error) {
-            showMessage(error.message, true);
-        }
+            content.appendChild(dl);
+            $("detailsDialog").showModal();
+        } catch (error) { message(error.message, "error"); }
     }
-
-    async function deleteEmployee(id) {
-        if (!confirm("Are you sure you want to delete employee " + id + "?")) {
-            return;
-        }
-
+    async function openEdit(id) {
         try {
-            const response = await fetch(API + "/" + id, {
-                method: "DELETE",
-                headers: getHeaders(),
-                credentials: "same-origin"
-            });
-
-            if (!response.ok) {
-                throw new Error(
-                    "Unable to delete employee. HTTP " + response.status
-                );
-            }
-
-            showMessage("Employee deleted successfully.");
+            const e = await request(API + "/" + id);
+            $("editEmployeeId").value = e.employeeId;
+            $("editFirstName").value = e.firstName || "";
+            $("editLastName").value = e.lastName || "";
+            $("editEmail").value = e.email || "";
+            $("editPhone").value = e.phone || "";
+            $("editDob").value = e.dateOfBirth || "";
+            $("editHireDate").value = e.hireDate || "";
+            $("editAddress").value = e.address || "";
+            $("editDepartment").value = e.departmentId == null ? "" : String(e.departmentId);
+            $("editDesignation").value = e.designationId == null ? "" : String(e.designationId);
+            $("editManager").value = e.managerId == null ? "" : String(e.managerId);
+            $("editHr").value = e.hrId == null ? "" : String(e.hrId);
+            editMessage("");
+            $("editDialog").showModal();
+        } catch (error) { message(error.message, "error"); }
+    }
+    async function changeStatus(employee, active) {
+        const name = [employee.firstName,employee.lastName].filter(Boolean).join(" ");
+        const action = active ? "activate" : "deactivate";
+        if (!confirm("Are you sure you want to " + action + " " + name + "'s login account?")) return;
+        try {
+            await request(API + "/" + employee.employeeId + "/status?active=" + active, {method:"PATCH"});
+            message("Employee account " + (active ? "activated" : "deactivated") + " successfully.");
             await loadEmployees();
-
-        } catch (error) {
-            showMessage(error.message, true);
-        }
+        } catch (error) { message(error.message, "error"); }
     }
+    $("editForm").addEventListener("submit", async event => {
+        event.preventDefault();
+        const id = Number($("editEmployeeId").value);
+        const departmentId = $("editDepartment").value ? Number($("editDepartment").value) : null;
+        const managerId = $("editManager").value ? Number($("editManager").value) : null;
+        const hrId = $("editHr").value ? Number($("editHr").value) : null;
+        const payload = {
+            firstName: $("editFirstName").value.trim(),
+            lastName: $("editLastName").value.trim(),
+            email: $("editEmail").value.trim(),
+            phone: $("editPhone").value.trim() || null,
+            dateOfBirth: $("editDob").value || null,
+            hireDate: $("editHireDate").value || null,
+            address: $("editAddress").value.trim() || null,
+            department: {departmentId},
+            designation: {designationId: $("editDesignation").value ? Number($("editDesignation").value) : null},
+            managerId, hrId
+        };
+        $("saveEditButton").disabled = true;
+        try {
+            await request(API + "/" + id, {method:"PUT",body:JSON.stringify(payload)});
+            $("editDialog").close();
+            message("Employee details updated successfully.");
+            await loadEmployees();
+        } catch (error) { editMessage(error.message, "error"); }
+        finally { $("saveEditButton").disabled = false; }
+    });
+    $("searchInput").addEventListener("input", render);
+    $("statusFilter").addEventListener("change", render);
+    $("refreshButton").addEventListener("click", loadEmployees);
+    $("addButton").addEventListener("click", () => { window.location.href = "/admin/employees/add"; });
+    $("backButton").addEventListener("click", () => { window.location.href = "/admin-dashboard"; });
+    $("closeDetailsButton").addEventListener("click", () => $("detailsDialog").close());
+    $("cancelEditButton").addEventListener("click", () => $("editDialog").close());
+    $("exportButton").addEventListener("click", () => {
+        const rows = filteredEmployees();
+        const columns = ["employeeId","firstName","lastName","email","phone","departmentName","designationName","username","isActive"];
+        const csvCell = value => '"' + String(value == null ? "" : value).replace(/"/g,'""') + '"';
+        const csv = [columns.join(","), ...rows.map(e => columns.map(k => csvCell(k === "isActive" ? (e.hasLoginAccount && e.isActive ? "Active" : "Inactive") : e[k])).join(","))].join("\r\n");
+        const blob = new Blob(["\uFEFF",csv],{type:"text/csv;charset=utf-8;"});
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a"); link.href = url; link.download = "ems-employees.csv";
+        document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+    });
+    document.querySelectorAll("[data-sort]").forEach(button => button.addEventListener("click", () => {
+        const field = button.dataset.sort;
+        if (sortField === field) sortDirection = sortDirection === "asc" ? "desc" : "asc";
+        else { sortField = field; sortDirection = "asc"; }
+        render();
+    }));
 
-
-    function openAddEmployeePage() {
-        window.location.href = "/admin/employees/add";
-    }
-
-
-    loadEmployees();
+    Promise.all([loadChoices(),loadEmployees()]).catch(error => message(error.message, "error"));
+})();
 </script>
-
 </body>
 </html>

@@ -43,7 +43,7 @@ Working branch: agent/multicompany-hardening
 - [ ] Review JWT user/company status validation, cookie flags, logout, expiration, and CSRF.
 - [ ] Add tenant-isolation and role-authorization tests.
 - [x] Compile and package with Java 26 in GitHub Actions.
-- [x] Run the company migration and tenant assertions against a disposable PostgreSQL 18 fixture in GitHub Actions.
+- [x] Run the company migration, all updated SQL function scripts, and tenant-isolation assertions against a disposable PostgreSQL 18 fixture in GitHub Actions.
 - [ ] Run application-level tests and exercise all roles against the real EMS schema/data.
 - [ ] Build and verify the final source ZIP.
 
@@ -62,7 +62,7 @@ New-company onboarding is currently a database/bootstrap operation: create a row
 ## Verification status
 
 - **Maven package:** passed in GitHub Actions on Java 26. The workflow compiles production and test sources and packages the Spring Boot JAR; test execution is currently skipped.
-- **PostgreSQL migration:** passed against a disposable PostgreSQL 18 fixture containing two companies. The test validates company-ID backfill, foreign-key creation, and rejection of cross-company project membership. Company-scoped department and designation SQL functions also created successfully in that fixture.
+- **PostgreSQL migration/functions:** passed against a disposable PostgreSQL 18 fixture containing two companies. The workflow validates company-ID backfill, foreign-key creation, rejection of cross-company project membership, company-scoped leave/payroll query overloads, and successful creation of the department/designation/task/attendance/leave/payroll SQL functions.
 - **Not yet verified:** running the migration against the real EMS database, existing-data edge cases, application startup with the real schema, browser flows, and end-to-end role/tenant integration tests.
 
 The migration is intentionally tested against a representative fixture, not claimed safe for the live database until it is backed up and checked against its actual data.

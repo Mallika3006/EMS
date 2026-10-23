@@ -75,6 +75,8 @@ public class EmployeeService {
             throw new IllegalArgumentException(
                     "Employee accounts must use the HR, Manager or Employee role");
         }
+        validateEmployeeRole(dto.getManagerId(), 3, "Manager");
+        validateEmployeeRole(dto.getHrId(), 2, "HR");
         if (!dto.getEmail().matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
             throw new IllegalArgumentException("Enter a valid email address");
         }
@@ -162,8 +164,8 @@ public class EmployeeService {
         dto.setManagerId(details.getManagerId());
         dto.setHrId(details.getHrId());
 
-        validateRelatedEmployee(dto.getManagerId());
-        validateRelatedEmployee(dto.getHrId());
+        validateEmployeeRole(dto.getManagerId(), 3, "Manager");
+        validateEmployeeRole(dto.getHrId(), 2, "HR");
 
         return employeeRepository.updateMyProfile(id, dto);
     }
@@ -292,6 +294,23 @@ public class EmployeeService {
     private void validateRelatedEmployee(Integer id) {
         if (id != null) {
             getEmployeeById(id);
+        }
+    }
+
+    private void validateEmployeeRole(Integer employeeId, Integer expectedRoleId,
+                                      String relationship) {
+        if (employeeId == null) {
+            return;
+        }
+        getEmployeeById(employeeId);
+        User relatedUser = userRepository.findByEmployeeEmployeeId(employeeId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        relationship + " must have a linked login account"));
+        if (relatedUser.getRole() == null
+                || !expectedRoleId.equals(relatedUser.getRole().getRoleId())
+                || !Boolean.TRUE.equals(relatedUser.getIsActive())) {
+            throw new IllegalArgumentException(
+                    relationship + " must be an active account with the correct role");
         }
     }
 

@@ -167,6 +167,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_employees_id_company
     ON public.employees (employee_id, company_id);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_projects_id_company
     ON public.projects (project_id, company_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_department_id_company
+    ON public.department (department_id, company_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_designation_id_company
+    ON public.designation (designation_id, company_id);
 
 DO $$
 BEGIN
@@ -235,7 +239,47 @@ BEGIN
             FOREIGN KEY (project_id, company_id)
             REFERENCES public.projects(project_id, company_id) ON DELETE RESTRICT;
     END IF;
-END $$;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_users_employee_company') THEN
+        ALTER TABLE public.users ADD CONSTRAINT fk_users_employee_company
+            FOREIGN KEY (employee_id, company_id)
+            REFERENCES public.employees(employee_id, company_id) ON DELETE RESTRICT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_employees_department_company') THEN
+        ALTER TABLE public.employees ADD CONSTRAINT fk_employees_department_company
+            FOREIGN KEY (department_id, company_id)
+            REFERENCES public.department(department_id, company_id) ON DELETE RESTRICT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_employees_designation_company') THEN
+        ALTER TABLE public.employees ADD CONSTRAINT fk_employees_designation_company
+            FOREIGN KEY (designation_id, company_id)
+            REFERENCES public.designation(designation_id, company_id) ON DELETE RESTRICT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_employees_manager_company') THEN
+        ALTER TABLE public.employees ADD CONSTRAINT fk_employees_manager_company
+            FOREIGN KEY (manager_id, company_id)
+            REFERENCES public.employees(employee_id, company_id) ON DELETE RESTRICT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_employees_hr_company') THEN
+        ALTER TABLE public.employees ADD CONSTRAINT fk_employees_hr_company
+            FOREIGN KEY (hr_id, company_id)
+            REFERENCES public.employees(employee_id, company_id) ON DELETE RESTRICT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_projects_manager_company') THEN
+        ALTER TABLE public.projects ADD CONSTRAINT fk_projects_manager_company
+            FOREIGN KEY (manager_id, company_id)
+            REFERENCES public.employees(employee_id, company_id) ON DELETE RESTRICT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_tasks_project_company') THEN
+        ALTER TABLE public.tasks ADD CONSTRAINT fk_tasks_project_company
+            FOREIGN KEY (project_id, company_id)
+            REFERENCES public.projects(project_id, company_id) ON DELETE RESTRICT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_tasks_assignee_company') THEN
+        ALTER TABLE public.tasks ADD CONSTRAINT fk_tasks_assignee_company
+            FOREIGN KEY (assigned_to, company_id)
+            REFERENCES public.employees(employee_id, company_id) ON DELETE RESTRICT;
+    END IF;
+END $;
 
 -- Keep the identity sequence above all preserved company IDs.
 SELECT setval(

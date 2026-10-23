@@ -102,10 +102,7 @@ public class LoginController {
                 jwtCookie.toString()
         );
 
-        // Return token and role to existing frontend
-        return Map.of(
-                "token", token,
-                "role", role
-        );
+        // The JWT is sent only as an HttpOnly cookie; JavaScript receives the role only.
+        return Map.of("role", role);
     }
 }

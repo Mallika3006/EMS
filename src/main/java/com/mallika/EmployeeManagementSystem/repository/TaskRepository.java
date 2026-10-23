@@ -166,7 +166,7 @@ public class TaskRepository {
     }
 
     public List<Task> getTasksByManagerId(Integer managerId) {
-        return queryTasks("SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id JOIN public.employees e ON e.employee_id=t.assigned_to AND e.company_id=t.company_id WHERE e.manager_id=? AND t.company_id=? ORDER BY t.task_id DESC",
+        return queryTasks("SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id JOIN public.employees e ON e.employee_id=t.assigned_to AND e.company_id=t.company_id JOIN public.users u ON u.employee_id=e.employee_id AND u.company_id=e.company_id AND u.is_active=TRUE WHERE e.manager_id=? AND t.company_id=? ORDER BY t.task_id DESC",
                 ps -> { ps.setInt(1, managerId); ps.setLong(2, companyContext.getCompanyId()); });
     }
 

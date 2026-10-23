@@ -86,6 +86,33 @@ public class UserRepository {
         }
     }
 
+    /**
+     * Login resolves usernames before a company context exists, so usernames
+     * must be unique across all tenants (case-insensitively).
+     */
+    public boolean usernameExistsGlobally(String username, Integer excludingUserId) {
+        String sql = """
+            SELECT EXISTS (
+                SELECT 1 FROM public.users
+                WHERE LOWER(username) = LOWER(?)
+                  AND (?::integer IS NULL OR user_id <> ?)
+            )
+            """;
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, username);
+            if (excludingUserId == null) ps.setNull(2, Types.INTEGER);
+            else ps.setInt(2, excludingUserId);
+            if (excludingUserId == null) ps.setNull(3, Types.INTEGER);
+            else ps.setInt(3, excludingUserId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() && rs.getBoolean(1);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error checking username uniqueness", e);
+        }
+    }
+
     // GET ALL USERS IN THIS COMPANY
     public List<User> getAllUsers() {
         return queryUsers("""

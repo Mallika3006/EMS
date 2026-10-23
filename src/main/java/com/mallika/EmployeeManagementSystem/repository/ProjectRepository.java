@@ -129,6 +129,70 @@ public class ProjectRepository {
             """, ps -> { ps.setInt(1, employeeId); ps.setLong(2, companyId); ps.setLong(3, companyId); });
     }
 
+    public boolean assignProjectToEmployee(
+            Integer projectId, Integer employeeId,
+            Integer managerId, Long companyId) {
+        String insertSql = """
+            INSERT INTO public.employee_project (employee_id, project_id, company_id)
+            SELECT e.employee_id, p.project_id, p.company_id
+            FROM public.employees e
+            JOIN public.users u
+              ON u.employee_id = e.employee_id
+             AND u.company_id = e.company_id
+             AND u.is_active = TRUE
+            JOIN public.projects p
+              ON p.company_id = e.company_id
+            WHERE e.employee_id = ?
+              AND e.manager_id = ?
+              AND e.company_id = ?
+              AND p.project_id = ?
+              AND p.manager_id = ?
+              AND NOT EXISTS (
+                  SELECT 1 FROM public.employee_project ep
+                  WHERE ep.employee_id = e.employee_id
+                    AND ep.project_id = p.project_id
+              )
+            RETURNING employee_id
+            """;
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(insertSql)) {
+            ps.setInt(1, employeeId);
+            ps.setInt(2, managerId);
+            ps.setLong(3, companyId);
+            ps.setInt(4, projectId);
+            ps.setInt(5, managerId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return true;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error assigning project to employee", e);
+        }
+
+        String existingSql = """
+            SELECT 1
+            FROM public.employee_project ep
+            JOIN public.projects p
+              ON p.project_id = ep.project_id AND p.company_id = ep.company_id
+            JOIN public.employees e
+              ON e.employee_id = ep.employee_id AND e.company_id = ep.company_id
+            WHERE ep.project_id = ? AND ep.employee_id = ?
+              AND ep.company_id = ? AND p.manager_id = ? AND e.manager_id = ?
+            """;
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(existingSql)) {
+            ps.setInt(1, projectId);
+            ps.setInt(2, employeeId);
+            ps.setLong(3, companyId);
+            ps.setInt(4, managerId);
+            ps.setInt(5, managerId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error checking project assignment", e);
+        }
+    }
+
     private void validateEmployeeCompany(Integer employeeId, Long companyId) {
         String sql = """
             SELECT 1

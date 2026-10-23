@@ -70,6 +70,16 @@ public class ProjectController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{projectId}/members/{employeeId}")
+    public ResponseEntity<Void> assignProjectToEmployee(
+            @PathVariable Integer projectId,
+            @PathVariable Integer employeeId,
+            Authentication authentication) {
+        projectService.assignProjectToEmployee(
+                projectId, employeeId, authentication.getName());
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/manager/team")
     public ResponseEntity<List<Project>> getManagerTeamProjects(
             Authentication authentication) {

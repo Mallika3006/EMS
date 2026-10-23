@@ -150,15 +150,28 @@ public class SecurityConfig {
                         ).hasAnyRole("EMPLOYEE", "HR", "MANAGER", "ADMIN")
 
                         // Leave management
+                        .requestMatchers("/leaves/manager/**")
+                        .hasRole("MANAGER")
+
+                        .requestMatchers("/leaves/hr/**")
+                        .hasRole("HR")
+
+                        // Cross-employee leave administration is Admin-only.
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/leaves/*"
-                        ).hasAnyRole("ADMIN", "HR", "MANAGER")
+                        ).hasRole("ADMIN")
 
                         .requestMatchers(
                                 HttpMethod.DELETE,
                                 "/leaves/*"
-                        ).hasAnyRole("ADMIN", "HR", "MANAGER")
+                        ).hasRole("ADMIN")
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/leaves",
+                                "/leaves/*"
+                        ).hasRole("ADMIN")
 
                         // Employee APIs
                         .requestMatchers("/employees/**")
@@ -197,9 +210,9 @@ public class SecurityConfig {
                         .requestMatchers("/tasks/**")
                         .hasAnyRole("ADMIN", "MANAGER")
 
-                        // Remaining leave APIs
+                        // Remaining leave administration endpoints are Admin-only.
                         .requestMatchers("/leaves/**")
-                        .hasAnyRole("ADMIN", "HR", "MANAGER")
+                        .hasRole("ADMIN")
 
                         // Everything else requires authentication
                         .anyRequest().authenticated()

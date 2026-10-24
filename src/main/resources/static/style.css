@@ -211,3 +211,30 @@ form button[type="submit"] { min-width: 112px; }
   table { min-width: 560px; }
   .container button, .container .btn { max-width: 100%; }
 }
+
+
+/* Keep long role navigation scrollable without hiding the logout control. */
+@media (min-width: 821px) {
+  .app-sidebar {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .app-nav {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(219, 229, 255, .55) transparent;
+    padding-right: 4px;
+  }
+  .app-nav::-webkit-scrollbar { width: 6px; }
+  .app-nav::-webkit-scrollbar-thumb {
+    background: rgba(219, 229, 255, .45);
+    border-radius: 999px;
+  }
+  .app-nav::-webkit-scrollbar-track { background: transparent; }
+  .app-sidebar-footer { flex: 0 0 auto; }
+}

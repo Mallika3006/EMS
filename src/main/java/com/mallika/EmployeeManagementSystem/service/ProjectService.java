@@ -40,7 +40,10 @@ public class ProjectService {
     }
 
     public Project createProject(Project project, String username) {
-        Long companyId = getCompanyId(username);
+        requireAdmin();
+        User user = getUser(username);
+        Long companyId = requireCompanyId(user);
+        validateProject(project);
         return projectRepository.createProject(project, companyId);
     }
 
@@ -48,7 +51,7 @@ public class ProjectService {
         User user = getUser(username);
         Long companyId = requireCompanyId(user);
         if (isManager()) {
-            return projectRepository.getProjectsVisibleToManager(
+            return projectRepository.getProjectsByManager(
                     requireEmployeeId(user), companyId);
         }
         return projectRepository.getAllProjects(companyId);
@@ -63,8 +66,7 @@ public class ProjectService {
                         new ResourceNotFoundException(
                                 "Project not found with id: " + id));
 
-        if (isManager() && project.getManagerId() != null
-                && !project.getManagerId().equals(requireEmployeeId(user))) {
+        if (isManager() && !requireEmployeeId(user).equals(project.getManagerId())) {
             throw new ResourceNotFoundException(
                     "Project not found in your managed projects");
         }
@@ -73,17 +75,17 @@ public class ProjectService {
 
     public Project updateProject(
             Integer id, Project details, String username) {
+        requireAdmin();
         User user = getUser(username);
         Long companyId = requireCompanyId(user);
-        ensureManagerOwnsProject(id, user, companyId);
-
+        validateProject(details);
         return projectRepository.updateProject(id, details, companyId);
     }
 
     public void deleteProject(Integer id, String username) {
+        requireAdmin();
         User user = getUser(username);
         Long companyId = requireCompanyId(user);
-        ensureManagerOwnsProject(id, user, companyId);
 
         if (projectRepository.hasTasks(id, companyId)) {
             throw new IllegalStateException(
@@ -176,6 +178,51 @@ public class ProjectService {
         return user.getEmployee().getEmployeeId();
     }
 
+    private void requireAdmin() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        boolean admin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+        if (!admin) {
+            throw new AccessDeniedException("Only an Admin can create, edit, or delete projects");
+        }
+    }
+
+    private void validateProject(Project project) {
+        if (project == null || project.getProjectName() == null
+                || project.getProjectName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Project name is required");
+        }
+        if (project.getProjectName().trim().length() > 150) {
+            throw new IllegalArgumentException("Project name cannot exceed 150 characters");
+        }
+        if (project.getManagerId() == null) {
+            throw new IllegalArgumentException("Select a project manager");
+        }
+        if (project.getStartDate() != null && project.getEndDate() != null
+                && project.getEndDate().isBefore(project.getStartDate())) {
+            throw new IllegalArgumentException("Project end date cannot be before its start date");
+        }
+        if (project.getStatus() == null || project.getStatus().isBlank()) {
+            project.setStatus("PLANNED");
+        } else {
+            project.setStatus(project.getStatus().trim().toUpperCase());
+        }
+        if (!List.of("PLANNED", "IN_PROGRESS", "ON_HOLD", "COMPLETED").contains(project.getStatus())) {
+            throw new IllegalArgumentException("Project status must be PLANNED, IN_PROGRESS, ON_HOLD, or COMPLETED");
+        }
+        if (project.getPriority() == null || project.getPriority().isBlank()) {
+            project.setPriority("MEDIUM");
+        } else {
+            project.setPriority(project.getPriority().trim().toUpperCase());
+        }
+        if (!List.of("LOW", "MEDIUM", "HIGH", "CRITICAL").contains(project.getPriority())) {
+            throw new IllegalArgumentException("Project priority must be LOW, MEDIUM, HIGH, or CRITICAL");
+        }
+        if (project.getDescription() != null && project.getDescription().length() > 4000) {
+            throw new IllegalArgumentException("Project description cannot exceed 4000 characters");
+        }
+    }
+
     private boolean isManager() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication != null && authentication.getAuthorities().stream()
@@ -184,14 +231,12 @@ public class ProjectService {
 
 
     private void ensureManagerOwnsProject(Integer projectId, User user, Long companyId) {
-        if (!isManager()) return;
         Integer managerId = requireEmployeeId(user);
         Project project = projectRepository.getProjectById(projectId, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Project not found in your company: " + projectId));
         if (!managerId.equals(project.getManagerId())) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "Managers can only modify projects assigned to them");
+            throw new AccessDeniedException("Managers can only access projects assigned to them");
         }
     }
 

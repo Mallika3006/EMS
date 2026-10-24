@@ -84,7 +84,7 @@ public class CompanyRegistrationService {
         }
 
         Long companyId = jdbcTemplate.queryForObject(
-                "INSERT INTO companies (company_name, recovery_email, recovery_phone) VALUES (?, ?, ?)",
+                "INSERT INTO companies (company_name, recovery_email, recovery_phone) VALUES (?, ?, ?) RETURNING company_id",
                 Long.class, normalizedCompanyName, normalizedRecoveryEmail, normalizedRecoveryPhone.isBlank() ? null : normalizedRecoveryPhone);
         if (companyId == null) {
             throw new IllegalStateException("Could not create the company.");

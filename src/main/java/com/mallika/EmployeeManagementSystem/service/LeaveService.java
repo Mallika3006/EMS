@@ -33,46 +33,44 @@ public class LeaveService {
     // =========================================================
 
     public Leave createLeave(Leave leave) {
+        if (leave == null) {
+            throw new IllegalArgumentException("Leave details are required");
+        }
+        validateLeaveFields(leave);
 
         Authentication authentication =
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication();
-
-        String username =
-                authentication.getName();
-
-        User user =
-                userRepository
-                        .findByUsername(username)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "User not found: "
-                                                + username
-                                ));
-
-        if (user.getEmployee() == null ||
-                user.getEmployee().getEmployeeId() == null) {
-
-            throw new ResourceNotFoundException(
-                    "Employee not found for user: "
-                            + username
-            );
+                SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Authentication is required to create a leave record");
         }
 
-        Integer employeeId =
-                user.getEmployee().getEmployeeId();
+        // Admin creates/maintains a record for the selected employee.
+        // Repository validation still enforces the authenticated company boundary.
+        boolean admin = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+        if (admin) {
+            if (leave.getEmployee() == null || leave.getEmployee().getEmployeeId() == null) {
+                throw new IllegalArgumentException("Select an employee for this leave record");
+            }
+            leave.setStatus(normalizeLeaveStatus(leave.getStatus()));
+            return leaveRepository.createLeave(leave);
+        }
 
-        Employee employee =
-                new Employee();
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
 
-        employee.setEmployeeId(employeeId);
+        if (user.getEmployee() == null || user.getEmployee().getEmployeeId() == null) {
+            throw new ResourceNotFoundException("Employee not found for user: " + username);
+        }
 
+        Employee employee = new Employee();
+        employee.setEmployeeId(user.getEmployee().getEmployeeId());
         leave.setEmployee(employee);
 
-        // Always PENDING when employee applies
+        // Employee, HR, and manager self-service requests always start pending.
         leave.setStatus("PENDING");
-
         return leaveRepository.createLeave(leave);
     }
 
@@ -107,14 +105,39 @@ public class LeaveService {
     // UPDATE
     // =========================================================
 
-    public Leave updateLeave(
-            Integer id,
-            Leave leaveDetails) {
+    public Leave updateLeave(Integer id, Leave leaveDetails) {
+        if (leaveDetails == null) {
+            throw new IllegalArgumentException("Leave details are required");
+        }
+        validateLeaveFields(leaveDetails);
+        if (leaveDetails.getEmployee() == null || leaveDetails.getEmployee().getEmployeeId() == null) {
+            throw new IllegalArgumentException("Select an employee for this leave record");
+        }
+        leaveDetails.setStatus(normalizeLeaveStatus(leaveDetails.getStatus()));
+        return leaveRepository.updateLeave(id, leaveDetails);
+    }
 
-        return leaveRepository.updateLeave(
-                id,
-                leaveDetails
-        );
+    private void validateLeaveFields(Leave leave) {
+        if (leave.getFromDate() == null || leave.getToDate() == null) {
+            throw new IllegalArgumentException("From date and to date are required");
+        }
+        if (leave.getToDate().isBefore(leave.getFromDate())) {
+            throw new IllegalArgumentException("To date cannot be before from date");
+        }
+        if (leave.getReason() == null || leave.getReason().isBlank()) {
+            throw new IllegalArgumentException("Leave reason is required");
+        }
+    }
+
+    private String normalizeLeaveStatus(String status) {
+        if (status == null || status.isBlank()) {
+            throw new IllegalArgumentException("Leave status is required");
+        }
+        String normalized = status.trim().toUpperCase(java.util.Locale.ROOT);
+        if (!List.of("PENDING", "APPROVED", "REJECTED", "WITHDRAWN").contains(normalized)) {
+            throw new IllegalArgumentException("Status must be Pending, Approved, Rejected, or Withdrawn");
+        }
+        return normalized;
     }
 
 

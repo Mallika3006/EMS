@@ -368,6 +368,18 @@
 
         <br><br>
 
+        <label for="filterDueFrom">Due Date From</label>
+        <br>
+        <input type="date" id="filterDueFrom" onchange="applyFilters()">
+        <br><br>
+
+        <label for="filterDueTo">Due Date To</label>
+        <br>
+        <input type="date" id="filterDueTo" onchange="applyFilters()">
+        <br><br>
+
+        <button type="button" onclick="clearFilters()">Clear Filters</button>
+
 
         <button onclick="applyFilters()">
             Apply Filters
@@ -1122,6 +1134,13 @@
                 "filterStatus"
             ).value;
 
+        const dueFrom = document.getElementById("filterDueFrom").value;
+        const dueTo = document.getElementById("filterDueTo").value;
+
+        if (dueFrom && dueTo && dueFrom > dueTo) {
+            alert("Due Date From cannot be after Due Date To.");
+            return;
+        }
 
         /*
          * Project filter is used only
@@ -1227,6 +1246,13 @@
 
                 }
 
+                if (dueFrom && (!task.dueDate || task.dueDate < dueFrom)) {
+                    return false;
+                }
+
+                if (dueTo && (!task.dueDate || task.dueDate > dueTo)) {
+                    return false;
+                }
 
                 return true;
 
@@ -1272,6 +1298,8 @@
             "filterStatus"
         ).value = "";
 
+        document.getElementById("filterDueFrom").value = "";
+        document.getElementById("filterDueTo").value = "";
 
         applyFilters();
 

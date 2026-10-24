@@ -58,8 +58,14 @@ public class TaskRepository {
         // The create_task function returns the raw tasks row. Reload through the
         // tenant-scoped query so project and assigned employee names are available
         // to mapTask(), and so the response follows the same shape as task records.
-        return getTaskById(createdTaskId).orElseThrow(() ->
-                new RuntimeException("Task was created but could not be reloaded: " + createdTaskId));
+        var createdTask = getTaskById(createdTaskId);
+
+        if (createdTask.isEmpty()) {
+            throw new RuntimeException(
+                    "Task was created but could not be reloaded: " + createdTaskId);
+        }
+
+        return createdTask.get();
     }
 
     public List<Task> getAllTasks() {

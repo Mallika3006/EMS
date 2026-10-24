@@ -1,24 +1,192 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>HR Dashboard | Employee Management System</title><link rel="stylesheet" th:href="@{/style.css}"></head>
-<body><div class="app-shell">
-<aside class="app-sidebar"><a class="app-brand" th:href="@{/hr-dashboard}" style="text-decoration:none">EMS <small>Employee Management System</small></a>
-<nav class="app-nav" aria-label="HR navigation">
-<span class="nav-section">Workspace</span><a th:href="@{/hr-dashboard}" aria-current="page">⌂ &nbsp; Overview</a><a th:href="@{/hr/employees}">♙ &nbsp; Employees</a>
-<span class="nav-section">People operations</span><a th:href="@{/hr/departments}">▦ &nbsp; Departments</a><a th:href="@{/hr/designations}">▤ &nbsp; Designations</a><a th:href="@{/hr/employee-attendance}">◷ &nbsp; Employee attendance</a><a th:href="@{/hr/employee-leaves}">▣ &nbsp; Employee leaves</a><a th:href="@{/hr/employee-payroll}">₹ &nbsp; Employee payroll</a>
-<span class="nav-section">My account</span><a th:href="@{/hr/profile}">♙ &nbsp; My profile</a><a th:href="@{/hr/attendance}">◷ &nbsp; My attendance</a><a th:href="@{/hr/leaves}">▣ &nbsp; My leaves</a><a th:href="@{/hr/payroll}">₹ &nbsp; My payroll</a>
-</nav><div class="app-sidebar-footer"><form th:action="@{/logout}" method="post"><button type="submit">↪ &nbsp; Log out</button></form></div></aside>
-<main class="app-main"><header class="app-topbar"><div><h1>HR workspace</h1><p>Employee services and people operations.</p></div><div><span class="role-pill">Human Resources</span><p>Signed in as <strong sec:authentication="name">HR</strong></p></div></header>
-<section class="dashboard-intro"><h2>Good to see you</h2><p>Open an existing HR workflow below. Records and available actions are provided by the server for your current organization.</p></section>
-<section class="dashboard-grid" aria-label="HR modules">
-<article class="dashboard-card"><span class="card-icon">♙</span><h3>Employees</h3><p>View employee information and supported employee operations.</p><a th:href="@{/hr/employees}">Open employees →</a></article>
-<article class="dashboard-card"><span class="card-icon">▦</span><h3>Departments</h3><p>Review organization department records.</p><a th:href="@{/hr/departments}">Open departments →</a></article>
-<article class="dashboard-card"><span class="card-icon">▤</span><h3>Designations</h3><p>Review designation information.</p><a th:href="@{/hr/designations}">Open designations →</a></article>
-<article class="dashboard-card"><span class="card-icon">◷</span><h3>Attendance</h3><p>Review employee attendance and your own records.</p><a th:href="@{/hr/employee-attendance}">Employee attendance →</a></article>
-<article class="dashboard-card"><span class="card-icon">▣</span><h3>Leave requests</h3><p>Review leave records supported by the HR workflow.</p><a th:href="@{/hr/employee-leaves}">Employee leaves →</a></article>
-<article class="dashboard-card"><span class="card-icon">₹</span><h3>Payroll</h3><p>Access employee payroll where authorized.</p><a th:href="@{/hr/employee-payroll}">Employee payroll →</a></article>
-<article class="dashboard-card"><span class="card-icon">◎</span><h3>My profile</h3><p>View your account and profile information.</p><a th:href="@{/hr/profile}">View profile →</a></article>
-<article class="dashboard-card"><span class="card-icon">◷</span><h3>My attendance</h3><p>Check your own attendance records.</p><a th:href="@{/hr/attendance}">View attendance →</a></article>
-<article class="dashboard-card"><span class="card-icon">▣</span><h3>My leaves</h3><p>View your leave records and supported actions.</p><a th:href="@{/hr/leaves}">View leaves →</a></article>
-<article class="dashboard-card"><span class="card-icon">₹</span><h3>My payroll</h3><p>Review your own payroll records.</p><a th:href="@{/hr/payroll}">View payroll →</a></article>
-</section><footer style="padding:24px 0 8px"><small>Employee Management System · HR workspace</small></footer></main></div></body></html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HR Dashboard | Employee Management System</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+    <style>
+        .hr-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin:20px 0 28px; }
+        .hr-metric { padding:18px; border:1px solid var(--line); border-radius:12px; background:var(--surface); min-width:0; }
+        .hr-metric .metric-label { display:block; color:var(--muted); font-size:.88rem; }
+        .hr-metric strong { display:block; margin-top:8px; font-size:1.85rem; color:var(--ink); overflow-wrap:anywhere; }
+        .hr-metric a { display:inline-block; margin-top:10px; font-size:.88rem; font-weight:650; }
+        .hr-overview-actions { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+        .hr-overview-actions button { margin:0; }
+        .hr-message { min-height:1.5em; margin:8px 0; }
+        .hr-quick-links { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+        .hr-quick-links a { display:inline-flex; align-items:center; padding:9px 12px; border:1px solid var(--line); border-radius:9px; background:#fff; font-weight:650; }
+        .hr-quick-links a:hover { background:var(--brand-soft); text-decoration:none; }
+        .hr-section-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+        .hr-section-heading h2 { margin:0; }
+        #recentLeaveTable td { vertical-align:top; }
+    </style>
+</head>
+<body>
+<div class="app-shell">
+    <aside class="app-sidebar">
+        <a class="app-brand" th:href="@{/hr-dashboard}" style="text-decoration:none">EMS <small>Employee Management System</small></a>
+        <nav class="app-nav" aria-label="HR navigation">
+            <span class="nav-section">Workspace</span>
+            <a th:href="@{/hr-dashboard}" aria-current="page">⌂ &nbsp; Overview</a>
+            <a th:href="@{/hr/employees}">♙ &nbsp; Employees</a>
+            <span class="nav-section">People operations</span>
+            <a th:href="@{/hr/departments}">▦ &nbsp; Departments</a>
+            <a th:href="@{/hr/designations}">▤ &nbsp; Designations</a>
+            <a th:href="@{/hr/employee-attendance}">◷ &nbsp; Employee attendance</a>
+            <a th:href="@{/hr/employee-leaves}">▣ &nbsp; Employee leaves</a>
+            <a th:href="@{/hr/employee-payroll}">₹ &nbsp; Employee payroll</a>
+            <span class="nav-section">My account</span>
+            <a th:href="@{/hr/profile}">♙ &nbsp; My profile</a>
+            <a th:href="@{/hr/attendance}">◷ &nbsp; My attendance</a>
+            <a th:href="@{/hr/leaves}">▣ &nbsp; My leaves</a>
+            <a th:href="@{/hr/payroll}">₹ &nbsp; My payroll</a>
+        </nav>
+        <div class="app-sidebar-footer"><form th:action="@{/logout}" method="post"><button type="submit">↪ &nbsp; Log out</button></form></div>
+    </aside>
+
+    <main class="app-main">
+        <header class="app-topbar">
+            <div><h1>HR workspace</h1><p>People operations and employee services for your organization.</p></div>
+            <div><span class="role-pill">Human Resources</span><p>Signed in as <strong sec:authentication="name">HR</strong></p></div>
+        </header>
+
+        <section class="dashboard-intro">
+            <div class="hr-overview-actions">
+                <div><h2>HR overview</h2><p>Review your assigned employees, attendance activity, leave requests and payroll records.</p></div>
+                <button id="refreshHrOverview" class="btn-secondary" type="button">Refresh overview</button>
+            </div>
+            <p id="hrOverviewMessage" class="hr-message" role="status" aria-live="polite">Loading HR overview…</p>
+        </section>
+
+        <section class="hr-metrics" aria-label="HR overview counts">
+            <article class="hr-metric"><span class="metric-label">Active assigned employees</span><strong id="hrEmployeeCount">—</strong><a th:href="@{/hr/employees}">View employees →</a></article>
+            <article class="hr-metric"><span class="metric-label">Pending leave requests</span><strong id="hrPendingLeaveCount">—</strong><a th:href="@{/hr/employee-leaves}">Review leave records →</a></article>
+            <article class="hr-metric"><span class="metric-label">Attendance records today</span><strong id="hrAttendanceTodayCount">—</strong><a th:href="@{/hr/employee-attendance}">Open attendance →</a></article>
+            <article class="hr-metric"><span class="metric-label">Payroll records available</span><strong id="hrPayrollCount">—</strong><a th:href="@{/hr/employee-payroll}">Open payroll →</a></article>
+        </section>
+
+        <section class="card">
+            <div class="hr-section-heading"><h2>People operations</h2></div>
+            <div class="dashboard-grid" aria-label="HR management modules">
+                <article class="dashboard-card"><span class="card-icon">♙</span><h3>Employees</h3><p>View and search active employees assigned to your HR account.</p><a th:href="@{/hr/employees}">Open employees →</a></article>
+                <article class="dashboard-card"><span class="card-icon">▦</span><h3>Departments</h3><p>Review department records for your organization.</p><a th:href="@{/hr/departments}">Open departments →</a></article>
+                <article class="dashboard-card"><span class="card-icon">▤</span><h3>Designations</h3><p>Review job designation information.</p><a th:href="@{/hr/designations}">Open designations →</a></article>
+                <article class="dashboard-card"><span class="card-icon">◷</span><h3>Employee attendance</h3><p>Filter attendance records and export reports for assigned employees.</p><a th:href="@{/hr/employee-attendance}">View attendance →</a></article>
+                <article class="dashboard-card"><span class="card-icon">▣</span><h3>Employee leaves</h3><p>Filter leave requests and review pending, approved, rejected or withdrawn records.</p><a th:href="@{/hr/employee-leaves}">Review leaves →</a></article>
+                <article class="dashboard-card"><span class="card-icon">₹</span><h3>Employee payroll</h3><p>Access payroll records for employees within your authorized HR scope.</p><a th:href="@{/hr/employee-payroll}">View payroll →</a></article>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="hr-section-heading"><h2>Recent leave requests</h2><a th:href="@{/hr/employee-leaves}">View all →</a></div>
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th>Employee</th><th>From</th><th>To</th><th>Reason</th><th>Status</th></tr></thead>
+                    <tbody id="recentLeaveTable"><tr><td colspan="5">Loading leave requests…</td></tr></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="hr-section-heading"><h2>My account</h2></div>
+            <div class="hr-quick-links">
+                <a th:href="@{/hr/profile}">♙ &nbsp; My profile</a>
+                <a th:href="@{/hr/attendance}">◷ &nbsp; My attendance</a>
+                <a th:href="@{/hr/leaves}">▣ &nbsp; My leaves</a>
+                <a th:href="@{/hr/payroll}">₹ &nbsp; My payroll</a>
+            </div>
+        </section>
+        <footer style="padding:24px 0 8px"><small>Employee Management System · HR workspace</small></footer>
+    </main>
+</div>
+<script>
+(() => {
+    const $ = id => document.getElementById(id);
+    const today = () => {
+        const d = new Date();
+        return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    };
+    async function getJson(url) {
+        const response = await fetch(url, { credentials: "same-origin", headers: { "Accept": "application/json" } });
+        const body = await response.text();
+        let data;
+        try { data = body ? JSON.parse(body) : null; } catch { data = body; }
+        if (!response.ok) {
+            const reason = data && typeof data === "object" ? (data.message || data.error) : data;
+            throw new Error(reason || "Request failed (HTTP " + response.status + ")");
+        }
+        return data;
+    }
+    function setMessage(text, error) {
+        $("hrOverviewMessage").textContent = text;
+        $("hrOverviewMessage").className = error ? "hr-message error-message" : "hr-message";
+    }
+    function cell(row, value) {
+        const td = document.createElement("td");
+        td.textContent = value == null || value === "" ? "—" : String(value);
+        row.appendChild(td);
+    }
+    function renderRecentLeaves(leaves) {
+        const body = $("recentLeaveTable");
+        body.replaceChildren();
+        const sorted = [...leaves].sort((a, b) => String(b.fromDate || "").localeCompare(String(a.fromDate || ""))).slice(0, 6);
+        if (!sorted.length) {
+            const row = document.createElement("tr"), td = document.createElement("td");
+            td.colSpan = 5; td.textContent = "No leave requests found for your assigned employees.";
+            row.appendChild(td); body.appendChild(row); return;
+        }
+        sorted.forEach(leave => {
+            const row = document.createElement("tr");
+            const employee = leave.employee || {};
+            const name = [employee.firstName, employee.lastName].filter(Boolean).join(" ")
+                || (leave.employeeId != null ? "Employee #" + leave.employeeId : "Employee");
+            cell(row, name);
+            cell(row, leave.fromDate);
+            cell(row, leave.toDate);
+            cell(row, leave.reason);
+            cell(row, leave.status);
+            body.appendChild(row);
+        });
+    }
+    async function loadOverview() {
+        const button = $("refreshHrOverview");
+        button.disabled = true;
+        setMessage("Loading HR overview…", false);
+        const jobs = [
+            { id: "hrEmployeeCount", url: "/employees/hr/my-employees", count: data => (Array.isArray(data) ? data : []).length },
+            { id: "hrPendingLeaveCount", url: "/leaves/hr", count: data => (Array.isArray(data) ? data : []).filter(item => String(item.status || "").toUpperCase() === "PENDING").length },
+            { id: "hrAttendanceTodayCount", url: "/attendance/hr", count: data => (Array.isArray(data) ? data : []).filter(item => String(item.attDate || "").slice(0, 10) === today()).length },
+            { id: "hrPayrollCount", url: "/payrolls/hr/my-employees", count: data => (Array.isArray(data) ? data : []).length }
+        ];
+        const results = await Promise.allSettled(jobs.map(async job => {
+            const data = await getJson(job.url);
+            $(job.id).textContent = job.count(data);
+            return data;
+        }));
+        let failures = 0;
+        results.forEach((result, index) => {
+            if (result.status === "rejected") {
+                failures++;
+                $(jobs[index].id).textContent = "—";
+                console.error("HR dashboard request failed:", jobs[index].url, result.reason);
+            }
+        });
+        const leaveResult = results[1];
+        if (leaveResult.status === "fulfilled") renderRecentLeaves(Array.isArray(leaveResult.value) ? leaveResult.value : []);
+        else {
+            const body = $("recentLeaveTable");
+            body.replaceChildren();
+            const row = document.createElement("tr"), td = document.createElement("td");
+            td.colSpan = 5; td.textContent = "Unable to load leave requests. Open Employee leaves to retry.";
+            row.appendChild(td); body.appendChild(row);
+        }
+        setMessage(failures ? "Some overview data could not be loaded. Check the relevant module and refresh to retry." : "Overview updated successfully.", failures > 0);
+        button.disabled = false;
+    }
+    $("refreshHrOverview").addEventListener("click", loadOverview);
+    loadOverview();
+})();
+</script>
+</body>
+</html>

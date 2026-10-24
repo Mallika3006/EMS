@@ -135,11 +135,6 @@ public class PageController {
         return "employee/my-tasks";
     }
 
-    @GetMapping("/my-department")
-    public String myDepartment() {
-        return "employee/my-department";
-    }
-
 
     // ==========================================
     // EDIT PROFILE

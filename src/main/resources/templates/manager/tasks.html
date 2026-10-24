@@ -370,12 +370,12 @@
 
         <label for="filterDueFrom">Due Date From</label>
         <br>
-        <input type="date" id="filterDueFrom">
+        <input type="date" id="filterDueFrom" onchange="applyFilters()">
         <br><br>
 
         <label for="filterDueTo">Due Date To</label>
         <br>
-        <input type="date" id="filterDueTo">
+        <input type="date" id="filterDueTo" onchange="applyFilters()">
         <br><br>
 
         <button type="button" onclick="clearFilters()">Clear Filters</button>

@@ -1,6 +1,7 @@
 package com.mallika.EmployeeManagementSystem.repository;
 
 import com.mallika.EmployeeManagementSystem.model.Project;
+import com.mallika.EmployeeManagementSystem.dto.ProjectMemberSummary;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -228,6 +229,40 @@ public class ProjectRepository {
             }
         } catch (SQLException e) {
             throw new RuntimeException("Error checking project assignment", e);
+        }
+    }
+
+    public List<ProjectMemberSummary> getProjectMembers(Integer projectId, Long companyId) {
+        String sql = """
+            SELECT DISTINCT e.employee_id, e.first_name, e.last_name
+            FROM public.employee_project ep
+            JOIN public.projects p
+              ON p.project_id = ep.project_id AND p.company_id = ep.company_id
+            JOIN public.employees e
+              ON e.employee_id = ep.employee_id AND e.company_id = ep.company_id
+            JOIN public.users u
+              ON u.employee_id = e.employee_id
+             AND u.company_id = e.company_id
+             AND u.is_active = TRUE
+            WHERE ep.project_id = ? AND ep.company_id = ?
+            ORDER BY e.first_name, e.last_name, e.employee_id
+            """;
+        List<ProjectMemberSummary> members = new ArrayList<>();
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, projectId);
+            ps.setLong(2, companyId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    members.add(new ProjectMemberSummary(
+                            rs.getInt("employee_id"),
+                            rs.getString("first_name"),
+                            rs.getString("last_name")));
+                }
+            }
+            return members;
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not load project members", e);
         }
     }
 

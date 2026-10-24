@@ -2,6 +2,7 @@ package com.mallika.EmployeeManagementSystem.service;
 
 import com.mallika.EmployeeManagementSystem.exception.ResourceNotFoundException;
 import com.mallika.EmployeeManagementSystem.model.Project;
+import com.mallika.EmployeeManagementSystem.dto.ProjectMemberSummary;
 import com.mallika.EmployeeManagementSystem.model.User;
 import com.mallika.EmployeeManagementSystem.repository.ProjectRepository;
 import com.mallika.EmployeeManagementSystem.repository.UserRepository;
@@ -136,6 +137,17 @@ public class ProjectService {
         return projectRepository.getProjectsByManager(
                 user.getEmployee().getEmployeeId(),
                 user.getCompanyId());
+    }
+
+    public List<ProjectMemberSummary> getProjectMembers(Integer projectId, String username) {
+        User user = getUser(username);
+        Long companyId = requireCompanyId(user);
+        if (isManager()) {
+            ensureManagerOwnsProject(projectId, user, companyId);
+        } else {
+            requireAdmin();
+        }
+        return projectRepository.getProjectMembers(projectId, companyId);
     }
 
     public List<Project> getMyProjects(String username) {

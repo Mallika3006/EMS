@@ -106,29 +106,83 @@ public class ProjectRepository {
         throw new RuntimeException("Project not found in current company: " + id);
     }
 
-    public boolean hasTasks(Integer projectId, Long companyId) {
-        String sql = "SELECT 1 FROM public.tasks WHERE project_id = ? AND company_id = ? LIMIT 1";
-        try (Connection con = dataSource.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, projectId);
-            ps.setLong(2, companyId);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next();
+    /**
+     * Deletes a project and its project-owned records atomically.
+     * Every delete is scoped to the authenticated user's company. PostgreSQL
+     * foreign keys remain the final guard; if another dependent table blocks
+     * deletion, the whole transaction is rolled back.
+     */
+    public boolean deleteProject(Integer id, Long companyId) {
+        String lockProjectSql =
+                "SELECT project_id FROM public.projects WHERE project_id = ? AND company_id = ? FOR UPDATE";
+        try (Connection con = dataSource.getConnection()) {
+            boolean previousAutoCommit = con.getAutoCommit();
+            con.setAutoCommit(false);
+            try {
+                boolean projectExists;
+                try (PreparedStatement ps = con.prepareStatement(lockProjectSql)) {
+                    ps.setInt(1, id);
+                    ps.setLong(2, companyId);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        projectExists = rs.next();
+                    }
+                }
+
+                if (!projectExists) {
+                    con.rollback();
+                    return false;
+                }
+
+                // Tasks have an ON DELETE RESTRICT project FK in the
+                // multi-company schema, so delete company-owned tasks first.
+                try (PreparedStatement ps = con.prepareStatement(
+                        "DELETE FROM public.tasks WHERE project_id = ? AND company_id = ?")) {
+                    ps.setInt(1, id);
+                    ps.setLong(2, companyId);
+                    ps.executeUpdate();
+                }
+
+                // Explicit membership cleanup also works where FK cascade
+                // constraints have not been installed.
+                try (PreparedStatement ps = con.prepareStatement(
+                        "DELETE FROM public.employee_project WHERE project_id = ? AND company_id = ?")) {
+                    ps.setInt(1, id);
+                    ps.setLong(2, companyId);
+                    ps.executeUpdate();
+                }
+
+                int deleted;
+                try (PreparedStatement ps = con.prepareStatement(
+                        "DELETE FROM public.projects WHERE project_id = ? AND company_id = ?")) {
+                    ps.setInt(1, id);
+                    ps.setLong(2, companyId);
+                    deleted = ps.executeUpdate();
+                }
+                if (deleted != 1) {
+                    throw new SQLException("Expected to delete one project row, deleted " + deleted);
+                }
+
+                con.commit();
+                return true;
+            } catch (SQLException | RuntimeException e) {
+                try {
+                    con.rollback();
+                } catch (SQLException rollbackError) {
+                    e.addSuppressed(rollbackError);
+                }
+                throw e;
+            } finally {
+                try {
+                    con.setAutoCommit(previousAutoCommit);
+                } catch (SQLException ignored) {
+                    // Connection is closed immediately after this method.
+                }
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Could not check project tasks", e);
-        }
-    }
-
-    public boolean deleteProject(Integer id, Long companyId) {
-        try (Connection con = dataSource.getConnection();
-             PreparedStatement ps = con.prepareStatement(
-                     "DELETE FROM public.projects WHERE project_id = ? AND company_id = ?")) {
-            ps.setInt(1, id);
-            ps.setLong(2, companyId);
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            throw new RuntimeException("Error deleting project: " + id, e);
+            throw new RuntimeException(
+                    "Error deleting project and its dependent records: " + id
+                            + ". The transaction was rolled back if a dependent foreign key blocked deletion.",
+                    e);
         }
     }
 

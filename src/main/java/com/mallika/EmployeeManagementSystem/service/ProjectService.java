@@ -88,11 +88,6 @@ public class ProjectService {
         User user = getUser(username);
         Long companyId = requireCompanyId(user);
 
-        if (projectRepository.hasTasks(id, companyId)) {
-            throw new IllegalStateException(
-                    "Delete or reassign the project's tasks before deleting the project");
-        }
-
         boolean deleted =
                 projectRepository.deleteProject(id, companyId);
 

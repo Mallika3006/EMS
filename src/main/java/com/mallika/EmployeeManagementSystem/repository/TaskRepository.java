@@ -30,6 +30,7 @@ public class TaskRepository {
 
     public Task createTask(Task task, Long companyId) {
         String sql = "SELECT * FROM public.create_task(?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        Integer createdTaskId = null;
         try (Connection c = dataSource.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, task.getTaskName());
@@ -42,12 +43,23 @@ public class TaskRepository {
             setNullableInt(ps, 8, task.getAssignedTo() == null ? null : task.getAssignedTo().getEmployeeId());
             ps.setLong(9, companyId);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return mapTask(rs);
+                if (rs.next()) {
+                    createdTaskId = rs.getInt("task_id");
+                }
             }
         } catch (SQLException e) {
             throw new RuntimeException("Error creating task", e);
         }
-        throw new RuntimeException("Task could not be created");
+
+        if (createdTaskId == null) {
+            throw new RuntimeException("Task could not be created");
+        }
+
+        // The create_task function returns the raw tasks row. Reload through the
+        // tenant-scoped query so project and assigned employee names are available
+        // to mapTask(), and so the response follows the same shape as task records.
+        return getTaskById(createdTaskId).orElseThrow(() ->
+                new RuntimeException("Task was created but could not be reloaded: " + createdTaskId));
     }
 
     public List<Task> getAllTasks() {

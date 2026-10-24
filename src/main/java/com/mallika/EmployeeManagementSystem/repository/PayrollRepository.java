@@ -622,29 +622,87 @@ public class PayrollRepository {
 
 
     public List<Payroll> getPayrollsByHr(Integer hrId) {
-
         List<Payroll> payrolls = new ArrayList<>();
-
-        String sql = "SELECT * FROM public.get_payrolls_by_hr(?, ?)";
-
+        String sql = """
+            SELECT p.*
+            FROM public.payroll p
+            JOIN public.employees e ON e.employee_id = p.employee_id
+                AND e.company_id = p.company_id
+            WHERE e.hr_id = ?
+              AND e.company_id = ?
+              AND EXISTS (
+                  SELECT 1 FROM public.users u
+                  WHERE u.employee_id = e.employee_id
+                    AND u.company_id = e.company_id
+                    AND u.is_active = TRUE
+              )
+            ORDER BY p.pay_month DESC, e.employee_id, p.payroll_id DESC
+            """;
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
-
+             java.sql.PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, hrId);
-
             statement.setLong(2, companyContext.getCompanyId());
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    payrolls.add(mapPayroll(resultSet));
-                }
+                while (resultSet.next()) payrolls.add(mapPayroll(resultSet));
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException(
-                    "Error fetching HR employee payrolls", e);
+            throw new RuntimeException("Error fetching HR employee payrolls: " + e.getMessage(), e);
         }
-
         return payrolls;
+    }
+
+    public boolean isEmployeeAssignedToHr(Integer employeeId, Integer hrId) {
+        if (employeeId == null || hrId == null) return false;
+        String sql = """
+            SELECT 1
+            FROM public.employees e
+            WHERE e.employee_id = ? AND e.hr_id = ? AND e.company_id = ?
+              AND EXISTS (
+                  SELECT 1 FROM public.users u
+                  WHERE u.employee_id = e.employee_id
+                    AND u.company_id = e.company_id
+                    AND u.is_active = TRUE
+              )
+            """;
+        try (Connection connection = dataSource.getConnection();
+             java.sql.PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, employeeId);
+            statement.setInt(2, hrId);
+            statement.setLong(3, companyContext.getCompanyId());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not validate HR employee assignment: " + e.getMessage(), e);
+        }
+    }
+
+    public boolean isPayrollAssignedToHr(Integer payrollId, Integer hrId) {
+        if (payrollId == null || hrId == null) return false;
+        String sql = """
+            SELECT 1
+            FROM public.payroll p
+            JOIN public.employees e ON e.employee_id = p.employee_id
+                AND e.company_id = p.company_id
+            WHERE p.payroll_id = ? AND e.hr_id = ? AND e.company_id = ?
+              AND EXISTS (
+                  SELECT 1 FROM public.users u
+                  WHERE u.employee_id = e.employee_id
+                    AND u.company_id = e.company_id
+                    AND u.is_active = TRUE
+              )
+            """;
+        try (Connection connection = dataSource.getConnection();
+             java.sql.PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, payrollId);
+            statement.setInt(2, hrId);
+            statement.setLong(3, companyContext.getCompanyId());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not validate HR payroll ownership: " + e.getMessage(), e);
+        }
     }
 
 

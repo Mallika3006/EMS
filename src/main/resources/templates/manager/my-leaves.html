@@ -292,6 +292,13 @@
     }
 
 
+    let selectedLeaveStatus = "Pending";
+
+    function selectLeaveStatus(status) {
+        selectedLeaveStatus = status;
+        loadLeaves();
+    }
+
     // =========================================================
     // LOAD MY LEAVES
     // =========================================================
@@ -388,79 +395,37 @@
                     );
 
 
-                // =================================================
-                // DISPLAY
-                // =================================================
+                // Show one selected status section at a time.
+                const leaveSections = [
+                    { label: "Pending", leaves: pendingLeaves, canWithdraw: true },
+                    { label: "Approved", leaves: approvedLeaves, canWithdraw: false },
+                    { label: "Withdrawn", leaves: withdrawnLeaves, canWithdraw: false },
+                    { label: "Rejected", leaves: rejectedLeaves, canWithdraw: false }
+                ];
+                if (!leaveSections.some(section => section.label === selectedLeaveStatus)) {
+                    selectedLeaveStatus = "Pending";
+                }
+                const selectedSection = leaveSections.find(
+                    section => section.label === selectedLeaveStatus
+                );
 
                 leavesDiv.innerHTML = `
-
                     <h3>My Leave Records</h3>
-
-
-                    <details>
-
-                        <summary>
-                            Pending (${pendingLeaves.length})
-                        </summary>
-
-                        ${createLeaveTable(
-                    pendingLeaves,
-                    true
-                )}
-
-                    </details>
-
-
-                    <br>
-
-
-                    <details>
-
-                        <summary>
-                            Approved (${approvedLeaves.length})
-                        </summary>
-
-                        ${createLeaveTable(
-                    approvedLeaves,
-                    false
-                )}
-
-                    </details>
-
-
-                    <br>
-
-
-                    <details>
-
-                        <summary>
-                            Withdrawn (${withdrawnLeaves.length})
-                        </summary>
-
-                        ${createLeaveTable(
-                    withdrawnLeaves,
-                    false
-                )}
-
-                    </details>
-
-
-                    <br>
-
-
-                    <details>
-
-                        <summary>
-                            Rejected (${rejectedLeaves.length})
-                        </summary>
-
-                        ${createLeaveTable(
-                    rejectedLeaves,
-                    false
-                )}
-
-                    </details>
-
+                    <div class="leave-status-tabs" role="tablist" aria-label="Filter my leave records">
+                        ${leaveSections.map(section => `
+                            <button
+                                type="button"
+                                role="tab"
+                                aria-selected="${section.label === selectedLeaveStatus}"
+                                class="${section.label === selectedLeaveStatus ? "active" : "btn-secondary"}"
+                                onclick="selectLeaveStatus('${section.label}')">
+                                ${section.label} (${section.leaves.length})
+                            </button>
+                        `).join("")}
+                    </div>
+                    <div class="leave-status-records" role="tabpanel">
+                        ${createLeaveTable(selectedSection.leaves, selectedSection.canWithdraw)}
+                    </div>
                 `;
 
             })

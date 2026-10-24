@@ -432,54 +432,46 @@ public class LeaveService {
             String status) {
 
         Authentication authentication =
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication();
+                SecurityContextHolder.getContext().getAuthentication();
 
-        String username =
-                authentication.getName();
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication.getAuthorities().stream()
+                .noneMatch(authority -> "ROLE_MANAGER".equals(authority.getAuthority()))) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Only a Manager can review team leave requests");
+        }
 
+        if (leaveId == null || leaveId <= 0) {
+            throw new IllegalArgumentException("A valid leave request ID is required");
+        }
 
-        // Find logged-in manager
-        User user =
-                userRepository
-                        .findByUsername(username)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "User not found: " + username
-                                ));
+        if (status == null || status.isBlank()) {
+            throw new IllegalArgumentException("Status must be APPROVED or REJECTED");
+        }
 
+        String normalizedStatus = status.trim().toUpperCase(java.util.Locale.ROOT);
+        if (!"APPROVED".equals(normalizedStatus)
+                && !"REJECTED".equals(normalizedStatus)) {
+            throw new IllegalArgumentException("Status must be APPROVED or REJECTED");
+        }
 
-        // Make sure manager has an employee record
-        if (user.getEmployee() == null ||
-                user.getEmployee().getEmployeeId() == null) {
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "User not found: " + username));
 
+        if (user.getEmployee() == null
+                || user.getEmployee().getEmployeeId() == null) {
             throw new ResourceNotFoundException(
-                    "Employee not found for manager: " + username
-            );
+                    "Employee not found for manager: " + username);
         }
 
-
-        // Logged-in manager's employee ID
-        Integer managerId =
-                user.getEmployee().getEmployeeId();
-
-
-        // Only APPROVED or REJECTED
-        if (!"APPROVED".equalsIgnoreCase(status) &&
-                !"REJECTED".equalsIgnoreCase(status)) {
-
-            throw new IllegalArgumentException(
-                    "Status must be APPROVED or REJECTED"
-            );
-        }
-
-
+        // The company-scoped PostgreSQL function verifies that this request
+        // belongs to an employee directly managed by this manager and remains pending.
         return leaveRepository.updateManagerLeaveStatus(
                 leaveId,
-                managerId,
-                status.toUpperCase()
-        );
+                user.getEmployee().getEmployeeId(),
+                normalizedStatus);
     }
 
     // =========================================================

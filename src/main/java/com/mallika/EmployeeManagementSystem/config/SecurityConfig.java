@@ -122,7 +122,7 @@ public class SecurityConfig {
                     response.setCharacterEncoding("UTF-8");
                     response.getWriter().write("{\"message\":\"Access denied. Your account does not have permission for this action.\"}");
                 }))
-            .logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/user-login").deleteCookies("jwt").invalidateHttpSession(true))
+            .logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/login").deleteCookies("jwt").invalidateHttpSession(true))
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(cookieOriginValidationFilter, JwtAuthenticationFilter.class);
         return http.build();

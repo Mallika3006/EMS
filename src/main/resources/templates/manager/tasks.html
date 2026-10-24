@@ -749,6 +749,11 @@
                     ).value;
 
 
+                if (!projectId && !employeeId) {
+                    alert("Select a project or assign this task to one of your active team members.");
+                    return;
+                }
+
                 /*
                  * Create task without project first.
                  */

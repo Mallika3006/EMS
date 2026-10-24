@@ -36,12 +36,14 @@ public class CompanyRegistrationController {
     @ResponseBody
     public ResponseEntity<Map<String, String>> registerCompany(
             @RequestParam String companyName,
+            @RequestParam String recoveryEmail,
+            @RequestParam(required = false) String recoveryPhone,
             @RequestParam String adminUsername,
             @RequestParam String password,
             @RequestParam String confirmPassword) {
         try {
             registrationService.registerCompany(
-                    companyName, adminUsername, password, confirmPassword);
+                    companyName, recoveryEmail, recoveryPhone, adminUsername, password, confirmPassword);
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
                     "message", "Company registered successfully. You can now sign in with your Admin account.",
                     "redirect", "/login?registered"

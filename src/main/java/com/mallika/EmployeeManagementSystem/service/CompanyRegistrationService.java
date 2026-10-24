@@ -27,15 +27,27 @@ public class CompanyRegistrationService {
     @Transactional
     public void registerCompany(
             String companyName,
+            String recoveryEmail,
+            String recoveryPhone,
             String adminUsername,
             String password,
             String confirmPassword) {
 
         String normalizedCompanyName = companyName == null ? "" : companyName.trim();
         String normalizedUsername = adminUsername == null ? "" : adminUsername.trim();
+        String normalizedRecoveryEmail = recoveryEmail == null ? "" : recoveryEmail.trim().toLowerCase();
+        String normalizedRecoveryPhone = recoveryPhone == null ? "" : recoveryPhone.trim();
 
         if (!StringUtils.hasText(normalizedCompanyName) || normalizedCompanyName.length() > 200) {
             throw new IllegalArgumentException("Enter a company name between 1 and 200 characters.");
+        }
+        if (!StringUtils.hasText(normalizedRecoveryEmail)
+                || normalizedRecoveryEmail.length() > 320
+                || !normalizedRecoveryEmail.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw new IllegalArgumentException("Enter a valid organization recovery email address.");
+        }
+        if (normalizedRecoveryPhone.length() > 30) {
+            throw new IllegalArgumentException("Recovery phone number must be 30 characters or fewer.");
         }
         if (!USERNAME_PATTERN.matcher(normalizedUsername).matches()) {
             throw new IllegalArgumentException(
@@ -72,8 +84,8 @@ public class CompanyRegistrationService {
         }
 
         Long companyId = jdbcTemplate.queryForObject(
-                "INSERT INTO companies (company_name) VALUES (?) RETURNING company_id",
-                Long.class, normalizedCompanyName);
+                "INSERT INTO companies (company_name, recovery_email, recovery_phone) VALUES (?, ?, ?)",
+                Long.class, normalizedCompanyName, normalizedRecoveryEmail, normalizedRecoveryPhone.isBlank() ? null : normalizedRecoveryPhone);
         if (companyId == null) {
             throw new IllegalStateException("Could not create the company.");
         }

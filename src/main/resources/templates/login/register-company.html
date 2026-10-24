@@ -30,6 +30,13 @@
                 <input id="companyName" name="companyName" type="text" maxlength="200"
                        autocomplete="organization" placeholder="e.g. Acme Technologies" required>
 
+                <label for="recoveryEmail">Organization recovery email</label>
+                <input id="recoveryEmail" name="recoveryEmail" type="email" maxlength="320"
+                       autocomplete="email" placeholder="e.g. admin@yourcompany.com" required>
+                <small>This address receives Admin password-reset OTPs.</small>
+                <label for="recoveryPhone">Organization recovery phone (optional)</label>
+                <input id="recoveryPhone" name="recoveryPhone" type="tel" maxlength="30"
+                       autocomplete="tel" placeholder="Include country code for SMS, e.g. +91...">
                 <label for="adminUsername">Admin username</label>
                 <input id="adminUsername" name="adminUsername" type="text" minlength="3" maxlength="50"
                        pattern="[A-Za-z0-9._\x2d]+" autocomplete="username"
@@ -45,7 +52,7 @@
 
                 <button id="registerButton" type="submit">Create company account</button>
             </form>
-            <p class="registration-note">Registration creates a new company and its first Admin account. It cannot add an account to an existing company.</p>
+            <p class="registration-note">Registration creates a new company and its first Admin account. Keep the recovery email accessible. It cannot add an account to an existing company.</p>
         </section>
     </main>
 </div>

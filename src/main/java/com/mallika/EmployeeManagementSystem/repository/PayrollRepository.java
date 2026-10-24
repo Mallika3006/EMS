@@ -682,7 +682,7 @@ public class PayrollRepository {
             SELECT 1
             FROM public.payroll p
             JOIN public.employees e ON e.employee_id = p.employee_id
-                AND e.company_id = p.company_id
+                
             WHERE p.payroll_id = ? AND e.hr_id = ? AND e.company_id = ?
               AND EXISTS (
                   SELECT 1 FROM public.users u

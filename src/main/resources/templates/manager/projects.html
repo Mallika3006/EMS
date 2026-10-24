@@ -181,6 +181,7 @@
                 );
             }
             alert("Project assigned to employee.");
+            await loadProjects();
         } catch (error) {
             alert("Could not assign project: " + error.message);
         }
@@ -200,9 +201,9 @@
                 ? members.map(member => {
                     const name = [member.firstName, member.lastName].filter(Boolean).join(" ") || "Name unavailable";
                     return name + " (ID: " + member.employeeId + ")";
-                }).join("\\n")
+                }).join("\n")
                 : "No active employees are assigned to this project.";
-            alert("Project members\\n\\n" + message);
+            alert("Project members\n\n" + message);
         } catch (error) {
             alert("Could not load project members: " + error.message);
         }

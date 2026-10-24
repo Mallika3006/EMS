@@ -106,6 +106,30 @@ public class TaskService {
     }
 
 
+    public Task updateTaskStatus(Integer id, String status, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+
+        if (user.getCompanyId() == null) {
+            throw new IllegalStateException("User has no company assigned");
+        }
+        if (!isManager()) {
+            throw new AccessDeniedException("Only managers can update task status through this action");
+        }
+
+        String normalizedStatus = status == null ? "" : status.trim();
+        if (!List.of("Pending", "In Progress", "Completed").contains(normalizedStatus)) {
+            throw new IllegalArgumentException("Status must be Pending, In Progress, or Completed");
+        }
+
+        Integer managerId = requireEmployeeId(user);
+        if (!taskRepository.isTaskAccessibleToManager(id, managerId, user.getCompanyId())) {
+            throw new ResourceNotFoundException("Task not found in your managed projects or team");
+        }
+
+        return taskRepository.updateTaskStatus(id, normalizedStatus, user.getCompanyId());
+    }
+
     // =========================================================
     // DELETE
     // =========================================================

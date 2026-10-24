@@ -225,6 +225,17 @@ public class AttendanceService {
         return attendanceRepository.createAttendance(attendance);
     }
 
+    // HR: correct an existing attendance record without changing its employee assignment.
+    public Attendance updateHrAttendance(Integer attendanceId, Attendance details) {
+        User hr = getCurrentUser();
+        if (!hasRole("HR")) {
+            throw new AccessDeniedException("Only HR users can correct assigned employee attendance");
+        }
+        validateAttendance(details);
+        return attendanceRepository.updateAttendanceByHr(
+                attendanceId, hr.getEmployee().getEmployeeId(), details);
+    }
+
     // HR: attendance of active employees assigned to this HR user.
     public List<Attendance> getHrEmployeeAttendance() {
         User hr = getCurrentUser();

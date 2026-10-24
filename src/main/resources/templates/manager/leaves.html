@@ -1,344 +1,281 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
-    <title>Leave Requests</title>
-
-    <link rel="stylesheet"
-          href="/style.css">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Leave Requests | Employee Management System</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .leave-page { max-width: 1250px; margin: 28px auto; padding: 0 18px 36px; }
+        .leave-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; }
+        .leave-heading h1 { margin-bottom:6px; }
+        .leave-toolbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:20px 0; }
+        .leave-toolbar input, .leave-toolbar select { min-height:40px; padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px; }
+        .leave-toolbar input { min-width:220px; }
+        .leave-button { border:0; border-radius:7px; padding:9px 13px; cursor:pointer; font-weight:600; }
+        .leave-button:disabled { opacity:.55; cursor:not-allowed; }
+        .leave-button.primary { background:#1d4ed8; color:white; }
+        .leave-button.approve { background:#15803d; color:white; }
+        .leave-button.reject { background:#b91c1c; color:white; }
+        .leave-button.secondary { background:#e2e8f0; color:#0f172a; }
+        .leave-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:18px 0; }
+        .leave-stat { background:white; border:1px solid #e2e8f0; border-radius:10px; padding:15px; }
+        .leave-stat span { display:block; color:#64748b; font-size:.9rem; }
+        .leave-stat strong { display:block; font-size:1.65rem; margin-top:5px; }
+        .leave-table-wrap { overflow-x:auto; background:white; border:1px solid #e2e8f0; border-radius:10px; }
+        .leave-table { width:100%; border-collapse:collapse; min-width:850px; }
+        .leave-table th,.leave-table td { text-align:left; padding:12px; border-bottom:1px solid #e2e8f0; vertical-align:top; }
+        .leave-table th { background:#f8fafc; white-space:nowrap; }
+        .leave-table tr:last-child td { border-bottom:0; }
+        .leave-status { display:inline-block; border-radius:999px; padding:4px 9px; font-size:.82rem; font-weight:700; background:#e2e8f0; color:#334155; }
+        .leave-status.pending { background:#fef3c7; color:#92400e; }
+        .leave-status.approved { background:#dcfce7; color:#166534; }
+        .leave-status.rejected { background:#fee2e2; color:#991b1b; }
+        .leave-status.withdrawn { background:#e2e8f0; color:#475569; }
+        .leave-actions { display:flex; gap:6px; }
+        .leave-message { margin:12px 0; padding:11px 13px; border-radius:8px; display:none; }
+        .leave-message.error { display:block; background:#fee2e2; color:#991b1b; }
+        .leave-message.success { display:block; background:#dcfce7; color:#166534; }
+        .leave-message.info { display:block; background:#eff6ff; color:#1e40af; }
+        .leave-empty { text-align:center; padding:28px !important; color:#64748b; }
+        @media(max-width:600px) { .leave-page { padding:0 10px 24px; } .leave-toolbar input { width:100%; min-width:0; } }
+    </style>
 </head>
-
-
 <body>
+<main class="container leave-page">
+    <div class="leave-heading">
+        <div>
+            <h1>Team Leave Requests</h1>
+            <p>Review leave requests submitted by your direct reports. Only pending requests can be approved or rejected.</p>
+        </div>
+        <div class="leave-toolbar" style="margin-top:0">
+            <button class="leave-button secondary" id="refreshButton" type="button">Refresh</button>
+            <a class="leave-button secondary" href="/manager-dashboard" style="text-decoration:none">← Dashboard</a>
+        </div>
+    </div>
 
+    <div id="message" class="leave-message" role="status" aria-live="polite"></div>
 
-<div class="container">
+    <section class="leave-stats" aria-label="Leave request summary">
+        <div class="leave-stat"><span>Total requests</span><strong id="totalCount">—</strong></div>
+        <div class="leave-stat"><span>Pending review</span><strong id="pendingCount">—</strong></div>
+        <div class="leave-stat"><span>Approved</span><strong id="approvedCount">—</strong></div>
+        <div class="leave-stat"><span>Rejected</span><strong id="rejectedCount">—</strong></div>
+    </section>
 
+    <div class="leave-toolbar">
+        <label for="statusFilter">Status</label>
+        <select id="statusFilter">
+            <option value="ALL">All statuses</option>
+            <option value="PENDING">Pending</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+            <option value="WITHDRAWN">Withdrawn</option>
+        </select>
+        <label for="searchInput">Search</label>
+        <input id="searchInput" type="search" placeholder="Employee name, ID or reason" autocomplete="off">
+        <span id="resultCount" aria-live="polite"></span>
+    </div>
 
-    <h1>Leave Requests</h1>
-
-
-    <p>
-        Review leave requests submitted by your team members.
-    </p>
-
-
-    <a href="/manager-dashboard">
-        ← Back to Dashboard
-    </a>
-
-
-    <br>
-    <br>
-
-
-    <div id="message"></div>
-
-
-    <table border="1"
-           cellpadding="10"
-           cellspacing="0">
-
-
-        <thead>
-
-        <tr>
-
-            <th>Leave ID</th>
-
-            <th>Employee ID</th>
-            <th>Employee Name</th>
-            <th>From Date</th>
-
-            <th>To Date</th>
-
-            <th>Reason</th>
-
-            <th>Status</th>
-
-            <th>Action</th>
-
-        </tr>
-
-        </thead>
-
-
-        <tbody id="leaveTableBody">
-
-        </tbody>
-
-
-    </table>
-
-
-</div>
-
-
+    <div class="leave-table-wrap">
+        <table class="leave-table">
+            <thead>
+            <tr>
+                <th>Leave ID</th><th>Employee</th><th>From</th><th>To</th>
+                <th>Reason</th><th>Status</th><th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="leaveTableBody">
+            <tr><td colspan="7" class="leave-empty">Loading leave requests…</td></tr>
+            </tbody>
+        </table>
+    </div>
+</main>
 
 <script>
+    const tableBody = document.getElementById("leaveTableBody");
+    const messageBox = document.getElementById("message");
+    const refreshButton = document.getElementById("refreshButton");
+    const statusFilter = document.getElementById("statusFilter");
+    const searchInput = document.getElementById("searchInput");
+    let leaveRequests = [];
+    let requestInProgress = false;
 
+    function showMessage(text, type) {
+        messageBox.textContent = text;
+        messageBox.className = "leave-message " + type;
+    }
 
-    // =========================================================
-    // LOAD MANAGER LEAVE REQUESTS
-    // =========================================================
+    function clearMessage() {
+        messageBox.textContent = "";
+        messageBox.className = "leave-message";
+    }
+
+    function element(tag, text, className) {
+        const node = document.createElement(tag);
+        if (text !== undefined && text !== null) node.textContent = String(text);
+        if (className) node.className = className;
+        return node;
+    }
+
+    function normalizeStatus(status) {
+        return String(status || "").trim().toUpperCase();
+    }
+
+    function setSummary() {
+        document.getElementById("totalCount").textContent = leaveRequests.length;
+        document.getElementById("pendingCount").textContent = leaveRequests.filter(l => normalizeStatus(l.status) === "PENDING").length;
+        document.getElementById("approvedCount").textContent = leaveRequests.filter(l => normalizeStatus(l.status) === "APPROVED").length;
+        document.getElementById("rejectedCount").textContent = leaveRequests.filter(l => normalizeStatus(l.status) === "REJECTED").length;
+    }
+
+    function renderLeaves() {
+        const selectedStatus = statusFilter.value;
+        const query = searchInput.value.trim().toLowerCase();
+        const filtered = leaveRequests.filter(leave => {
+            const status = normalizeStatus(leave.status);
+            const employee = leave.employee || {};
+            const name = [employee.firstName, employee.lastName].filter(Boolean).join(" ");
+            const haystack = [leave.leaveId, employee.employeeId, name, leave.reason, leave.fromDate, leave.toDate]
+                .filter(value => value !== undefined && value !== null).join(" ").toLowerCase();
+            return (selectedStatus === "ALL" || status === selectedStatus) && haystack.includes(query);
+        });
+
+        tableBody.replaceChildren();
+        document.getElementById("resultCount").textContent = "Showing " + filtered.length + " of " + leaveRequests.length;
+
+        if (filtered.length === 0) {
+            const row = document.createElement("tr");
+            const cell = element("td", leaveRequests.length ? "No requests match these filters." : "No leave requests found for your direct reports.", "leave-empty");
+            cell.colSpan = 7;
+            row.appendChild(cell);
+            tableBody.appendChild(row);
+            return;
+        }
+
+        filtered.forEach(leave => {
+            const row = document.createElement("tr");
+            const employee = leave.employee || {};
+            const name = [employee.firstName, employee.lastName].filter(Boolean).join(" ") || "Name unavailable";
+            row.appendChild(element("td", leave.leaveId ?? "—"));
+            const employeeCell = document.createElement("td");
+            employeeCell.appendChild(element("strong", name));
+            employeeCell.appendChild(document.createElement("br"));
+            employeeCell.appendChild(element("small", "ID: " + (employee.employeeId ?? "—")));
+            row.appendChild(employeeCell);
+            row.appendChild(element("td", leave.fromDate || "—"));
+            row.appendChild(element("td", leave.toDate || "—"));
+            row.appendChild(element("td", leave.reason || "—"));
+            const status = normalizeStatus(leave.status) || "UNKNOWN";
+            row.appendChild(element("td", status, "leave-status " + status.toLowerCase()));
+            const actions = element("td", null, "leave-actions");
+            if (status === "PENDING") {
+                const approve = element("button", "Approve", "leave-button approve");
+                approve.type = "button";
+                approve.addEventListener("click", () => updateLeaveStatus(leave.leaveId, "APPROVED", approve));
+                const reject = element("button", "Reject", "leave-button reject");
+                reject.type = "button";
+                reject.addEventListener("click", () => updateLeaveStatus(leave.leaveId, "REJECTED", reject));
+                actions.append(approve, reject);
+            } else {
+                actions.appendChild(element("span", "No action"));
+            }
+            row.appendChild(actions);
+            tableBody.appendChild(row);
+        });
+    }
 
     async function loadLeaveRequests() {
-
+        if (requestInProgress) return;
+        requestInProgress = true;
+        refreshButton.disabled = true;
+        clearMessage();
+        tableBody.replaceChildren();
+        const loadingRow = document.createElement("tr");
+        const loadingCell = element("td", "Loading leave requests…", "leave-empty");
+        loadingCell.colSpan = 7;
+        loadingRow.appendChild(loadingCell);
+        tableBody.appendChild(loadingRow);
         try {
-
-            const response =
-                await fetch("/leaves/manager");
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    "Failed to load leave requests"
-                );
-
-            }
-
-
-            const leaves =
-                await response.json();
-
-
-            const tableBody =
-                document.getElementById(
-                    "leaveTableBody"
-                );
-
-
-            tableBody.innerHTML = "";
-
-
-            // -------------------------------------------------
-            // NO LEAVE REQUESTS
-            // -------------------------------------------------
-
-            if (leaves.length === 0) {
-
-                tableBody.innerHTML = `
-
-                    <tr>
-
-                        <td colspan="7">
-
-                            No leave requests found.
-
-                        </td>
-
-                    </tr>
-
-                `;
-
-                return;
-
-            }
-
-
-            // -------------------------------------------------
-            // DISPLAY LEAVE REQUESTS
-            // -------------------------------------------------
-
-            leaves.forEach(leave => {
-
-
-                const row =
-                    document.createElement("tr");
-
-
-                row.innerHTML = `
-
-                    <td>
-                        ${leave.leaveId ?? "-"}
-                    </td>
-
-
-                    <td>${leave.employee?.employeeId ?? "-"}</td>
-
-                    <td>
-                        ${[
-                                        leave.employee?.firstName,
-                                        leave.employee?.lastName
-                                    ].filter(Boolean).join(" ") || "-"}
-                    </td>
-
-
-                    <td>
-                        ${leave.fromDate ?? "-"}
-                    </td>
-
-
-                    <td>
-                        ${leave.toDate ?? "-"}
-                    </td>
-
-
-                    <td>
-                        ${leave.reason ?? "-"}
-                    </td>
-
-
-                    <td>
-                        ${leave.status ?? "-"}
-                    </td>
-
-
-                    <td>
-
-                        ${
-                    leave.status?.toUpperCase()
-                    === "PENDING"
-
-                        ?
-
-                        `
-
-                            <button
-                                onclick="updateLeaveStatus(
-                                    ${leave.leaveId},
-                                    'APPROVED'
-                                )">
-
-                                Approve
-
-                            </button>
-
-
-                            <button
-                                onclick="updateLeaveStatus(
-                                    ${leave.leaveId},
-                                    'REJECTED'
-                                )">
-
-                                Reject
-
-                            </button>
-
-                            `
-
-                        :
-
-                        "No action"
-                }
-
-                    </td>
-
-                `;
-
-
-                tableBody.appendChild(row);
-
+            const response = await fetch("/leaves/manager", {
+                method: "GET",
+                headers: { "Accept": "application/json" },
+                credentials: "same-origin",
+                cache: "no-store"
             });
-
-
-        } catch (error) {
-
-
-            console.error(error);
-
-
-            document.getElementById(
-                "message"
-            ).innerText =
-                "Failed to load leave requests.";
-
-        }
-
-    }
-
-
-
-    // =========================================================
-    // APPROVE / REJECT LEAVE
-    // =========================================================
-
-    async function updateLeaveStatus(
-        leaveId,
-        status
-    ) {
-
-
-        try {
-
-
-            const response =
-                await fetch(
-                    `/leaves/manager/${leaveId}/status?status=${status}`,
-                    {
-                        method: "PUT"
-                    }
-                );
-
-
-            // -------------------------------------------------
-            // HANDLE ERROR
-            // -------------------------------------------------
-
             if (!response.ok) {
-
-
-                const errorText =
-                    await response.text();
-
-
-                throw new Error(
-                    errorText ||
-                    "Failed to update leave"
-                );
-
+                let detail = "";
+                try {
+                    const body = await response.json();
+                    detail = body.message || body.error || "";
+                } catch (_) {
+                    detail = await response.text().catch(() => "");
+                }
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error("You are not authorized to view these requests. Sign in with your Manager account and try again.");
+                }
+                throw new Error(detail || "Server returned HTTP " + response.status + ".");
             }
-
-
-            // -------------------------------------------------
-            // SUCCESS
-            // -------------------------------------------------
-
-            alert(
-                `Leave ${status.toLowerCase()} successfully.`
-            );
-
-
-            // Reload the table
-            loadLeaveRequests();
-
-
+            const data = await response.json();
+            if (!Array.isArray(data)) throw new Error("The server returned an unexpected response.");
+            leaveRequests = data;
+            setSummary();
+            renderLeaves();
         } catch (error) {
-
-
-            console.error(error);
-
-
-            alert(
-                "Failed to update leave: " +
-                error.message
-            );
-
+            console.error("Unable to load manager leave requests:", error);
+            leaveRequests = [];
+            setSummary();
+            tableBody.replaceChildren();
+            const row = document.createElement("tr");
+            const cell = element("td", "Leave requests could not be loaded. " + (error.message || "Please try again."), "leave-empty");
+            cell.colSpan = 7;
+            row.appendChild(cell);
+            tableBody.appendChild(row);
+            showMessage("Unable to load leave requests: " + (error.message || "Please try again."), "error");
+        } finally {
+            requestInProgress = false;
+            refreshButton.disabled = false;
         }
-
     }
 
+    async function updateLeaveStatus(leaveId, status, clickedButton) {
+        if (!leaveId || !["APPROVED", "REJECTED"].includes(status)) return;
+        const verb = status === "APPROVED" ? "approve" : "reject";
+        if (!window.confirm("Are you sure you want to " + verb + " leave request #" + leaveId + "?")) return;
 
+        const row = clickedButton.closest("tr");
+        const buttons = row ? row.querySelectorAll("button") : [];
+        buttons.forEach(button => button.disabled = true);
+        clearMessage();
+        try {
+            const response = await fetch("/leaves/manager/" + encodeURIComponent(leaveId) + "/status?status=" + encodeURIComponent(status), {
+                method: "PUT",
+                headers: { "Accept": "application/json" },
+                credentials: "same-origin"
+            });
+            if (!response.ok) {
+                let detail = "";
+                try {
+                    const body = await response.json();
+                    detail = body.message || body.error || "";
+                } catch (_) {
+                    detail = await response.text().catch(() => "");
+                }
+                throw new Error(detail || "Server returned HTTP " + response.status + ".");
+            }
+            showMessage("Leave request #" + leaveId + " was " + status.toLowerCase() + ".", "success");
+            await loadLeaveRequests();
+        } catch (error) {
+            console.error("Unable to update leave request:", error);
+            showMessage("Could not update leave request: " + (error.message || "Please try again."), "error");
+            buttons.forEach(button => button.disabled = false);
+        }
+    }
 
-    // =========================================================
-    // INITIAL LOAD
-    // =========================================================
-
+    refreshButton.addEventListener("click", loadLeaveRequests);
+    statusFilter.addEventListener("change", renderLeaves);
+    searchInput.addEventListener("input", renderLeaves);
     loadLeaveRequests();
-
-
 </script>
-
-
 </body>
-
 </html>

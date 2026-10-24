@@ -238,3 +238,37 @@ form button[type="submit"] { min-width: 112px; }
   .app-nav::-webkit-scrollbar-track { background: transparent; }
   .app-sidebar-footer { flex: 0 0 auto; }
 }
+
+/* Modern SaaS UI refresh */
+:root{--ink:#17233b;--muted:#64748b;--brand:#315ee8;--brand-dark:#2449c6;--brand-soft:#edf2ff;--surface:#fff;--canvas:#f5f7fc;--line:#e2e8f2;--radius:16px;--shadow:0 10px 30px rgba(30,48,85,.06)}
+body{background:var(--canvas);color:var(--ink)}
+button,.btn,.back-link{box-shadow:0 1px 2px rgba(16,24,40,.05)}
+.dashboard-card{border-radius:16px}.dashboard-card p{margin:0;line-height:1.65}
+.app-sidebar{background:linear-gradient(180deg,#172b59 0%,#132248 100%)}
+.app-nav a{transition:background .16s ease,color .16s ease}
+.app-nav a[aria-current=page]{color:#fff;background:rgba(111,146,255,.22);box-shadow:inset 3px 0 0 #91adff}
+input,select,textarea{border-color:#d4dce9}
+.theme-toggle{position:fixed;right:20px;bottom:20px;z-index:1000;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:10px 15px;border:1px solid #d5dced;border-radius:999px;color:#1f2d46;background:#fff;box-shadow:0 8px 28px rgba(20,34,62,.18);font-size:.85rem;font-weight:750}
+.theme-toggle:hover{background:#f3f6ff;color:#1f2d46}
+html[data-theme=dark]{color-scheme:dark;--ink:#e8edf7;--muted:#a7b3c8;--brand:#91aaff;--brand-dark:#b5c5ff;--brand-soft:#26365b;--surface:#182338;--canvas:#0f1728;--line:#2c3950;--success:#6ce0a4;--danger:#ff9898;--shadow:0 10px 30px rgba(0,0,0,.18)}
+html[data-theme=dark] body,html[data-theme=dark] .app-main,html[data-theme=dark] .container,html[data-theme=dark] .dashboard-container{background:var(--canvas);color:var(--ink)}
+html[data-theme=dark] h1,html[data-theme=dark] h2,html[data-theme=dark] h3,html[data-theme=dark] h4,html[data-theme=dark] strong,html[data-theme=dark] td{color:var(--ink)}
+html[data-theme=dark] p,html[data-theme=dark] small,html[data-theme=dark] footer{color:var(--muted)}
+html[data-theme=dark] .card,html[data-theme=dark] .dashboard-card,html[data-theme=dark] .manager-metric,html[data-theme=dark] .hr-metric,html[data-theme=dark] .dashboard-container>header,html[data-theme=dark] .login-container,html[data-theme=dark] .table-responsive,html[data-theme=dark] .table-container,html[data-theme=dark] table{background:var(--surface);border-color:var(--line);color:var(--ink)}
+html[data-theme=dark] th,html[data-theme=dark] thead th{background:#202d43;color:#c4d0e4;border-color:var(--line)}
+html[data-theme=dark] td,html[data-theme=dark] th{border-bottom-color:var(--line)}
+html[data-theme=dark] tbody tr:hover{background:#202d43}
+html[data-theme=dark] input,html[data-theme=dark] select,html[data-theme=dark] textarea{background:#111b2c;color:var(--ink);border-color:#3a4962}
+html[data-theme=dark] label,html[data-theme=dark] .profile-label{color:#c4d0e4}
+html[data-theme=dark] .btn-secondary,html[data-theme=dark] .btn-danger{background:#202d43;color:#e8edf7;border-color:#3a4962}
+html[data-theme=dark] .status,html[data-theme=dark] .badge{background:#2a3952;color:#dbe6fa}
+html[data-theme=dark] .role-pill{background:#26365b;color:#c6d3ff}
+html[data-theme=dark] .dashboard-card .card-icon{background:#26365b;border-color:#354a77;color:#b5c5ff}
+html[data-theme=dark] .login-page,html[data-theme=dark] .login-panel{background:#0f1728}
+html[data-theme=dark] .login-container{background:#182338}
+html[data-theme=dark] .login-intro{background:linear-gradient(145deg,#0c1630 0%,#1d3269 56%,#2949a0 100%)}
+html[data-theme=dark] .theme-toggle{background:#202d43;border-color:#43516b;color:#f0f4ff}
+html[data-theme=dark] .app-sidebar{background:linear-gradient(180deg,#0b1428 0%,#111e37 100%)}
+html[data-theme=dark] .success-message:not(:empty){background:#123528;border-color:#216b4b;color:#8ce8b6}
+html[data-theme=dark] .error-message:not(:empty){background:#3a2027;border-color:#79404b;color:#ffb4b4}
+@media(max-width:620px){.theme-toggle{right:12px;bottom:12px;min-height:40px;padding:9px 12px}}

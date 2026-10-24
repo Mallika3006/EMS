@@ -31,7 +31,13 @@
     <main class="app-main">
         <header class="app-topbar">
             <div><h1>Overview</h1><p>Manage your organization's people and operations.</p></div>
-            <div><span class="role-pill">Administrator</span><p>Signed in as <strong sec:authentication="name">Admin</strong></p></div>
+            <div class="admin-account-actions">
+                <span class="role-pill">Administrator</span>
+                <p>Signed in as <strong sec:authentication="name">Admin</strong></p>
+                <form th:action="@{/logout}" method="post" class="admin-topbar-logout">
+                    <button type="submit" class="btn-secondary"><span aria-hidden="true">↪</span> Log out</button>
+                </form>
+            </div>
         </header>
         <section class="dashboard-intro">
             <h2>Management workspace</h2>

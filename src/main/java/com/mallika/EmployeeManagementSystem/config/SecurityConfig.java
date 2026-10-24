@@ -38,6 +38,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/login", "/register-company").permitAll()
                 .requestMatchers("/css/**", "/js/**", "/images/**", "/style.css", "/company-registration.css", "/favicon.ico").permitAll()
                 .requestMatchers(HttpMethod.POST, "/users").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/employees").hasRole("ADMIN")
                 .requestMatchers("/admin-dashboard").hasRole("ADMIN")
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/hr-dashboard").hasRole("HR")

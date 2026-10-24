@@ -154,8 +154,10 @@ public class ProjectRepository {
         return queryProjects("""
             SELECT DISTINCT p.project_id, p.project_name, p.description, p.status, p.priority, p.start_date, p.end_date, p.manager_id, p.company_id
             FROM public.projects p
-            JOIN public.employee_project ep ON ep.project_id = p.project_id
-            JOIN public.employees e ON e.employee_id = ep.employee_id
+            JOIN public.employee_project ep
+              ON ep.project_id = p.project_id AND ep.company_id = p.company_id
+            JOIN public.employees e
+              ON e.employee_id = ep.employee_id AND e.company_id = p.company_id
             WHERE ep.employee_id = ?
               AND p.company_id = ?
               AND e.company_id = ?

@@ -414,7 +414,7 @@
 
                 <th>Description</th>
 
-                <th>Employee ID</th>
+                <th>Assigned Employee</th>
 
                 <th>Priority</th>
 
@@ -1371,10 +1371,14 @@
                     : "-";
 
 
-            const employeeId =
-                task.assignedTo
-                    ? task.assignedTo.employeeId
-                    : "-";
+            const assignedEmployee = task.assignedTo;
+            const employeeId = assignedEmployee?.employeeId;
+            const employeeName = assignedEmployee
+                ? [assignedEmployee.firstName, assignedEmployee.lastName].filter(Boolean).join(" ") || "Name unavailable"
+                : "Unassigned";
+            const employeeDisplay = employeeId
+                ? employeeName + " (ID: " + employeeId + ")"
+                : employeeName;
 
 
             row.innerHTML = `
@@ -1396,7 +1400,7 @@
                 </td>
 
                 <td>
-                    ${employeeId}
+                    ${employeeDisplay}
                 </td>
 
                 <td>

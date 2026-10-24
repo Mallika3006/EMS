@@ -155,9 +155,15 @@
     const rows = filtered(), body = $("attendanceTable");
     body.replaceChildren();
     $("recordCount").textContent = rows.length;
-    for (const [id, status] of [["presentCount","present"],["absentCount","absent"],["lateCount","late"],["leaveCount","leave"]]) {
-      $(id).textContent = rows.filter(row => String(row.status || "").toLowerCase() === status).length;
-    }
+    const summaryCounters = [
+      { id: "presentCount", status: "present" },
+      { id: "absentCount", status: "absent" },
+      { id: "lateCount", status: "late" },
+      { id: "leaveCount", status: "leave" }
+    ];
+    summaryCounters.forEach(counter => {
+      $(counter.id).textContent = rows.filter(row => String(row.status || "").toLowerCase() === counter.status).length;
+    });
     const present = rows.filter(row => ["present","late"].includes(String(row.status || "").toLowerCase())).length;
     $("attendanceRate").textContent = rows.length ? Math.round(present / rows.length * 100) + "%" : "—";
     if (!rows.length) {

@@ -760,12 +760,13 @@ public class LeaveRepository {
              CallableStatement statement = connection.prepareCall(sql)) {
 
             statement.setInt(1, hrId);
-
             statement.setLong(2, companyContext.getCompanyId());
-            try (ResultSet resultSet = statement.executeQuery()) {
 
+            try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    leaves.add(mapLeave(resultSet));
+                    Leave leave = mapLeave(resultSet);
+                    populateDepartmentForHrLeave(leave, hrId);
+                    leaves.add(leave);
                 }
             }
 
@@ -774,6 +775,46 @@ public class LeaveRepository {
         }
 
         return leaves;
+    }
+
+    // The tenant-scoped leave function returns employee names. Enrich the employee
+    // object with its department for the HR table, keeping the query restricted
+    // to this company and the logged-in HR's assignment.
+    private void populateDepartmentForHrLeave(Leave leave, Integer hrId) throws SQLException {
+        if (leave.getEmployee() == null || leave.getEmployee().getEmployeeId() == null) {
+            return;
+        }
+
+        String sql = """
+            SELECT d.department_id, d.department_name
+            FROM public.employees e
+            LEFT JOIN public.departments d
+              ON d.department_id = e.department_id
+             AND d.company_id = e.company_id
+            WHERE e.employee_id = ?
+              AND e.hr_id = ?
+              AND e.company_id = ?
+            """;
+
+        try (Connection connection = dataSource.getConnection();
+             java.sql.PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, leave.getEmployee().getEmployeeId());
+            statement.setInt(2, hrId);
+            statement.setLong(3, companyContext.getCompanyId());
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    int departmentId = resultSet.getInt("department_id");
+                    if (!resultSet.wasNull()) {
+                        com.mallika.EmployeeManagementSystem.model.Department department =
+                                new com.mallika.EmployeeManagementSystem.model.Department();
+                        department.setDepartmentId(departmentId);
+                        department.setDepartmentName(resultSet.getString("department_name"));
+                        leave.getEmployee().setDepartment(department);
+                    }
+                }
+            }
+        }
     }
 
 

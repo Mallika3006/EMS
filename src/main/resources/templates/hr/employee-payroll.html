@@ -11,6 +11,13 @@
 
     <h1>Employee Payroll</h1>
 
+    <div class="card" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px">
+        <div><small>Total payroll records</small><h2 id="payrollRecordCount">0</h2></div>
+        <div><small>Total net salary (loaded records)</small><h2 id="payrollNetTotal">₹0.00</h2></div>
+        <div><small>Records currently shown</small><h2 id="payrollShownCount">0</h2></div>
+    </div>
+    <p id="payrollMessage" role="status" aria-live="polite"></p>
+
     <!-- ADD / EDIT PAYROLL -->
     <div class="card">
         <h2 id="formTitle">Add Payroll</h2>
@@ -85,6 +92,8 @@
 
         <br><br>
         <button type="button" onclick="loadPayrolls()">Show All</button>
+        <button type="button" onclick="loadPayrolls()">Refresh</button>
+        <button type="button" onclick="exportPayrollCsv()">Export CSV</button>
     </div>
 
     <!-- PAYROLL TABLE -->
@@ -123,6 +132,53 @@
 
     // Payroll records loaded from the HR-specific endpoint
     let hrPayrolls = [];
+    let visiblePayrolls = [];
+
+    function setPayrollMessage(message, isError = false) {
+        const element = document.getElementById("payrollMessage");
+        element.textContent = message;
+        element.style.color = isError ? "#b42318" : "";
+    }
+
+    function updatePayrollSummary(records = visiblePayrolls) {
+        document.getElementById("payrollRecordCount").textContent = hrPayrolls.length;
+        const netTotal = hrPayrolls.reduce((sum, p) => sum + (Number(p.netSalary) || 0), 0);
+        document.getElementById("payrollNetTotal").textContent =
+            netTotal.toLocaleString("en-IN", { style: "currency", currency: "INR" });
+        document.getElementById("payrollShownCount").textContent = records.length;
+    }
+
+    function exportPayrollCsv() {
+        if (!visiblePayrolls.length) {
+            setPayrollMessage("There are no payroll records to export.", true);
+            return;
+        }
+        const rows = [["Payroll ID", "Employee Name", "Employee ID", "Pay Month",
+            "Basic Salary", "Allowances", "Deductions", "Net Salary", "Payment Date"]];
+        visiblePayrolls.forEach(p => {
+            const employeeId = p.employee?.employeeId ?? p.employeeId ?? "";
+            const employeeName = [p.employee?.firstName, p.employee?.lastName]
+                .filter(Boolean).join(" ");
+            rows.push([p.payrollId ?? "", employeeName, employeeId, p.payMonth ?? "",
+                p.basicSalary ?? "", p.allowances ?? "", p.deductions ?? "",
+                p.netSalary ?? "", p.paymentDate ? String(p.paymentDate).slice(0, 10) : ""]);
+        });
+        const csv = rows.map(row => row.map(value => {
+            let text = String(value ?? "");
+            if (/^[=+@\\-\\t\\r]/.test(text)) text = "'" + text;
+            return '"' + text.replace(/"/g, '""') + '"';
+        }).join(",")).join("\r\n");
+        const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "employee-payroll.csv";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        setPayrollMessage("CSV export created.");
+    }
 
     // Automatically calculate net salary
     function calculateNetSalary() {
@@ -205,12 +261,12 @@
                 throw new Error(await response.text());
             }
 
-            alert(id ? "Payroll updated successfully." : "Payroll added successfully.");
+            setPayrollMessage(id ? "Payroll updated successfully." : "Payroll added successfully.");
             resetForm();
             await loadPayrolls();
         } catch (error) {
             console.error(error);
-            alert("Unable to save payroll. Check the backend logs.");
+            setPayrollMessage("Unable to save payroll: " + (error.message || "check backend logs"), true);
         }
     });
 
@@ -239,9 +295,11 @@
                 });
             }
             displayPayrolls(hrPayrolls);
+            updatePayrollSummary(hrPayrolls);
+            setPayrollMessage("Payroll records loaded successfully.");
         } catch (error) {
             console.error(error);
-            alert("Failed to load payroll records.");
+            setPayrollMessage("Failed to load payroll records. Check the backend logs.", true);
         }
     }
 
@@ -315,6 +373,8 @@
     function displayPayrolls(payrolls) {
         const body = document.getElementById("payrollTableBody");
         body.innerHTML = "";
+        visiblePayrolls = Array.isArray(payrolls) ? [...payrolls] : [];
+        updatePayrollSummary(visiblePayrolls);
 
         if (!payrolls || payrolls.length === 0) {
             body.innerHTML =
@@ -406,11 +466,11 @@
                 throw new Error(await response.text());
             }
 
-            alert("Payroll deleted successfully.");
+            setPayrollMessage("Payroll deleted successfully.");
             await loadPayrolls();
         } catch (error) {
             console.error(error);
-            alert("Failed to delete payroll record.");
+            setPayrollMessage("Failed to delete payroll record: " + (error.message || "check backend logs"), true);
         }
     }
 

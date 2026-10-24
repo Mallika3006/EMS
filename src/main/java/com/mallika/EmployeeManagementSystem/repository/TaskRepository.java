@@ -62,7 +62,7 @@ public class TaskRepository {
     }
 
     public Task updateTask(Integer id, Task details, Long companyId) {
-        String sql = "UPDATE public.tasks t SET task_name=?, description=?, priority=?, status=?, start_date=?, due_date=?, project_id=?, assigned_to=? WHERE task_id=? AND company_id=? AND (project_id IS NULL OR EXISTS (SELECT 1 FROM public.projects p WHERE p.project_id=? AND p.company_id=?)) AND (assigned_to IS NULL OR EXISTS (SELECT 1 FROM public.employees e WHERE e.employee_id=? AND e.company_id=?)) RETURNING t.*";
+        String sql = "UPDATE public.tasks t SET task_name=?, description=?, priority=?, status=?, start_date=?, due_date=?, project_id=?, assigned_to=? WHERE task_id=? AND company_id=? AND (project_id IS NULL OR EXISTS (SELECT 1 FROM public.projects p WHERE p.project_id=? AND p.company_id=?)) AND (assigned_to IS NULL OR EXISTS (SELECT 1 FROM public.employees e WHERE e.employee_id=? AND e.company_id=?))";
         try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, details.getTaskName());
             ps.setString(2, details.getDescription());
@@ -80,13 +80,19 @@ public class TaskRepository {
             ps.setLong(12, companyId);
             setNullableInt(ps, 13, employeeId);
             ps.setLong(14, companyId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return mapTask(rs);
+
+            int updatedRows = ps.executeUpdate();
+            if (updatedRows == 0) {
+                throw new RuntimeException(
+                        "Task not found in current company or project/employee belongs to another company: " + id);
             }
         } catch (SQLException e) {
             throw new RuntimeException("Error updating task with id: " + id, e);
         }
-        throw new RuntimeException("Task not found in current company or project/employee belongs to another company: " + id);
+
+        // Reload through the tenant-scoped query, which includes project and employee names.
+        return getTaskById(id).orElseThrow(() ->
+                new RuntimeException("Task updated but could not be reloaded: " + id));
     }
 
     public boolean deleteTask(Integer id, Long companyId) {

@@ -424,6 +424,53 @@ public class AttendanceRepository {
                 companyId(), hrId);
     }
 
+    // HR may correct only records belonging to active employees assigned to that HR user.
+    public Attendance updateAttendanceByHr(Integer attendanceId, Integer hrId, Attendance details) {
+        String sql = """
+            UPDATE attendance a
+            SET att_date = ?,
+                status = ?,
+                check_in_time = ?,
+                check_out_time = ?
+            WHERE a.attendance_id = ?
+              AND a.company_id = ?
+              AND EXISTS (
+                  SELECT 1
+                  FROM employees e
+                  JOIN users u ON u.employee_id = e.employee_id
+                             AND u.company_id = e.company_id
+                  WHERE e.employee_id = a.employee_id
+                    AND e.company_id = a.company_id
+                    AND e.hr_id = ?
+                    AND u.is_active = TRUE
+              )
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM attendance other
+                  WHERE other.employee_id = a.employee_id
+                    AND other.att_date = ?
+                    AND other.company_id = a.company_id
+                    AND other.attendance_id <> a.attendance_id
+              )
+            """;
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            setAttendanceFields(ps, details, 1);
+            ps.setInt(5, attendanceId);
+            ps.setLong(6, companyId());
+            ps.setInt(7, hrId);
+            ps.setDate(8, Date.valueOf(details.getAttDate()));
+            if (ps.executeUpdate() == 0) {
+                throw new IllegalArgumentException(
+                        "Attendance not found, employee is inactive/unassigned, or a record already exists for that date");
+            }
+            return getAttendanceById(attendanceId).orElseThrow(
+                    () -> new IllegalStateException("Updated attendance could not be retrieved"));
+        } catch (SQLException e) {
+            throw new RuntimeException("Error updating HR attendance record " + attendanceId, e);
+        }
+    }
+
     private List<Attendance> query(String sql, Object... parameters) {
         List<Attendance> results = new ArrayList<>();
 

@@ -71,9 +71,13 @@ public class ProjectRepository {
     }
 
     public Project updateProject(Integer id, Project details, Long companyId) {
+        if (details.getManagerId() != null) {
+            validateEmployeeCompany(details.getManagerId(), companyId);
+        }
         String sql = """
             UPDATE public.projects
-            SET project_name = ?, description = ?, status = ?, priority = ?, start_date = ?, end_date = ?
+            SET project_name = ?, description = ?, status = ?, priority = ?,
+                start_date = ?, end_date = ?, manager_id = ?
             WHERE project_id = ? AND company_id = ?
             RETURNING project_id, project_name, description, status, priority, start_date, end_date, manager_id, company_id
             """;
@@ -85,8 +89,9 @@ public class ProjectRepository {
             ps.setString(4, details.getPriority());
             setDate(ps, 5, details.getStartDate());
             setDate(ps, 6, details.getEndDate());
-            ps.setInt(7, id);
-            ps.setLong(8, companyId);
+            setNullableInt(ps, 7, details.getManagerId());
+            ps.setInt(8, id);
+            ps.setLong(9, companyId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     Project updated = mapProject(rs);

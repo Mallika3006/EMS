@@ -112,7 +112,10 @@
                     <td>${escapeHtml(project.priority || "MEDIUM")}</td>
                     <td>${Number(project.progressPercent ?? 0)}%</td>
                     <td>${Number(project.completedTasks ?? 0)} / ${Number(project.totalTasks ?? 0)}</td>
-                    <td>${Number(project.assignedEmployeeCount ?? 0)}</td>
+                    <td>
+                        ${Number(project.assignedEmployeeCount ?? 0)}
+                        <button type="button" onclick="viewProjectMembers(${project.projectId})">View members</button>
+                    </td>
                     <td>
                         <select id="project-member-${project.projectId}">
                             <option value="">Select employee</option>
@@ -183,6 +186,27 @@
         }
     }
 
+
+    async function viewProjectMembers(projectId) {
+        try {
+            const response = await fetch("/projects/" + projectId + "/members", {
+                credentials: "same-origin"
+            });
+            if (!response.ok) {
+                throw new Error((await response.text()) || "Could not load project members");
+            }
+            const members = await response.json();
+            const message = members.length
+                ? members.map(member => {
+                    const name = [member.firstName, member.lastName].filter(Boolean).join(" ") || "Name unavailable";
+                    return name + " (ID: " + member.employeeId + ")";
+                }).join("\\n")
+                : "No active employees are assigned to this project.";
+            alert("Project members\\n\\n" + message);
+        } catch (error) {
+            alert("Could not load project members: " + error.message);
+        }
+    }
 
     // Open tasks for the selected project
     function viewProjectTasks(projectId) {

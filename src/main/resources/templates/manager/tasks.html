@@ -1382,7 +1382,11 @@
                 </td>
 
                 <td>
-                    ${task.status || "-"}
+                    <select id="taskStatus-${task.taskId}" aria-label="Status for task ${task.taskId}">
+                        <option value="Pending" ${task.status === "Pending" ? "selected" : ""}>Pending</option>
+                        <option value="In Progress" ${task.status === "In Progress" ? "selected" : ""}>In Progress</option>
+                        <option value="Completed" ${task.status === "Completed" ? "selected" : ""}>Completed</option>
+                    </select>
                 </td>
 
                 <td>
@@ -1403,6 +1407,11 @@
                     <button
                         onclick="deleteTask(${task.taskId})">
                         Delete
+                    </button>
+
+                    <button
+                        onclick="updateTaskStatus(${task.taskId})">
+                        Save Status
                     </button>
 
                 </td>
@@ -1447,6 +1456,40 @@
         window.location.href =
             url;
 
+    }
+
+
+    /* =====================================================
+       UPDATE TASK STATUS
+       Managers can move tasks between Pending, In Progress,
+       and Completed without editing the rest of the task.
+       ===================================================== */
+
+    async function updateTaskStatus(taskId) {
+        const statusSelect = document.getElementById("taskStatus-" + taskId);
+        if (!statusSelect) {
+            alert("Could not find the selected task status.");
+            return;
+        }
+
+        try {
+            const params = new URLSearchParams({ status: statusSelect.value });
+            const response = await fetch(
+                "/tasks/" + taskId + "/status?" + params.toString(),
+                { method: "PATCH" }
+            );
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || "Failed to update task status");
+            }
+
+            await loadTeamTasks();
+            alert("Task status updated successfully.");
+        } catch (error) {
+            console.error(error);
+            alert("Failed to update task status: " + error.message);
+        }
     }
 
 

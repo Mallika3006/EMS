@@ -95,6 +95,24 @@ public class TaskRepository {
                 new RuntimeException("Task updated but could not be reloaded: " + id));
     }
 
+    public Task updateTaskStatus(Integer id, String status, Long companyId) {
+        String sql = "UPDATE public.tasks SET status=? WHERE task_id=? AND company_id=?";
+        try (Connection c = dataSource.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, status);
+            ps.setInt(2, id);
+            ps.setLong(3, companyId);
+            if (ps.executeUpdate() == 0) {
+                throw new RuntimeException("Task not found in current company: " + id);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error updating status for task id: " + id, e);
+        }
+
+        return getTaskById(id).orElseThrow(() ->
+                new RuntimeException("Task status updated but task could not be reloaded: " + id));
+    }
+
     public boolean deleteTask(Integer id, Long companyId) {
         String sql = "DELETE FROM public.tasks WHERE task_id=? AND company_id=?";
         try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {

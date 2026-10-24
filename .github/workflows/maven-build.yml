@@ -100,6 +100,7 @@ jobs:
         run: |
           psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/tests/multicompany_migration_fixture.sql
           psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/multicompany_hardening.sql
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/project_tracking_migration.sql
           psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/tests/multicompany_migration_assertions.sql
           psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/department_company_functions.sql
           psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file sql/department_functions.sql

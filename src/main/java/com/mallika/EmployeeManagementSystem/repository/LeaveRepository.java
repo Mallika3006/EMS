@@ -855,36 +855,46 @@ public class LeaveRepository {
         ensureLeaveInCompany(leaveId);
         validateEmployeeInCompany(hrId);
 
-        String sql =
-                "SELECT * FROM public.update_hr_leave_status(?, ?, ?, ?)";
+        String sql = """
+            UPDATE public.leaves AS l
+               SET status = UPPER(?)
+              FROM public.employees AS e
+              JOIN public.users AS u
+                ON u.employee_id = e.employee_id
+               AND u.company_id = e.company_id
+               AND u.is_active = TRUE
+             WHERE l.employee_id = e.employee_id
+               AND l.leave_id = ?
+               AND e.hr_id = ?
+               AND e.company_id = ?
+               AND l.company_id = ?
+               AND UPPER(l.status) = 'PENDING'
+            RETURNING l.*
+            """;
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement =
-                     connection.prepareCall(sql)) {
+             java.sql.PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            statement.setInt(1, leaveId);
-            statement.setInt(2, hrId);
-            statement.setString(3, status);
-
+            statement.setString(1, status);
+            statement.setInt(2, leaveId);
+            statement.setInt(3, hrId);
             statement.setLong(4, companyContext.getCompanyId());
-            try (ResultSet resultSet = statement.executeQuery()) {
+            statement.setLong(5, companyContext.getCompanyId());
 
+            try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
                     return mapLeave(resultSet);
                 }
             }
-
         } catch (SQLException e) {
-
             throw new RuntimeException(
-                    "Error updating HR leave status",
+                    "Error updating HR leave status: " + e.getMessage(),
                     e
             );
         }
 
         throw new RuntimeException(
-                "Leave request not found, not pending, " +
-                        "or not assigned to this HR"
+                "Leave request not found, not pending, or not assigned to this HR"
         );
     }
 

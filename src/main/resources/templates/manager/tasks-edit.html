@@ -470,10 +470,7 @@
                 task.description || "";
 
 
-            document.getElementById(
-                "priority"
-            ).value =
-                const normalizedPriority = String(task.priority || "Medium").trim().toLowerCase();
+            const normalizedPriority = String(task.priority || "Medium").trim().toLowerCase();
             document.getElementById("priority").value =
                 normalizedPriority.charAt(0).toUpperCase() + normalizedPriority.slice(1);
 

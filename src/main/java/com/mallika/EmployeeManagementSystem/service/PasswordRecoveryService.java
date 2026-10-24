@@ -78,13 +78,13 @@ public class PasswordRecoveryService {
         }
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = IllegalArgumentException.class)
     public String verifyOtp(String username,String channel,String otp) {
         if(!"EMAIL".equals(channel) && !"SMS".equals(channel)) throw new IllegalArgumentException("Choose email or SMS.");
         List<OtpChallenge> rows=jdbc.query("""
             SELECT p.request_id,p.user_id,p.company_id,p.otp_hash,p.attempts,p.expires_at,p.used_at
             FROM password_reset_requests p JOIN public.users u ON u.user_id=p.user_id AND u.company_id=p.company_id
-            WHERE LOWER(u.username)=LOWER(?) AND p.channel=? ORDER BY p.created_at DESC LIMIT 1
+            WHERE LOWER(u.username)=LOWER(?) AND u.is_active=TRUE AND p.channel=? ORDER BY p.created_at DESC LIMIT 1
             """,(rs,row)->new OtpChallenge(rs.getLong("request_id"),rs.getInt("user_id"),rs.getLong("company_id"),
             rs.getString("otp_hash"),rs.getInt("attempts"),rs.getTimestamp("expires_at").toInstant(),
             rs.getTimestamp("used_at")==null?null:rs.getTimestamp("used_at").toInstant()),username,channel);

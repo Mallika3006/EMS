@@ -788,7 +788,7 @@ public class LeaveRepository {
         String sql = """
             SELECT d.department_id, d.department_name
             FROM public.employees e
-            LEFT JOIN public.departments d
+            LEFT JOIN public.department d
               ON d.department_id = e.department_id
              AND d.company_id = e.company_id
             WHERE e.employee_id = ?

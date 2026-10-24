@@ -135,9 +135,6 @@ public class PayrollService {
         payroll.setDeductions(deductions);
         payroll.setNetSalary(gross.subtract(deductions).setScale(2, java.math.RoundingMode.HALF_UP));
 
-        if (payroll.getPaymentDate() != null && payroll.getPaymentDate().isBefore(LocalDate.of(2000, 1, 1))) {
-            throw new IllegalArgumentException("Payment date is invalid");
-        }
     }
 
     private BigDecimal requireNonNegative(String field, BigDecimal value) {

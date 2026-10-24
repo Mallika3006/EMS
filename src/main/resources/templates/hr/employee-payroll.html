@@ -153,8 +153,10 @@
             setPayrollMessage("There are no payroll records to export.", true);
             return;
         }
-        const rows = [["Payroll ID", "Employee Name", "Employee ID", "Pay Month",
-            "Basic Salary", "Allowances", "Deductions", "Net Salary", "Payment Date"]];
+        // Avoid a JavaScript [[...]] sequence here: Thymeleaf interprets it as an inlined expression.
+        const rows = [];
+        rows.push(["Payroll ID", "Employee Name", "Employee ID", "Pay Month",
+            "Basic Salary", "Allowances", "Deductions", "Net Salary", "Payment Date"]);
         visiblePayrolls.forEach(p => {
             const employeeId = p.employee?.employeeId ?? p.employeeId ?? "";
             const employeeName = [p.employee?.firstName, p.employee?.lastName]

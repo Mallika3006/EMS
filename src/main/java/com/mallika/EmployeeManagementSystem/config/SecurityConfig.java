@@ -71,6 +71,8 @@ public class SecurityConfig {
                 .requestMatchers("/leaves/hr/**").hasRole("HR")
                 .requestMatchers(HttpMethod.PUT, "/leaves/*").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/leaves/*").hasRole("ADMIN")
+                // Keep the exact manager queue ahead of the generic single-segment Admin leave matcher.
+                .requestMatchers(HttpMethod.GET, "/leaves/manager").hasRole("MANAGER")
                 .requestMatchers(HttpMethod.GET, "/leaves", "/leaves/*").hasRole("ADMIN")
                 .requestMatchers("/employees/**").hasAnyRole("ADMIN", "HR")
                 .requestMatchers("/departments/**").hasAnyRole("ADMIN", "HR")

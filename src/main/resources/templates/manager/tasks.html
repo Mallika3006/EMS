@@ -414,7 +414,7 @@
 
                 <th>Description</th>
 
-                <th>Employee ID</th>
+                <th>Assigned Employee</th>
 
                 <th>Priority</th>
 
@@ -749,6 +749,11 @@
                     ).value;
 
 
+                if (!projectId && !employeeId) {
+                    alert("Select a project or assign this task to one of your active team members.");
+                    return;
+                }
+
                 /*
                  * Create task without project first.
                  */
@@ -1065,49 +1070,23 @@
         `;
 
 
-        const employeeIds =
-            new Set();
-
+        const employeesById = new Map();
 
         allTeamTasks.forEach(task => {
-
-            if (
-                task.assignedTo &&
-                task.assignedTo.employeeId
-            ) {
-
-                employeeIds.add(
-                    task.assignedTo.employeeId
-                );
-
+            const employee = task.assignedTo;
+            if (employee && employee.employeeId) {
+                employeesById.set(employee.employeeId, employee);
             }
-
         });
 
-
-        employeeIds.forEach(employeeId => {
-
-            const option =
-                document.createElement(
-                    "option"
-                );
-
-
-            option.value =
-                employeeId;
-
-
-            option.textContent =
-                "Employee " +
-                employeeId;
-
-
-            employeeSelect.appendChild(
-                option
-            );
-
+        employeesById.forEach(employee => {
+            const option = document.createElement("option");
+            option.value = employee.employeeId;
+            const name = [employee.firstName, employee.lastName]
+                .filter(Boolean).join(" ") || "Name unavailable";
+            option.textContent = name + " (ID: " + employee.employeeId + ")";
+            employeeSelect.appendChild(option);
         });
-
     }
 
 
@@ -1366,10 +1345,14 @@
                     : "-";
 
 
-            const employeeId =
-                task.assignedTo
-                    ? task.assignedTo.employeeId
-                    : "-";
+            const assignedEmployee = task.assignedTo;
+            const employeeId = assignedEmployee?.employeeId;
+            const employeeName = assignedEmployee
+                ? [assignedEmployee.firstName, assignedEmployee.lastName].filter(Boolean).join(" ") || "Name unavailable"
+                : "Unassigned";
+            const employeeDisplay = employeeId
+                ? employeeName + " (ID: " + employeeId + ")"
+                : employeeName;
 
 
             row.innerHTML = `
@@ -1391,7 +1374,7 @@
                 </td>
 
                 <td>
-                    ${employeeId}
+                    ${employeeDisplay}
                 </td>
 
                 <td>

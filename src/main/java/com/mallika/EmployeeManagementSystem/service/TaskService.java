@@ -350,15 +350,28 @@ public class TaskService {
 
     private void validateManagerTaskAssignments(
             Task task, Integer managerId, Long companyId) {
-        if (task.getProject() != null && task.getProject().getProjectId() != null
-                && !taskRepository.isProjectManagedBy(
-                        task.getProject().getProjectId(), managerId, companyId)) {
+        if (task == null) {
+            throw new IllegalArgumentException("Task details are required");
+        }
+
+        Integer projectId = task.getProject() == null
+                ? null : task.getProject().getProjectId();
+        Integer employeeId = task.getAssignedTo() == null
+                ? null : task.getAssignedTo().getEmployeeId();
+
+        // Keep manager-created tasks connected to their visible project/team scope.
+        if (projectId == null && employeeId == null) {
+            throw new IllegalArgumentException(
+                    "Select one of your projects or assign the task to an active direct report.");
+        }
+
+        if (projectId != null
+                && !taskRepository.isProjectManagedBy(projectId, managerId, companyId)) {
             throw new AccessDeniedException(
                     "Managers can only assign tasks to their own projects");
         }
-        if (task.getAssignedTo() != null && task.getAssignedTo().getEmployeeId() != null
-                && !taskRepository.isEmployeeManagedBy(
-                        task.getAssignedTo().getEmployeeId(), managerId, companyId)) {
+        if (employeeId != null
+                && !taskRepository.isEmployeeManagedBy(employeeId, managerId, companyId)) {
             throw new AccessDeniedException(
                     "Managers can only assign tasks to their direct reports");
         }

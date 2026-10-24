@@ -1,21 +1,127 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Manager Dashboard | Employee Management System</title><link rel="stylesheet" th:href="@{/style.css}"></head>
-<body><div class="app-shell">
-<aside class="app-sidebar"><a class="app-brand" th:href="@{/manager-dashboard}" style="text-decoration:none">EMS <small>Employee Management System</small></a>
-<nav class="app-nav" aria-label="Manager navigation"><span class="nav-section">Workspace</span><a th:href="@{/manager-dashboard}" aria-current="page">⌂ &nbsp; Overview</a><a th:href="@{/manager/profile}">♙ &nbsp; My profile</a>
-<span class="nav-section">My account</span><a th:href="@{/manager/my-attendance}">◷ &nbsp; My attendance</a><a th:href="@{/manager/my-leaves}">▣ &nbsp; My leaves</a><a th:href="@{/manager/my-payroll}">₹ &nbsp; My payroll</a>
-<span class="nav-section">Workflows</span><a th:href="@{/manager/leaves}">▣ &nbsp; Leave requests</a><a th:href="@{/manager/attendance}">◷ &nbsp; Employee attendance</a><a th:href="@{/manager/projects}">▱ &nbsp; Projects</a><a th:href="@{/manager/tasks}">☷ &nbsp; Tasks</a></nav>
-<div class="app-sidebar-footer"><form th:action="@{/logout}" method="post"><button type="submit">↪ &nbsp; Log out</button></form></div></aside>
-<main class="app-main"><header class="app-topbar"><div><h1>Manager workspace</h1><p>Coordinate assigned work and review supported employee workflows.</p></div><div><span class="role-pill">Manager</span><p>Signed in as <strong sec:authentication="name">Manager</strong></p></div></header>
-<section class="dashboard-intro"><h2>Your work, in one place</h2><p>Manage only the employee, project, task, attendance, and leave actions permitted by your account. Project creation remains in the Admin workflow.</p></section>
-<section class="dashboard-grid" aria-label="Manager modules">
-<article class="dashboard-card"><span class="card-icon">◎</span><h3>My profile</h3><p>View your profile details.</p><a th:href="@{/manager/profile}">Open profile →</a></article>
-<article class="dashboard-card"><span class="card-icon">◷</span><h3>My attendance</h3><p>Review your attendance records.</p><a th:href="@{/manager/my-attendance}">View attendance →</a></article>
-<article class="dashboard-card"><span class="card-icon">▣</span><h3>Leave requests</h3><p>Review leave requests available to your role.</p><a th:href="@{/manager/leaves}">Review leaves →</a></article>
-<article class="dashboard-card"><span class="card-icon">◷</span><h3>Employee attendance</h3><p>Open the existing manager attendance workflow.</p><a th:href="@{/manager/attendance}">Review attendance →</a></article>
-<article class="dashboard-card"><span class="card-icon">▱</span><h3>Projects</h3><p>View and manage permitted project assignments.</p><a th:href="@{/manager/projects}">Open projects →</a></article>
-<article class="dashboard-card"><span class="card-icon">☷</span><h3>Tasks</h3><p>Manage task workflows available to managers.</p><a th:href="@{/manager/tasks}">Open tasks →</a></article>
-<article class="dashboard-card"><span class="card-icon">▣</span><h3>My leaves</h3><p>View your own leave records.</p><a th:href="@{/manager/my-leaves}">View my leaves →</a></article>
-<article class="dashboard-card"><span class="card-icon">₹</span><h3>My payroll</h3><p>Review your own payroll records.</p><a th:href="@{/manager/my-payroll}">View payroll →</a></article>
-</section><footer style="padding:24px 0 8px"><small>Employee Management System · Manager workspace</small></footer></main></div></body></html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Manager Dashboard | Employee Management System</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+    <style>
+        .manager-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr)); gap:14px; margin:20px 0 28px; }
+        .manager-metric { padding:18px; border:1px solid var(--line); border-radius:12px; background:var(--surface); }
+        .manager-metric span { display:block; color:var(--muted); font-size:.88rem; }
+        .manager-metric strong { display:block; margin-top:8px; font-size:1.8rem; color:var(--ink); }
+        .manager-metric a { display:inline-block; margin-top:8px; font-size:.88rem; }
+        .manager-dashboard-message { min-height:1.5em; margin:8px 0; }
+        .manager-overview-actions { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+        .manager-overview-actions button { margin:0; }
+    </style>
+</head>
+<body>
+<div class="app-shell">
+    <aside class="app-sidebar">
+        <a class="app-brand" th:href="@{/manager-dashboard}" style="text-decoration:none">EMS <small>Employee Management System</small></a>
+        <nav class="app-nav" aria-label="Manager navigation">
+            <span class="nav-section">Workspace</span>
+            <a th:href="@{/manager-dashboard}" aria-current="page">⌂ &nbsp; Overview</a>
+            <a th:href="@{/manager/profile}">♙ &nbsp; My profile</a>
+            <span class="nav-section">My account</span>
+            <a th:href="@{/manager/my-attendance}">◷ &nbsp; My attendance</a>
+            <a th:href="@{/manager/my-leaves}">▣ &nbsp; My leaves</a>
+            <a th:href="@{/manager/my-payroll}">₹ &nbsp; My payroll</a>
+            <span class="nav-section">Workflows</span>
+            <a th:href="@{/manager/leaves}">▣ &nbsp; Leave requests</a>
+            <a th:href="@{/manager/attendance}">◷ &nbsp; Employee attendance</a>
+            <a th:href="@{/manager/projects}">▱ &nbsp; Projects</a>
+            <a th:href="@{/manager/tasks}">☷ &nbsp; Tasks</a>
+        </nav>
+        <div class="app-sidebar-footer"><form th:action="@{/logout}" method="post"><button type="submit">↪ &nbsp; Log out</button></form></div>
+    </aside>
+    <main class="app-main">
+        <header class="app-topbar">
+            <div><h1>Manager workspace</h1><p>Coordinate your active team and review assigned work.</p></div>
+            <div><span class="role-pill">Manager</span><p>Signed in as <strong sec:authentication="name">Manager</strong></p></div>
+        </header>
+        <section class="dashboard-intro">
+            <div class="manager-overview-actions">
+                <div><h2>Your work, in one place</h2><p>Use the overview to check team workload, attendance, projects and pending leave requests.</p></div>
+                <button id="refreshOverview" class="btn-secondary" type="button">Refresh overview</button>
+            </div>
+            <p id="overviewMessage" class="manager-dashboard-message" role="status" aria-live="polite"></p>
+        </section>
+        <section class="manager-metrics" aria-label="Manager overview counts">
+            <article class="manager-metric"><span>Active team members</span><strong id="teamCount">—</strong><a th:href="@{/manager/attendance}">Review attendance →</a></article>
+            <article class="manager-metric"><span>Managed projects</span><strong id="projectCount">—</strong><a th:href="@{/manager/projects}">Open projects →</a></article>
+            <article class="manager-metric"><span>Open tasks</span><strong id="openTaskCount">—</strong><a th:href="@{/manager/tasks}">Manage tasks →</a></article>
+            <article class="manager-metric"><span>Overdue tasks</span><strong id="overdueTaskCount">—</strong><a th:href="@{/manager/tasks}">Review overdue work →</a></article>
+            <article class="manager-metric"><span>Pending leave requests</span><strong id="pendingLeaveCount">—</strong><a th:href="@{/manager/leaves}">Review requests →</a></article>
+            <article class="manager-metric"><span>Team attendance today</span><strong id="attendanceTodayCount">—</strong><a th:href="@{/manager/attendance}">Open attendance →</a></article>
+        </section>
+        <section class="dashboard-grid" aria-label="Manager modules">
+            <article class="dashboard-card"><span class="card-icon">◎</span><h3>My profile</h3><p>View and update your profile details.</p><a th:href="@{/manager/profile}">Open profile →</a></article>
+            <article class="dashboard-card"><span class="card-icon">◷</span><h3>My attendance</h3><p>Check in/out and review your attendance history.</p><a th:href="@{/manager/my-attendance}">View attendance →</a></article>
+            <article class="dashboard-card"><span class="card-icon">▣</span><h3>Leave requests</h3><p>Review and approve or reject pending requests from your team.</p><a th:href="@{/manager/leaves}">Review leaves →</a></article>
+            <article class="dashboard-card"><span class="card-icon">◷</span><h3>Employee attendance</h3><p>Review attendance for your active direct reports and record corrections.</p><a th:href="@{/manager/attendance}">Review team attendance →</a></article>
+            <article class="dashboard-card"><span class="card-icon">▱</span><h3>Projects</h3><p>Review projects assigned to you and assign them to your active team members.</p><a th:href="@{/manager/projects}">Open projects →</a></article>
+            <article class="dashboard-card"><span class="card-icon">☷</span><h3>Tasks</h3><p>Create, assign, filter, update and track tasks for your projects and team.</p><a th:href="@{/manager/tasks}">Open tasks →</a></article>
+            <article class="dashboard-card"><span class="card-icon">▣</span><h3>My leaves</h3><p>Apply for leave and review pending, approved, rejected or withdrawn requests.</p><a th:href="@{/manager/my-leaves}">View my leaves →</a></article>
+            <article class="dashboard-card"><span class="card-icon">₹</span><h3>My payroll</h3><p>Review your own payroll records.</p><a th:href="@{/manager/my-payroll}">View payroll →</a></article>
+        </section>
+        <footer style="padding:24px 0 8px"><small>Employee Management System · Manager workspace</small></footer>
+    </main>
+</div>
+<script>
+(() => {
+    const byId = id => document.getElementById(id);
+    const today = () => {
+        const date = new Date();
+        return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+    };
+    async function getJson(url) {
+        const response = await fetch(url, { credentials: "same-origin", headers: { "Accept": "application/json" } });
+        const body = await response.text();
+        let data;
+        try { data = body ? JSON.parse(body) : null; } catch { data = body; }
+        if (!response.ok) {
+            const errorMessage = data && typeof data === "object" ? (data.message || data.error) : data;
+            throw new Error(errorMessage || ("Request failed (HTTP " + response.status + ")"));
+        }
+        return data;
+    }
+    async function loadOverview() {
+        const button = byId("refreshOverview");
+        const message = byId("overviewMessage");
+        button.disabled = true;
+        message.textContent = "Loading your latest overview…";
+        message.className = "manager-dashboard-message";
+        const requests = [
+            ["teamCount", "/employees/manager/my-team", data => (data || []).length],
+            ["projectCount", "/projects/manager/team", data => (data || []).length],
+            ["openTaskCount", "/tasks/manager/team", data => (data || []).filter(task => !["completed", "cancelled"].includes(String(task.status || "").trim().toLowerCase().replace(/[_-]+/g, " "))).length],
+            ["overdueTaskCount", "/tasks/manager/team", data => (data || []).filter(task => task.dueDate && task.dueDate < today() && !["completed", "cancelled"].includes(String(task.status || "").trim().toLowerCase().replace(/[_-]+/g, " "))).length],
+            ["pendingLeaveCount", "/leaves/manager", data => (data || []).filter(leave => String(leave.status || "").toLowerCase() === "pending").length],
+            ["attendanceTodayCount", "/attendance/manager/team", data => (data || []).filter(record => String(record.attDate || "") === today()).length]
+        ];
+        const results = await Promise.allSettled(requests.map(async ([id, url, count]) => {
+            const data = await getJson(url);
+            byId(id).textContent = count(data);
+        }));
+        const failed = [];
+        results.forEach((result, index) => {
+            if (result.status === "rejected") {
+                byId(requests[index][0]).textContent = "—";
+                failed.push(requests[index][0]);
+                console.error("Manager overview request failed:", requests[index][1], result.reason);
+            }
+        });
+        message.textContent = failed.length
+            ? "Some overview counts could not be loaded. Open the relevant module for details, or refresh to try again."
+            : "Overview updated successfully.";
+        if (failed.length) message.className = "manager-dashboard-message error-message";
+        button.disabled = false;
+    }
+    byId("refreshOverview").addEventListener("click", loadOverview);
+    loadOverview();
+})();
+</script>
+</body>
+</html>

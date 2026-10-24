@@ -753,70 +753,65 @@ public class LeaveRepository {
         validateEmployeeInCompany(hrId);
 
         List<Leave> leaves = new ArrayList<>();
+        long companyId = companyContext.getCompanyId();
 
-        String sql = "SELECT * FROM public.get_leaves_by_hr(?, ?)";
-
-        try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
-
-            statement.setInt(1, hrId);
-            statement.setLong(2, companyContext.getCompanyId());
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    Leave leave = mapLeave(resultSet);
-                    populateDepartmentForHrLeave(leave, hrId);
-                    leaves.add(leave);
-                }
-            }
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Error fetching HR employee leaves", e);
-        }
-
-        return leaves;
-    }
-
-    // The tenant-scoped leave function returns employee names. Enrich the employee
-    // object with its department for the HR table, keeping the query restricted
-    // to this company and the logged-in HR's assignment.
-    private void populateDepartmentForHrLeave(Leave leave, Integer hrId) throws SQLException {
-        if (leave.getEmployee() == null || leave.getEmployee().getEmployeeId() == null) {
-            return;
-        }
-
+        // Query the tenant-scoped records directly instead of depending on a
+        // PostgreSQL function that may not yet exist in an already-created DB.
+        // Only active employees assigned to this HR in this company are returned.
         String sql = """
-            SELECT d.department_id, d.department_name
-            FROM public.employees e
+            SELECT l.leave_id,
+                   l.from_date,
+                   l.to_date,
+                   l.reason,
+                   l.status,
+                   l.employee_id,
+                   e.first_name AS employee_first_name,
+                   e.last_name AS employee_last_name,
+                   d.department_id,
+                   d.department_name
+            FROM public.leaves l
+            JOIN public.employees e
+              ON e.employee_id = l.employee_id
+             AND e.company_id = l.company_id
+            JOIN public.users u
+              ON u.employee_id = e.employee_id
+             AND u.company_id = e.company_id
+             AND u.is_active = TRUE
             LEFT JOIN public.department d
               ON d.department_id = e.department_id
              AND d.company_id = e.company_id
-            WHERE e.employee_id = ?
-              AND e.hr_id = ?
+            WHERE e.hr_id = ?
               AND e.company_id = ?
+              AND l.company_id = ?
+            ORDER BY l.leave_id DESC
             """;
 
         try (Connection connection = dataSource.getConnection();
              java.sql.PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, leave.getEmployee().getEmployeeId());
-            statement.setInt(2, hrId);
-            statement.setLong(3, companyContext.getCompanyId());
+            statement.setInt(1, hrId);
+            statement.setLong(2, companyId);
+            statement.setLong(3, companyId);
 
             try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
+                while (resultSet.next()) {
+                    Leave leave = mapLeave(resultSet);
                     int departmentId = resultSet.getInt("department_id");
-                    if (!resultSet.wasNull()) {
+                    if (!resultSet.wasNull() && leave.getEmployee() != null) {
                         com.mallika.EmployeeManagementSystem.model.Department department =
                                 new com.mallika.EmployeeManagementSystem.model.Department();
                         department.setDepartmentId(departmentId);
                         department.setDepartmentName(resultSet.getString("department_name"));
                         leave.getEmployee().setDepartment(department);
                     }
+                    leaves.add(leave);
                 }
             }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error fetching HR employee leaves: " + e.getMessage(), e);
         }
-    }
 
+        return leaves;
+    }
 
 // =========================================================
 // DELETE LEAVE BY HR

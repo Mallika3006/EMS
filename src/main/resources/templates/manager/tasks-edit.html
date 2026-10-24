@@ -40,7 +40,7 @@
 
             <br>
 
-            <select id="projectId" required>
+            <select id="projectId">
 
                 <option value="">
                     Select Project
@@ -93,7 +93,7 @@
 
             <br>
 
-            <select id="employeeId" required>
+            <select id="employeeId">
 
                 <option value="">
                     Select Employee
@@ -473,13 +473,19 @@
             document.getElementById(
                 "priority"
             ).value =
-                task.priority || "";
+                const normalizedPriority = String(task.priority || "Medium").trim().toLowerCase();
+            document.getElementById("priority").value =
+                normalizedPriority.charAt(0).toUpperCase() + normalizedPriority.slice(1);
 
-
-            document.getElementById(
-                "status"
-            ).value =
-                task.status || "";
+            const normalizedStatus = String(task.status || "Pending")
+                .trim().replace(/[_-]+/g, " ").toLowerCase();
+            const statusLabels = {
+                "pending": "Pending",
+                "in progress": "In Progress",
+                "completed": "Completed"
+            };
+            document.getElementById("status").value =
+                statusLabels[normalizedStatus] || "Pending";
 
 
             document.getElementById(
@@ -585,21 +591,20 @@
                         "dueDate"
                     ).value,
 
-                    project: {
-
-                        projectId:
-                            parseInt(projectId)
-
-                    },
-
-                    assignedTo: {
-
-                        employeeId:
-                            parseInt(employeeId)
-
-                    }
-
                 };
+
+                if (!projectId && !employeeId) {
+                    alert("Select a project or assign this task to one of your active team members.");
+                    return;
+                }
+
+                if (projectId) {
+                    task.project = { projectId: Number(projectId) };
+                }
+
+                if (employeeId) {
+                    task.assignedTo = { employeeId: Number(employeeId) };
+                }
 
 
                 try {

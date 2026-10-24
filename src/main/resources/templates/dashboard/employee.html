@@ -1,18 +1,215 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Employee Dashboard | Employee Management System</title><link rel="stylesheet" th:href="@{/style.css}"></head>
-<body><div class="app-shell">
-<aside class="app-sidebar"><a class="app-brand" th:href="@{/employee-dashboard}" style="text-decoration:none">EMS <small>Employee Management System</small></a>
-<nav class="app-nav" aria-label="Employee navigation"><span class="nav-section">Workspace</span><a th:href="@{/employee-dashboard}" aria-current="page">⌂ &nbsp; Overview</a><a th:href="@{/my-profile}">♙ &nbsp; My profile</a><a th:href="@{/my-department}">▦ &nbsp; My department</a><span class="nav-section">My work</span><a th:href="@{/my-attendance}">◷ &nbsp; Attendance</a><a th:href="@{/my-leaves}">▣ &nbsp; Leaves</a><a th:href="@{/my-payroll}">₹ &nbsp; Payroll</a><a th:href="@{/my-projects}">▱ &nbsp; My projects</a><a th:href="@{/my-tasks}">☷ &nbsp; My tasks</a></nav>
-<div class="app-sidebar-footer"><form th:action="@{/logout}" method="post"><button type="submit">↪ &nbsp; Log out</button></form></div></aside>
-<main class="app-main"><header class="app-topbar"><div><h1>My dashboard</h1><p>Your employee self-service workspace.</p></div><div><span class="role-pill">Employee</span><p>Welcome, <strong sec:authentication="name">Employee</strong></p></div></header>
-<section class="dashboard-intro"><h2>Welcome back</h2><p>Quick access to your profile, attendance, leave history, payroll, and assigned work. Your records are loaded through the existing secure EMS backend.</p></section>
-<section class="dashboard-grid" aria-label="Employee self-service">
-<article class="dashboard-card"><span class="card-icon">◎</span><h3>My profile</h3><p>View your personal and employment details.</p><a th:href="@{/my-profile}">View profile →</a></article>
-<article class="dashboard-card"><span class="card-icon">▦</span><h3>My department</h3><p>Review your department information.</p><a th:href="@{/my-department}">View department →</a></article>
-<article class="dashboard-card"><span class="card-icon">◷</span><h3>Attendance</h3><p>Check your attendance records.</p><a th:href="@{/my-attendance}">View attendance →</a></article>
-<article class="dashboard-card"><span class="card-icon">▣</span><h3>Leave requests</h3><p>Apply for leave and review your records where supported.</p><a th:href="@{/my-leaves}">Manage my leaves →</a></article>
-<article class="dashboard-card"><span class="card-icon">₹</span><h3>Payroll</h3><p>Review payroll information available to your account.</p><a th:href="@{/my-payroll}">View payroll →</a></article>
-<article class="dashboard-card"><span class="card-icon">▱</span><h3>My projects</h3><p>See projects assigned to you.</p><a th:href="@{/my-projects}">View projects →</a></article>
-<article class="dashboard-card"><span class="card-icon">☷</span><h3>My tasks</h3><p>Review your assigned tasks.</p><a th:href="@{/my-tasks}">View tasks →</a></article>
-</section><footer style="padding:24px 0 8px"><small>Employee Management System · Employee workspace</small></footer></main></div></body></html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Employee Dashboard | Employee Management System</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+    <style>
+        .employee-welcome { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:16px; }
+        .employee-welcome p { margin-bottom:0; }
+        .employee-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin:20px 0 28px; }
+        .employee-metric { min-width:0; padding:18px; border:1px solid var(--border-color,#e2e8f0); border-radius:14px; background:var(--card-background,#fff); }
+        .employee-metric .metric-label { display:block; color:var(--muted-text,#64748b); font-size:.9rem; }
+        .employee-metric strong { display:block; margin:9px 0 5px; font-size:1.7rem; overflow-wrap:anywhere; }
+        .employee-metric small { color:var(--muted-text,#64748b); }
+        .employee-section-title { margin:26px 0 12px; }
+        .employee-dashboard-error { color:#b42318; font-size:.9rem; }
+        .employee-page-date { color:var(--muted-text,#64748b); }
+        @media (max-width:640px) { .employee-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .employee-metric { padding:14px; } .employee-metric strong { font-size:1.35rem; } }
+    </style>
+</head>
+<body>
+<div class="app-shell">
+    <aside class="app-sidebar">
+        <a class="app-brand" th:href="@{/employee-dashboard}" style="text-decoration:none">EMS <small>Employee Management System</small></a>
+        <nav class="app-nav" aria-label="Employee navigation">
+            <span class="nav-section">Workspace</span>
+            <a th:href="@{/employee-dashboard}" aria-current="page">⌂ &nbsp; Overview</a>
+            <a th:href="@{/my-profile}">♙ &nbsp; My profile</a>
+            <a th:href="@{/my-department}">▦ &nbsp; My department</a>
+            <span class="nav-section">My work</span>
+            <a th:href="@{/my-attendance}">◷ &nbsp; Attendance</a>
+            <a th:href="@{/my-leaves}">▣ &nbsp; Leaves</a>
+            <a th:href="@{/my-payroll}">₹ &nbsp; Payroll</a>
+            <a th:href="@{/my-projects}">▱ &nbsp; My projects</a>
+            <a th:href="@{/my-tasks}">☷ &nbsp; My tasks</a>
+        </nav>
+        <div class="app-sidebar-footer">
+            <form th:action="@{/logout}" method="post"><button type="submit">↪ &nbsp; Log out</button></form>
+        </div>
+    </aside>
+
+    <main class="app-main">
+        <header class="app-topbar">
+            <div><h1>My dashboard</h1><p>Your employee self-service workspace.</p></div>
+            <div><span class="role-pill">Employee</span><p>Signed in as <strong sec:authentication="name">Employee</strong></p></div>
+        </header>
+
+        <section class="dashboard-intro employee-welcome">
+            <div>
+                <h2>Welcome back<span id="employeeFirstName"></span></h2>
+                <p>Here is a live overview of your attendance, leave requests, projects, and tasks.</p>
+                <p id="employeeDepartment" class="employee-page-date">Loading your work details…</p>
+            </div>
+            <p id="todayDate" class="employee-page-date"></p>
+        </section>
+
+        <h2 class="employee-section-title">Your overview</h2>
+        <section class="employee-metrics" aria-label="Personal work summary" aria-live="polite">
+            <article class="employee-metric"><span class="metric-label">Attendance records</span><strong id="attendanceCount">—</strong><small id="attendanceHint">Loading records…</small></article>
+            <article class="employee-metric"><span class="metric-label">Pending leave requests</span><strong id="pendingLeaveCount">—</strong><small>Requests awaiting a decision</small></article>
+            <article class="employee-metric"><span class="metric-label">Active projects</span><strong id="activeProjectCount">—</strong><small>Projects not marked completed</small></article>
+            <article class="employee-metric"><span class="metric-label">Open tasks</span><strong id="openTaskCount">—</strong><small>Tasks not marked completed</small></article>
+            <article class="employee-metric"><span class="metric-label">Latest net pay</span><strong id="latestNetPay">—</strong><small id="latestPayMonth">Payroll information</small></article>
+        </section>
+        <p id="dashboardFeedback" class="employee-dashboard-error" role="status" aria-live="polite"></p>
+
+        <h2 class="employee-section-title">Self-service</h2>
+        <section class="dashboard-grid" aria-label="Employee self-service">
+            <article class="dashboard-card"><span class="card-icon">◎</span><h3>My profile</h3><p>View your personal and employment details.</p><a th:href="@{/my-profile}">View profile →</a></article>
+            <article class="dashboard-card"><span class="card-icon">▦</span><h3>My department</h3><p>Review your department information.</p><a th:href="@{/my-department}">View department →</a></article>
+            <article class="dashboard-card"><span class="card-icon">◷</span><h3>Attendance</h3><p>Check in, check out, and review your attendance history.</p><a th:href="@{/my-attendance}">View attendance →</a></article>
+            <article class="dashboard-card"><span class="card-icon">▣</span><h3>Leave requests</h3><p>Apply for leave and review pending, approved, rejected, or withdrawn requests.</p><a th:href="@{/my-leaves}">Manage my leaves →</a></article>
+            <article class="dashboard-card"><span class="card-icon">₹</span><h3>Payroll</h3><p>Review your payroll records and payment dates.</p><a th:href="@{/my-payroll}">View payroll →</a></article>
+            <article class="dashboard-card"><span class="card-icon">▱</span><h3>My projects</h3><p>See projects assigned to you and their progress.</p><a th:href="@{/my-projects}">View projects →</a></article>
+            <article class="dashboard-card"><span class="card-icon">☷</span><h3>My tasks</h3><p>Review your assigned tasks, priorities, and due dates.</p><a th:href="@{/my-tasks}">View tasks →</a></article>
+        </section>
+        <footer style="padding:24px 0 8px"><small>Employee Management System · Personal workspace</small></footer>
+    </main>
+</div>
+
+<script>
+(() => {
+    const byId = id => document.getElementById(id);
+    const setText = (id, value) => { byId(id).textContent = value; };
+    const today = new Date();
+    setText("todayDate", today.toLocaleDateString(undefined, {weekday:"long", year:"numeric", month:"long", day:"numeric"}));
+
+    async function getJson(url) {
+        const response = await fetch(url, {credentials:"same-origin", headers:{"Accept":"application/json"}});
+        const body = await response.text();
+        let data = null;
+        try { data = body ? JSON.parse(body) : null; } catch { data = null; }
+        if (!response.ok) {
+            const message = data && (data.message || data.error);
+            throw new Error(message || "Request failed with HTTP " + response.status);
+        }
+        return data;
+    }
+
+    function listOrThrow(value) {
+        if (!Array.isArray(value)) throw new Error("Unexpected response format");
+        return value;
+    }
+
+    function normalizedStatus(item) {
+        return String(item && item.status || "").trim().toLowerCase();
+    }
+
+    function setMetric(id, value, hintId, hint) {
+        setText(id, value);
+        if (hintId) setText(hintId, hint);
+    }
+
+    async function loadProfile() {
+        try {
+            const profile = await getJson("/employees/me/profile-details");
+            const name = String(profile.firstName || "").trim();
+            setText("employeeFirstName", name ? ", " + name : "");
+            setText("employeeDepartment", profile.departmentName
+                ? "Department: " + profile.departmentName
+                : "Your department has not been assigned yet.");
+        } catch (error) {
+            setText("employeeFirstName", "");
+            setText("employeeDepartment", "Your profile details are currently unavailable.");
+            console.error("Employee dashboard profile:", error);
+        }
+    }
+
+    async function loadAttendance() {
+        try {
+            const records = listOrThrow(await getJson("/attendance/me"));
+            setMetric("attendanceCount", String(records.length), "attendanceHint",
+                records.length === 1 ? "1 recorded entry" : records.length + " recorded entries");
+        } catch (error) {
+            setMetric("attendanceCount", "—", "attendanceHint", "Could not load attendance");
+            throw error;
+        }
+    }
+
+    async function loadLeaves() {
+        try {
+            const records = listOrThrow(await getJson("/leaves/me"));
+            const pending = records.filter(item => normalizedStatus(item) === "pending").length;
+            setText("pendingLeaveCount", String(pending));
+        } catch (error) {
+            setText("pendingLeaveCount", "—");
+            throw error;
+        }
+    }
+
+    async function loadProjects() {
+        try {
+            const records = listOrThrow(await getJson("/projects/me"));
+            const active = records.filter(item => normalizedStatus(item) !== "completed").length;
+            setText("activeProjectCount", String(active));
+        } catch (error) {
+            setText("activeProjectCount", "—");
+            throw error;
+        }
+    }
+
+    async function loadTasks() {
+        try {
+            const records = listOrThrow(await getJson("/tasks/me"));
+            const open = records.filter(item => normalizedStatus(item) !== "completed").length;
+            setText("openTaskCount", String(open));
+        } catch (error) {
+            setText("openTaskCount", "—");
+            throw error;
+        }
+    }
+
+    async function loadPayroll() {
+        try {
+            const records = listOrThrow(await getJson("/payrolls/me"));
+            if (!records.length) {
+                setText("latestNetPay", "—");
+                setText("latestPayMonth", "No payroll records available");
+                return;
+            }
+            const latest = records.slice().sort((a, b) => {
+                const monthCompare = String(b.payMonth || "").localeCompare(String(a.payMonth || ""));
+                if (monthCompare !== 0) return monthCompare;
+                return Number(b.payrollId || 0) - Number(a.payrollId || 0);
+            })[0];
+            const amount = Number(latest.netSalary);
+            setText("latestNetPay", Number.isFinite(amount)
+                ? new Intl.NumberFormat("en-IN", {style:"currency", currency:"INR", maximumFractionDigits:2}).format(amount)
+                : "—");
+            setText("latestPayMonth", latest.payMonth ? "Pay month: " + latest.payMonth : "Latest available payroll record");
+        } catch (error) {
+            setText("latestNetPay", "—");
+            setText("latestPayMonth", "Could not load payroll");
+            throw error;
+        }
+    }
+
+    async function initializeDashboard() {
+        const results = await Promise.allSettled([
+            loadProfile(), loadAttendance(), loadLeaves(), loadProjects(), loadTasks(), loadPayroll()
+        ]);
+        const failed = results.filter(result => result.status === "rejected").length;
+        setText("dashboardFeedback", failed
+            ? "Some summary information could not be loaded. Open the relevant section to retry; your other dashboard features remain available."
+            : "");
+    }
+
+    initializeDashboard();
+})();
+</script>
+</body>
+</html>

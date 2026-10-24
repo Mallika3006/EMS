@@ -821,27 +821,40 @@ public class LeaveRepository {
         ensureLeaveInCompany(leaveId);
         validateEmployeeInCompany(hrId);
 
-        String sql = "SELECT public.delete_leave_by_hr(?, ?, ?)";
+        String sql = """
+            DELETE FROM public.leaves AS l
+             USING public.employees AS e
+             WHERE l.employee_id = e.employee_id
+               AND l.leave_id = ?
+               AND e.hr_id = ?
+               AND e.company_id = ?
+               AND l.company_id = ?
+               AND EXISTS (
+                   SELECT 1
+                   FROM public.users AS u
+                   WHERE u.employee_id = e.employee_id
+                     AND u.company_id = e.company_id
+                     AND u.is_active = TRUE
+               )
+            RETURNING l.leave_id
+            """;
 
         try (Connection connection = dataSource.getConnection();
-             CallableStatement statement = connection.prepareCall(sql)) {
-
+             java.sql.PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, leaveId);
             statement.setInt(2, hrId);
-
             statement.setLong(3, companyContext.getCompanyId());
+            statement.setLong(4, companyContext.getCompanyId());
+
             try (ResultSet resultSet = statement.executeQuery()) {
-
-                if (resultSet.next()) {
-                    return resultSet.getBoolean(1);
-                }
+                return resultSet.next();
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Error deleting HR employee leave", e);
+            throw new RuntimeException(
+                    "Error deleting HR employee leave: " + e.getMessage(),
+                    e
+            );
         }
-
-        return false;
     }
 
     // =========================================================
@@ -858,17 +871,23 @@ public class LeaveRepository {
         String sql = """
             UPDATE public.leaves AS l
                SET status = UPPER(?)
-              FROM public.employees AS e
-              JOIN public.users AS u
-                ON u.employee_id = e.employee_id
-               AND u.company_id = e.company_id
-               AND u.is_active = TRUE
-             WHERE l.employee_id = e.employee_id
-               AND l.leave_id = ?
-               AND e.hr_id = ?
-               AND e.company_id = ?
+             WHERE l.leave_id = ?
                AND l.company_id = ?
                AND UPPER(l.status) = 'PENDING'
+               AND EXISTS (
+                   SELECT 1
+                   FROM public.employees AS e
+                   WHERE e.employee_id = l.employee_id
+                     AND e.company_id = l.company_id
+                     AND e.hr_id = ?
+                     AND EXISTS (
+                         SELECT 1
+                         FROM public.users AS u
+                         WHERE u.employee_id = e.employee_id
+                           AND u.company_id = e.company_id
+                           AND u.is_active = TRUE
+                     )
+               )
             RETURNING l.*
             """;
 
@@ -877,9 +896,8 @@ public class LeaveRepository {
 
             statement.setString(1, status);
             statement.setInt(2, leaveId);
-            statement.setInt(3, hrId);
-            statement.setLong(4, companyContext.getCompanyId());
-            statement.setLong(5, companyContext.getCompanyId());
+            statement.setLong(3, companyContext.getCompanyId());
+            statement.setInt(4, hrId);
 
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {

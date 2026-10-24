@@ -181,8 +181,12 @@
                 setText("latestPayMonth", "No payroll records available");
                 return;
             }
+            const monthTimestamp = value => {
+                const timestamp = Date.parse("1 " + String(value || ""));
+                return Number.isFinite(timestamp) ? timestamp : 0;
+            };
             const latest = records.slice().sort((a, b) => {
-                const monthCompare = String(b.payMonth || "").localeCompare(String(a.payMonth || ""));
+                const monthCompare = monthTimestamp(b.payMonth) - monthTimestamp(a.payMonth);
                 if (monthCompare !== 0) return monthCompare;
                 return Number(b.payrollId || 0) - Number(a.payrollId || 0);
             })[0];

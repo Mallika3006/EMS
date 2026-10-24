@@ -1,21 +1,242 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Attendance Reports | Employee Management System</title><link rel="stylesheet" th:href="@{/style.css}">
-<style>.filters,.summary{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin:14px 0}.filters label{display:grid;gap:5px}.summary>div{padding:14px;border:1px solid #ddd;border-radius:9px;min-width:120px}.table-wrap{overflow-x:auto}#feedback{margin:12px 0}</style></head>
-<body><div class="container">
-<h1>Attendance Reports</h1><p>View attendance for active employees assigned to you. This page is read-only; only company administrators and authorized managers can make attendance corrections.</p>
-<section class="card"><h2>Attendance summary</h2><div class="summary"><div>Records<strong id="recordCount">0</strong></div><div>Present<strong id="presentCount">0</strong></div><div>Absent<strong id="absentCount">0</strong></div><div>Late<strong id="lateCount">0</strong></div><div>Leave<strong id="leaveCount">0</strong></div></div>
-<div class="filters"><label>From date<input type="date" id="fromDate"></label><label>To date<input type="date" id="toDate"></label><label>Status<select id="statusFilter"><option value="">All statuses</option><option>Present</option><option>Absent</option><option>Late</option><option>Leave</option></select></label><label>Employee ID<input type="number" min="1" id="employeeFilter" placeholder="Any employee"></label><button type="button" id="applyButton">Apply filters</button><button type="button" id="resetButton">Reset</button><button type="button" id="exportButton">Export CSV</button><button type="button" id="refreshButton">Refresh</button></div>
-<p id="feedback" role="status" aria-live="polite"></p><div class="table-wrap"><table><thead><tr><th>Attendance ID</th><th>Employee ID</th><th>Date</th><th>Status</th><th>Check in</th><th>Check out</th><th>Working time</th></tr></thead><tbody id="attendanceTable"><tr><td colspan="7">Loading…</td></tr></tbody></table></div></section>
-<p><a href="/hr-dashboard">← Back to HR Dashboard</a></p></div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Employee Attendance | Employee Management System</title>
+  <link rel="stylesheet" th:href="@{/style.css}">
+  <style>
+    .attendance-page{max-width:1440px;margin:24px auto;padding:0 18px}
+    .filters,.summary,.toolbar,.form-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin:14px 0}
+    .filters label,.edit-grid label{display:grid;gap:5px;min-width:145px}
+    .summary>div{padding:14px;border:1px solid var(--line);border-radius:10px;min-width:125px;background:#fff}
+    .summary strong{display:block;font-size:1.55rem;margin-top:5px}
+    .table-wrap{overflow-x:auto}
+    #feedback{margin:12px 0}
+    .edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .edit-panel{margin-top:18px}
+    .row-actions{white-space:nowrap}
+    .status-pill{display:inline-block;padding:4px 9px;border-radius:999px;background:#eef2f6;font-size:.8rem;font-weight:700}
+    .muted{color:var(--muted)}
+    @media(max-width:620px){.edit-grid{grid-template-columns:1fr}.attendance-page{padding:0 10px}}
+  </style>
+</head>
+<body>
+<div class="attendance-page">
+  <header class="app-topbar">
+    <div><h1>Employee Attendance</h1><p>Review attendance for active employees assigned to you.</p></div>
+    <a href="/hr-dashboard">← HR Dashboard</a>
+  </header>
+
+  <section class="card">
+    <h2>Attendance summary</h2>
+    <p class="muted">Summary totals update when filters are applied.</p>
+    <div class="summary">
+      <div>Total records<strong id="recordCount">0</strong></div>
+      <div>Present<strong id="presentCount">0</strong></div>
+      <div>Absent<strong id="absentCount">0</strong></div>
+      <div>Late<strong id="lateCount">0</strong></div>
+      <div>Leave<strong id="leaveCount">0</strong></div>
+      <div>Attendance rate<strong id="attendanceRate">—</strong></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Find attendance records</h2>
+    <div class="filters">
+      <label>Search employee<input type="search" id="employeeSearch" placeholder="Name or employee ID"></label>
+      <label>From date<input type="date" id="fromDate"></label>
+      <label>To date<input type="date" id="toDate"></label>
+      <label>Status<select id="statusFilter"><option value="">All statuses</option><option>Present</option><option>Absent</option><option>Late</option><option>Leave</option></select></label>
+      <button type="button" id="applyButton">Apply filters</button>
+      <button type="button" class="btn-secondary" id="resetButton">Reset</button>
+      <button type="button" class="btn-secondary" id="exportButton">Export CSV</button>
+      <button type="button" class="btn-secondary" id="refreshButton">Refresh</button>
+    </div>
+    <p id="feedback" role="status" aria-live="polite"></p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Employee</th><th>Employee ID</th><th>Date</th><th>Status</th><th>Check in</th><th>Check out</th><th>Working time</th><th>Actions</th></tr></thead>
+        <tbody id="attendanceTable"><tr><td colspan="8">Loading attendance…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card edit-panel" id="editPanel" hidden>
+    <h2 id="editHeading">Correct attendance</h2>
+    <p class="muted" id="editEmployee"></p>
+    <form id="editForm">
+      <input type="hidden" id="editAttendanceId">
+      <input type="hidden" id="editEmployeeId">
+      <div class="edit-grid">
+        <label>Attendance date<input type="date" id="editDate" required></label>
+        <label>Status<select id="editStatus" required><option>Present</option><option>Absent</option><option>Late</option><option>Leave</option></select></label>
+        <label>Check-in time<input type="time" id="editCheckIn"></label>
+        <label>Check-out time<input type="time" id="editCheckOut"></label>
+      </div>
+      <p class="muted">The employee assignment cannot be changed here. The server checks that the employee is active and assigned to your HR account.</p>
+      <div class="form-actions"><button type="submit" id="saveButton">Save correction</button><button type="button" class="btn-secondary" id="cancelEditButton">Cancel</button></div>
+    </form>
+  </section>
+</div>
+
 <script>
-(()=>{const $=id=>document.getElementById(id);let records=[];
-const minutes=v=>{if(!v)return null;const p=String(v).split(":").map(Number);return p.length>=2?p[0]*60+p[1]:null};
-const duration=r=>{const a=minutes(r.checkInTime),b=minutes(r.checkOutTime);if(a===null||b===null)return "—";let n=b-a;if(n<0)n+=1440;return Math.floor(n/60)+"h "+n%60+"m"};
-function message(t,error=false){$("feedback").textContent=t;$("feedback").className=error?"error-message":"success-message"}
-async function load(){ $("refreshButton").disabled=true;try{const res=await fetch("/attendance/hr",{credentials:"same-origin",headers:{"Accept":"application/json"}});const body=await res.text();let data;try{data=body?JSON.parse(body):[]}catch{data=body}if(!res.ok)throw new Error(data?.error||data?.message||"Unable to load attendance (HTTP "+res.status+")");records=Array.isArray(data)?data:[];render();message(records.length+" assigned attendance record(s) loaded.");}catch(e){message(e.message,true)}finally{$("refreshButton").disabled=false}}
-function filtered(){return records.filter(r=>(!$("fromDate").value||String(r.attDate||"")>=$("fromDate").value)&&(!$("toDate").value||String(r.attDate||"")<=$("toDate").value)&&(!$("statusFilter").value||String(r.status||"").toLowerCase()===$("statusFilter").value.toLowerCase())&&(!$("employeeFilter").value||String(r.employee?.employeeId||"")===$("employeeFilter").value))}
-function render(){const rows=filtered(),body=$("attendanceTable");body.replaceChildren();$("recordCount").textContent=rows.length;for(const [id,status] of [["presentCount","present"],["absentCount","absent"],["lateCount","late"],["leaveCount","leave"]])$(id).textContent=rows.filter(r=>String(r.status||"").toLowerCase()===status).length;if(!rows.length){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=7;td.textContent="No attendance records match these filters.";tr.appendChild(td);body.appendChild(tr);return}rows.forEach(r=>{const tr=document.createElement("tr");[r.attendanceId,r.employee?.employeeId,r.attDate,r.status,r.checkInTime||"—",r.checkOutTime||"—",duration(r)].forEach(v=>{const td=document.createElement("td");td.textContent=v??"—";tr.appendChild(td)});body.appendChild(tr)})}
-$("applyButton").addEventListener("click",render);$("resetButton").addEventListener("click",()=>{$("fromDate").value="";$("toDate").value="";$("statusFilter").value="";$("employeeFilter").value="";render()});$("refreshButton").addEventListener("click",load);
-$("exportButton").addEventListener("click",()=>{const rows=[["Attendance ID","Employee ID","Date","Status","Check in","Check out","Working time"],...filtered().map(r=>[r.attendanceId,r.employee?.employeeId,r.attDate,r.status,r.checkInTime,r.checkOutTime,duration(r)])];const csv=rows.map(row=>row.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\r\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"}));a.download="hr-attendance-report.csv";a.click();URL.revokeObjectURL(a.href)});load()})();
-</script></body></html>
+(()=> {
+  const $ = id => document.getElementById(id);
+  let records = [];
+  const minutes = value => {
+    if (!value) return null;
+    const parts = String(value).split(":").map(Number);
+    return parts.length >= 2 ? parts[0] * 60 + parts[1] : null;
+  };
+  const duration = row => {
+    const start = minutes(row.checkInTime), end = minutes(row.checkOutTime);
+    if (start === null || end === null) return "—";
+    let total = end - start;
+    if (total < 0) total += 1440;
+    return Math.floor(total / 60) + "h " + (total % 60) + "m";
+  };
+  const employeeName = row => {
+    const employee = row.employee || {};
+    const full = [employee.firstName, employee.lastName].filter(Boolean).join(" ").trim();
+    return full || ("Employee #" + (employee.employeeId ?? "unknown"));
+  };
+  function message(text, error=false) {
+    $("feedback").textContent = text;
+    $("feedback").className = error ? "error-message" : "success-message";
+  }
+  async function requestJson(url, options={}) {
+    const response = await fetch(url, {
+      credentials: "same-origin",
+      headers: {"Accept":"application/json", ...(options.body ? {"Content-Type":"application/json"} : {}), ...(options.headers || {})},
+      ...options
+    });
+    const raw = await response.text();
+    let data = null;
+    try { data = raw ? JSON.parse(raw) : null; } catch { data = raw; }
+    if (!response.ok) {
+      const detail = data && typeof data === "object" ? (data.message || data.error) : null;
+      throw new Error(detail || "Request failed (HTTP " + response.status + ")");
+    }
+    return data;
+  }
+  async function load() {
+    $("refreshButton").disabled = true;
+    try {
+      const data = await requestJson("/attendance/hr");
+      records = Array.isArray(data) ? data : [];
+      render();
+      message(records.length + " attendance record(s) loaded for your assigned active employees.");
+    } catch (error) {
+      message(error.message || "Unable to load attendance records.", true);
+    } finally {
+      $("refreshButton").disabled = false;
+    }
+  }
+  function filtered() {
+    const search = $("employeeSearch").value.trim().toLowerCase();
+    const from = $("fromDate").value, to = $("toDate").value, status = $("statusFilter").value.toLowerCase();
+    return records.filter(row => {
+      const employee = row.employee || {};
+      const name = employeeName(row).toLowerCase();
+      const id = String(employee.employeeId ?? "");
+      const date = String(row.attDate || "");
+      return (!search || name.includes(search) || id.includes(search))
+        && (!from || date >= from) && (!to || date <= to)
+        && (!status || String(row.status || "").toLowerCase() === status);
+    });
+  }
+  function addCell(row, value) {
+    const cell = document.createElement("td");
+    cell.textContent = value == null || value === "" ? "—" : String(value);
+    row.appendChild(cell);
+  }
+  function render() {
+    const rows = filtered(), body = $("attendanceTable");
+    body.replaceChildren();
+    $("recordCount").textContent = rows.length;
+    for (const [id, status] of [["presentCount","present"],["absentCount","absent"],["lateCount","late"],["leaveCount","leave"]]) {
+      $(id).textContent = rows.filter(row => String(row.status || "").toLowerCase() === status).length;
+    }
+    const present = rows.filter(row => ["present","late"].includes(String(row.status || "").toLowerCase())).length;
+    $("attendanceRate").textContent = rows.length ? Math.round(present / rows.length * 100) + "%" : "—";
+    if (!rows.length) {
+      const tr = document.createElement("tr"), td = document.createElement("td");
+      td.colSpan = 8; td.textContent = "No attendance records match these filters."; tr.appendChild(td); body.appendChild(tr);
+      return;
+    }
+    rows.forEach(row => {
+      const tr = document.createElement("tr");
+      addCell(tr, employeeName(row));
+      addCell(tr, row.employee?.employeeId);
+      addCell(tr, row.attDate);
+      addCell(tr, row.status);
+      addCell(tr, row.checkInTime);
+      addCell(tr, row.checkOutTime);
+      addCell(tr, duration(row));
+      const actions = document.createElement("td");
+      actions.className = "row-actions";
+      const edit = document.createElement("button");
+      edit.type = "button"; edit.className = "btn-small btn-secondary"; edit.textContent = "Correct";
+      edit.addEventListener("click", () => openEditor(row));
+      actions.appendChild(edit); tr.appendChild(actions); body.appendChild(tr);
+    });
+  }
+  function openEditor(row) {
+    $("editAttendanceId").value = row.attendanceId;
+    $("editEmployeeId").value = row.employee?.employeeId ?? "";
+    $("editDate").value = String(row.attDate || "").slice(0,10);
+    $("editStatus").value = ["Present","Absent","Late","Leave"].find(s => s.toLowerCase() === String(row.status || "").toLowerCase()) || "Present";
+    $("editCheckIn").value = String(row.checkInTime || "").slice(0,5);
+    $("editCheckOut").value = String(row.checkOutTime || "").slice(0,5);
+    $("editEmployee").textContent = employeeName(row) + " (ID " + (row.employee?.employeeId ?? "—") + ")";
+    $("editPanel").hidden = false;
+    $("editPanel").scrollIntoView({behavior:"smooth", block:"start"});
+  }
+  function closeEditor() { $("editPanel").hidden = true; $("editForm").reset(); }
+  $("applyButton").addEventListener("click", render);
+  $("employeeSearch").addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); render(); } });
+  $("resetButton").addEventListener("click", () => {
+    $("employeeSearch").value = ""; $("fromDate").value = ""; $("toDate").value = ""; $("statusFilter").value = ""; render();
+  });
+  $("refreshButton").addEventListener("click", load);
+  $("cancelEditButton").addEventListener("click", closeEditor);
+  $("editForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    const attendanceId = $("editAttendanceId").value;
+    const employeeId = Number($("editEmployeeId").value);
+    const date = $("editDate").value;
+    const checkIn = $("editCheckIn").value || null;
+    const checkOut = $("editCheckOut").value || null;
+    if (!employeeId || !date) { message("Employee and attendance date are required.", true); return; }
+    if (checkIn && checkOut && checkOut < checkIn) { message("Check-out time cannot be earlier than check-in time.", true); return; }
+    $("saveButton").disabled = true;
+    try {
+      await requestJson("/attendance/hr/" + encodeURIComponent(attendanceId), {
+        method:"PUT",
+        body:JSON.stringify({
+          attDate:date, status:$("editStatus").value, checkInTime:checkIn, checkOutTime:checkOut,
+          employee:{employeeId:employeeId}
+        })
+      });
+      closeEditor();
+      await load();
+      message("Attendance correction saved successfully.");
+    } catch (error) {
+      message(error.message || "Unable to save attendance correction.", true);
+    } finally { $("saveButton").disabled = false; }
+  });
+  $("exportButton").addEventListener("click", () => {
+    const rows = [["Employee","Employee ID","Attendance ID","Date","Status","Check in","Check out","Working time"],
+      ...filtered().map(row => [employeeName(row),row.employee?.employeeId,row.attendanceId,row.attDate,row.status,row.checkInTime,row.checkOutTime,duration(row)])];
+    const csv = rows.map(row => row.map(value => '"' + String(value ?? "").replace(/"/g,'""') + '"').join(",")).join("\r\n");
+    const blob = new Blob(["\uFEFF" + csv], {type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob), link = document.createElement("a");
+    link.href = url; link.download = "hr-employee-attendance.csv"; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+  load();
+})();
+</script>
+</body>
+</html>

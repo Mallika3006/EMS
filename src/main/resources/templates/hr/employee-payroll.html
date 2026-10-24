@@ -95,7 +95,7 @@
             <thead>
             <tr>
                 <th>Payroll ID</th>
-                <th>Employee ID</th>
+                <th>Employee</th>
                 <th>Pay Month</th>
                 <th>Basic Salary</th>
                 <th>Allowances</th>
@@ -224,6 +224,20 @@
             }
 
             hrPayrolls = await response.json();
+            // Resolve employee names using the current HR account’s company-scoped employee list.
+            const employeesResponse = await fetch("/employees/hr/my-employees");
+            if (employeesResponse.ok) {
+                const employees = await employeesResponse.json();
+                const employeeById = new Map((Array.isArray(employees) ? employees : [])
+                    .map(employee => [String(employee.employeeId), employee]));
+                hrPayrolls = hrPayrolls.map(payroll => {
+                    const employeeId = payroll.employee?.employeeId ?? payroll.employeeId;
+                    const employee = employeeById.get(String(employeeId));
+                    return employee
+                        ? { ...payroll, employee: { ...(payroll.employee || {}), ...employee, employeeId } }
+                        : payroll;
+                });
+            }
             displayPayrolls(hrPayrolls);
         } catch (error) {
             console.error(error);
@@ -310,11 +324,12 @@
 
         payrolls.forEach(p => {
             const employeeId = p.employee?.employeeId ?? p.employeeId ?? "-";
+            const employeeName = [p.employee?.firstName, p.employee?.lastName].filter(Boolean).join(" ") || "Name unavailable";
             const row = document.createElement("tr");
 
             [
                 p.payrollId ?? "-",
-                employeeId,
+                `${employeeName} (ID ${employeeId})`,
                 p.payMonth ?? "-",
                 p.basicSalary ?? "-",
                 p.allowances ?? "-",

@@ -99,25 +99,24 @@
 
             const completedProjects =
                 projectList.filter(project =>
-
-                    project.endDate &&
-                    project.endDate < today
-
+                    String(project.status || "").toUpperCase() === "COMPLETED"
                 );
-
 
             const activeProjects =
                 projectList.filter(project =>
-
-                    !project.endDate ||
-                    project.endDate >= today
-
+                    String(project.status || "").toUpperCase() !== "COMPLETED"
                 );
 
 
             // =====================================================
             // CREATE PROJECT TABLE
             // =====================================================
+
+            function escapeHtml(value) {
+                return String(value).replace(/[&<>"']/g, character => ({
+                    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+                })[character]);
+            }
 
             function createProjectTable(projects) {
 
@@ -149,6 +148,10 @@
                                 <th>Project Name</th>
                                 <th>Start Date</th>
                                 <th>End Date</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                                <th>Progress</th>
+                                <th>Tasks</th>
 
                             </tr>
 
@@ -170,7 +173,7 @@
                             </td>
 
                             <td>
-                                ${project.projectName ?? "-"}
+                                ${escapeHtml(project.projectName ?? "-")}
                             </td>
 
                             <td>
@@ -180,6 +183,10 @@
                             <td>
                                 ${project.endDate ?? "-"}
                             </td>
+                            <td>${project.status ?? "PLANNED"}</td>
+                            <td>${project.priority ?? "MEDIUM"}</td>
+                            <td>${Number(project.progressPercent ?? 0)}%</td>
+                            <td>${Number(project.completedTasks ?? 0)} / ${Number(project.totalTasks ?? 0)}</td>
 
                         </tr>
 

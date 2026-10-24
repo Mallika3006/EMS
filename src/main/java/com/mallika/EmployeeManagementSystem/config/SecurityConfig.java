@@ -61,6 +61,7 @@ public class SecurityConfig {
                 .requestMatchers("/attendance/manager/team").hasRole("MANAGER")
                 .requestMatchers(HttpMethod.POST, "/attendance/manager").hasRole("MANAGER")
                 .requestMatchers(HttpMethod.GET, "/attendance/hr").hasRole("HR")
+                .requestMatchers(HttpMethod.PUT, "/attendance/hr/**").hasRole("HR")
                 .requestMatchers("/payrolls/me").hasAnyRole("EMPLOYEE", "HR", "MANAGER")
                 .requestMatchers("/projects/me").hasAnyRole("EMPLOYEE", "HR", "MANAGER")
                 .requestMatchers("/tasks/me").hasAnyRole("EMPLOYEE", "HR", "MANAGER")

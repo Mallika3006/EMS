@@ -75,6 +75,17 @@ public class TaskController {
         );
     }
 
+    // MANAGER TASK STATUS UPDATE
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Task> updateTaskStatus(
+            @PathVariable Integer id,
+            @RequestParam String status,
+            Authentication authentication) {
+        return ResponseEntity.ok(
+                taskService.updateTaskStatus(id, status, authentication.getName())
+        );
+    }
+
     // DELETE
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTask(

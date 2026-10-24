@@ -74,7 +74,8 @@ public class PasswordRecoveryService {
         try { if("EMAIL".equals(channel)) sendEmail(destination,otp); else sendSms(destination,otp); }
         catch(Exception ex) {
             jdbc.update("UPDATE password_reset_requests SET used_at=CURRENT_TIMESTAMP WHERE user_id=? AND used_at IS NULL",a.userId());
-            log.warn("Password recovery delivery failed for user id {} via {}.",a.userId(),channel);
+            log.error("Password recovery delivery failed for user id {} via {}. Cause: {}",
+                a.userId(), channel, ex.getMessage(), ex);
         }
     }
 

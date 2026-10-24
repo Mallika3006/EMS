@@ -117,6 +117,34 @@ public class LeaveService {
         return leaveRepository.updateLeave(id, leaveDetails);
     }
 
+    /**
+     * Admin decision for a leave request. Only pending requests can be approved or rejected.
+     * The repository checks that the leave and employee belong to the authenticated company.
+     */
+    public Leave updateAdminLeaveStatus(Integer leaveId, String status) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        boolean admin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+        if (!admin) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Only Admin can review leave requests");
+        }
+
+        String normalized = normalizeLeaveStatus(status);
+        if (!"APPROVED".equals(normalized) && !"REJECTED".equals(normalized)) {
+            throw new IllegalArgumentException("Status must be APPROVED or REJECTED");
+        }
+
+        Leave current = leaveRepository.getLeaveById(leaveId)
+                .orElseThrow(() -> new ResourceNotFoundException("Leave not found with id: " + leaveId));
+        if (!"PENDING".equalsIgnoreCase(current.getStatus())) {
+            throw new IllegalArgumentException("Only pending leave requests can be approved or rejected");
+        }
+
+        current.setStatus(normalized);
+        return leaveRepository.updateLeave(leaveId, current);
+    }
+
     private void validateLeaveFields(Leave leave) {
         if (leave.getFromDate() == null || leave.getToDate() == null) {
             throw new IllegalArgumentException("From date and to date are required");

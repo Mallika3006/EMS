@@ -29,19 +29,14 @@
 
         <button class="btn" onclick="loadEmployees()">
             Show All
-        </button>
-
-        <button class="btn" onclick="showAddForm()">
-            Add Employee
-        </button>
-    </div>
+        </button></div>
 
     <br>
 
     <!-- ADD / EDIT FORM -->
     <div class="card" id="employeeFormCard" style="display: none;">
 
-        <h2 id="formTitle">Add Employee</h2>
+        <h2 id="formTitle">Edit Employee</h2>
 
         <form id="employeeForm">
 
@@ -387,43 +382,6 @@
     // SHOW ADD FORM
     // ==========================================
 
-    async function showAddForm() {
-
-        try {
-
-            await loadFormOptions();
-
-            document.getElementById("employeeForm").reset();
-            document.getElementById("employeeId").value = "";
-
-            const currentHR = await getCurrentHR();
-
-            document.getElementById("hrId").value =
-                currentHR.employeeId;
-
-            document.getElementById("hrName").value =
-                `${currentHR.employeeId} - ${currentHR.firstName} ${currentHR.lastName}`;
-
-            document.getElementById("formTitle").textContent =
-                "Add Employee";
-
-            document.getElementById("formMessage").textContent = "";
-
-            document.getElementById("employeeFormCard").style.display =
-                "block";
-
-            document.getElementById("employeeFormCard").scrollIntoView({
-                behavior: "smooth"
-            });
-
-        } catch (error) {
-
-            console.error(error);
-            alert("Unable to load the employee form options.");
-        }
-    }
-
-
     // ==========================================
     // HIDE FORM
     // ==========================================
@@ -580,11 +538,13 @@
                     : null
             };
 
-            const url = employeeId
-                ? `/employees/${employeeId}`
-                : "/employees";
+            if (!employeeId) {
+                message.textContent = "Only an administrator can add employees. HR can edit existing employee records.";
+                return;
+            }
 
-            const method = employeeId ? "PUT" : "POST";
+            const url = `/employees/${employeeId}`;
+            const method = "PUT";
 
             const message = document.getElementById("formMessage");
 
@@ -606,9 +566,7 @@
                 }
 
                 alert(
-                    employeeId
-                        ? "Employee updated successfully."
-                        : "Employee added successfully."
+                    "Employee updated successfully."
                 );
 
                 hideEmployeeForm();

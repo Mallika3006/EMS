@@ -1,387 +1,289 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Leaves - StaffSync</title>
-    <link rel="stylesheet" th:href="@{/style.css}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Employee Leaves | Employee Management System</title>
+  <link rel="stylesheet" th:href="@{/style.css}">
+  <style>
+    .leave-page{max-width:1500px;margin:24px auto;padding:0 18px}
+    .leave-summary,.leave-filters,.leave-toolbar,.leave-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:end}
+    .leave-summary{margin:16px 0}
+    .leave-summary-card{padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--card,#fff);min-width:130px;flex:1}
+    .leave-summary-card span{display:block;color:var(--muted);font-size:.9rem}
+    .leave-summary-card strong{display:block;font-size:1.55rem;margin-top:5px}
+    .leave-filters{margin:14px 0}
+    .leave-filters label{display:grid;gap:5px;min-width:145px;flex:1}
+    .leave-toolbar{justify-content:space-between;margin:12px 0}
+    .leave-table-wrap{overflow-x:auto}
+    .leave-table-wrap table{width:100%;min-width:1050px;border-collapse:collapse}
+    .leave-table-wrap th,.leave-table-wrap td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--line,#e5e7eb);vertical-align:top}
+    .leave-table-wrap th{white-space:nowrap}
+    .leave-actions{align-items:center;gap:6px}
+    .leave-actions button{white-space:nowrap}
+    .status-pill{display:inline-block;padding:4px 9px;border-radius:999px;background:#eef2f6;font-size:.78rem;font-weight:700;white-space:nowrap}
+    .status-pending{background:#fff3cd;color:#795900}.status-approved{background:#d1fae5;color:#065f46}
+    .status-rejected{background:#fee2e2;color:#991b1b}.status-withdrawn{background:#e5e7eb;color:#374151}
+    #feedback{margin:12px 0}.muted{color:var(--muted)}
+    .leave-empty{text-align:center;padding:24px}
+    @media(max-width:650px){.leave-page{padding:0 10px}.leave-summary-card{min-width:42%}}
+  </style>
 </head>
-
 <body>
+<div class="leave-page">
+  <header class="app-topbar">
+    <div><h1>Employee Leaves</h1><p>Review leave requests for active employees assigned to you.</p></div>
+    <a href="/hr-dashboard">← HR Dashboard</a>
+  </header>
 
-<div class="container">
-
-    <h1>Employee Leaves</h1>
-
-    <!-- LEAVE FILTERS -->
-    <div class="card">
-
-        <h2>Leave Records</h2>
-
-        <button type="button" onclick="loadLeaves()">Show All</button>
-
-        <br><br>
-
-        <label for="employeeId">Employee ID:</label>
-        <input type="number" id="employeeId" placeholder="Enter Employee ID">
-
-        <button type="button" onclick="searchByEmployee()">Search</button>
-
-        <br><br>
-
-        <label for="statusFilter">Status:</label>
-
-        <select id="statusFilter">
-            <option value="">Select Status</option>
-            <option value="PENDING">Pending</option>
-            <option value="APPROVED">Approved</option>
-            <option value="REJECTED">Rejected</option>
-            <option value="WITHDRAWN">Withdrawn</option>
-        </select>
-
-        <button type="button" onclick="searchByStatus()">Search</button>
-
-        <br><br>
-
-        <label for="startDate">From Date:</label>
-        <input type="date" id="startDate">
-
-        <label for="endDate">To Date:</label>
-        <input type="date" id="endDate">
-
-        <button type="button" onclick="searchBetweenDates()">Search</button>
-        <button type="button" onclick="resetFilters()">Reset</button>
-
+  <section class="card">
+    <h2>Leave overview</h2>
+    <p class="muted">Counts reflect the records currently matching your filters.</p>
+    <div class="leave-summary">
+      <div class="leave-summary-card"><span>Total requests</span><strong id="totalCount">0</strong></div>
+      <div class="leave-summary-card"><span>Pending</span><strong id="pendingCount">0</strong></div>
+      <div class="leave-summary-card"><span>Approved</span><strong id="approvedCount">0</strong></div>
+      <div class="leave-summary-card"><span>Rejected</span><strong id="rejectedCount">0</strong></div>
+      <div class="leave-summary-card"><span>Withdrawn</span><strong id="withdrawnCount">0</strong></div>
     </div>
+  </section>
 
-    <br>
-
-    <!-- LEAVE TABLE -->
-    <div class="card">
-
-        <h2>Employee Leave Details</h2>
-
-        <table border="1" width="100%" cellpadding="10">
-
-            <thead>
-            <tr>
-                <th>Leave ID</th>
-                <th>Employee ID</th>
-                <th>From Date</th>
-                <th>To Date</th>
-                <th>Reason</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-            </thead>
-
-            <tbody id="leaveTable">
-            </tbody>
-
-        </table>
-
+  <section class="card">
+    <h2>Search and filter leave records</h2>
+    <div class="leave-filters">
+      <label>Employee name or ID<input id="employeeSearch" type="search" placeholder="Search employee"></label>
+      <label>Department<select id="departmentFilter"><option value="">All departments</option></select></label>
+      <label>Status<select id="statusFilter">
+        <option value="">All statuses</option><option value="PENDING">Pending</option>
+        <option value="APPROVED">Approved</option><option value="REJECTED">Rejected</option>
+        <option value="WITHDRAWN">Withdrawn</option>
+      </select></label>
+      <label>From date<input id="fromDate" type="date"></label>
+      <label>To date<input id="toDate" type="date"></label>
     </div>
-
-    <br>
-
-    <div class="dashboard-links">
-        <a href="/hr-dashboard">Back to HR Dashboard</a>
+    <div class="leave-toolbar">
+      <div class="leave-actions">
+        <button type="button" id="applyFilters">Apply filters</button>
+        <button type="button" class="btn-secondary" id="resetFilters">Reset</button>
+      </div>
+      <div class="leave-actions">
+        <button type="button" class="btn-secondary" id="exportCsv">Export CSV</button>
+        <button type="button" class="btn-secondary" id="refreshButton">Refresh</button>
+      </div>
     </div>
-
+    <p id="feedback" role="status" aria-live="polite"></p>
+    <div class="leave-table-wrap">
+      <table>
+        <thead><tr><th>Employee</th><th>Employee ID</th><th>Department</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="leaveTable"><tr><td colspan="9" class="leave-empty">Loading leave records…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
 </div>
 
 <script>
+(() => {
+  const $ = id => document.getElementById(id);
+  let hrLeaves = [];
 
-    // Leave records belonging to employees assigned to the logged-in HR.
-    let hrLeaves = [];
-
-    // =========================
-    // LOAD HR LEAVES
-    // =========================
-    async function loadLeaves() {
-
-        try {
-
-            const response = await fetch("/leaves/hr");
-
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-
-            hrLeaves = await response.json();
-
-            displayLeaves(hrLeaves);
-
-        } catch (error) {
-
-            console.error("Error loading HR leaves:", error);
-            alert("Error loading employee leaves.");
-
-        }
+  function employeeOf(leave) { return leave && leave.employee ? leave.employee : {}; }
+  function employeeIdOf(leave) {
+    const employee = employeeOf(leave);
+    return employee.employeeId ?? leave.employeeId ?? "";
+  }
+  function employeeName(leave) {
+    const employee = employeeOf(leave);
+    const fullName = [employee.firstName, employee.lastName].filter(Boolean).join(" ").trim();
+    return fullName || (employeeIdOf(leave) !== "" ? "Employee #" + employeeIdOf(leave) : "Unknown employee");
+  }
+  function departmentOf(leave) {
+    const department = employeeOf(leave).department;
+    return department && department.departmentName ? department.departmentName : "";
+  }
+  function dateOnly(value) { return value ? String(value).slice(0, 10) : ""; }
+  function leaveDays(leave) {
+    const from = dateOnly(leave.fromDate), to = dateOnly(leave.toDate);
+    if (!from || !to) return "—";
+    const start = new Date(from + "T00:00:00Z"), end = new Date(to + "T00:00:00Z");
+    const days = Math.round((end - start) / 86400000) + 1;
+    return days > 0 ? days : "—";
+  }
+  function showMessage(text, isError = false) {
+    $("feedback").textContent = text;
+    $("feedback").className = isError ? "error-message" : "success-message";
+  }
+  async function requestJson(url, options = {}) {
+    const response = await fetch(url, {
+      credentials: "same-origin",
+      headers: { "Accept": "application/json", ...(options.body ? {"Content-Type":"application/json"} : {}), ...(options.headers || {}) },
+      ...options
+    });
+    const raw = await response.text();
+    let data = null;
+    try { data = raw ? JSON.parse(raw) : null; } catch { data = raw; }
+    if (!response.ok) {
+      const detail = data && typeof data === "object" ? (data.message || data.error) : null;
+      throw new Error(detail || "Request failed (HTTP " + response.status + ")");
     }
-
-    // =========================
-    // DISPLAY LEAVES
-    // =========================
-    function displayLeaves(leaves) {
-
-        const table = document.getElementById("leaveTable");
-
-        table.innerHTML = "";
-
-        if (!leaves || leaves.length === 0) {
-
-            table.innerHTML = `
-                <tr>
-                    <td colspan="7">No leave records found.</td>
-                </tr>
-            `;
-
-            return;
-        }
-
-        leaves.forEach(leave => {
-
-            const row = document.createElement("tr");
-
-            const employeeId = leave.employee
-                ? leave.employee.employeeId
-                : (leave.employeeId ?? "");
-
-            const values = [
-                leave.leaveId ?? "",
-                employeeId,
-                leave.fromDate ?? "",
-                leave.toDate ?? "",
-                leave.reason ?? "",
-                leave.status ?? ""
-            ];
-
-            values.forEach(value => {
-
-                const cell = document.createElement("td");
-                cell.textContent = value;
-                row.appendChild(cell);
-
-            });
-
-            const actionCell = document.createElement("td");
-
-            // Only pending requests can be approved or rejected.
-            if (String(leave.status ?? "").toUpperCase() === "PENDING") {
-
-                const approveButton = document.createElement("button");
-
-                approveButton.type = "button";
-                approveButton.textContent = "Approve";
-
-                approveButton.addEventListener("click", function () {
-                    updateLeaveStatus(leave.leaveId, "APPROVED");
-                });
-
-                const rejectButton = document.createElement("button");
-
-                rejectButton.type = "button";
-                rejectButton.textContent = "Reject";
-
-                rejectButton.addEventListener("click", function () {
-                    updateLeaveStatus(leave.leaveId, "REJECTED");
-                });
-
-                actionCell.appendChild(approveButton);
-                actionCell.appendChild(rejectButton);
-            }
-
-            const deleteButton = document.createElement("button");
-
-            deleteButton.type = "button";
-            deleteButton.textContent = "Delete";
-
-            deleteButton.addEventListener("click", function () {
-                deleteLeave(leave.leaveId);
-            });
-
-            actionCell.appendChild(deleteButton);
-            row.appendChild(actionCell);
-
-            table.appendChild(row);
-
-        });
+    return data;
+  }
+  function populateDepartments() {
+    const select = $("departmentFilter"), selected = select.value;
+    const departments = Array.from(new Set(hrLeaves.map(departmentOf).filter(Boolean)))
+      .sort((a, b) => a.localeCompare(b));
+    select.replaceChildren(new Option("All departments", ""));
+    departments.forEach(name => select.add(new Option(name, name)));
+    if (departments.includes(selected)) select.value = selected;
+  }
+  function filteredLeaves() {
+    const search = $("employeeSearch").value.trim().toLowerCase();
+    const department = $("departmentFilter").value;
+    const status = $("statusFilter").value;
+    const from = $("fromDate").value, to = $("toDate").value;
+    return hrLeaves.filter(leave => {
+      const name = employeeName(leave).toLowerCase();
+      const employeeId = String(employeeIdOf(leave)).toLowerCase();
+      const leaveFrom = dateOnly(leave.fromDate), leaveTo = dateOnly(leave.toDate);
+      const overlapsDates = (!from || (leaveTo && leaveTo >= from)) && (!to || (leaveFrom && leaveFrom <= to));
+      return (!search || name.includes(search) || employeeId.includes(search))
+        && (!department || departmentOf(leave) === department)
+        && (!status || String(leave.status || "").toUpperCase() === status)
+        && overlapsDates;
+    });
+  }
+  function statusPill(status) {
+    const pill = document.createElement("span");
+    const normalized = String(status || "Unknown").toUpperCase();
+    pill.className = "status-pill status-" + normalized.toLowerCase();
+    pill.textContent = normalized.charAt(0) + normalized.slice(1).toLowerCase();
+    return pill;
+  }
+  function addCell(row, value) {
+    const cell = document.createElement("td");
+    cell.textContent = value === null || value === undefined || value === "" ? "—" : String(value);
+    row.appendChild(cell);
+    return cell;
+  }
+  function updateSummary(leaves) {
+    $("totalCount").textContent = leaves.length;
+    const summaryCounters = [
+      {id:"pendingCount", status:"PENDING"},
+      {id:"approvedCount", status:"APPROVED"},
+      {id:"rejectedCount", status:"REJECTED"},
+      {id:"withdrawnCount", status:"WITHDRAWN"}
+    ];
+    summaryCounters.forEach(counter => {
+      $(counter.id).textContent = leaves.filter(leave => String(leave.status || "").toUpperCase() === counter.status).length;
+    });
+  }
+  function renderLeaves() {
+    const leaves = filteredLeaves(), table = $("leaveTable");
+    table.replaceChildren();
+    updateSummary(leaves);
+    if (!leaves.length) {
+      const row = document.createElement("tr"), cell = document.createElement("td");
+      cell.colSpan = 9; cell.className = "leave-empty";
+      cell.textContent = hrLeaves.length ? "No leave records match these filters." : "No leave records found for your assigned active employees.";
+      row.appendChild(cell); table.appendChild(row); return;
     }
-
-    // =========================
-    // SEARCH BY EMPLOYEE ID
-    // =========================
-    function searchByEmployee() {
-
-        const employeeId =
-            document.getElementById("employeeId").value;
-
-        if (!employeeId) {
-            alert("Please enter Employee ID.");
-            return;
-        }
-
-        const filteredLeaves = hrLeaves.filter(leave => {
-
-            const id = leave.employee
-                ? leave.employee.employeeId
-                : leave.employeeId;
-
-            return Number(id) === Number(employeeId);
-
-        });
-
-        displayLeaves(filteredLeaves);
+    leaves.forEach(leave => {
+      const row = document.createElement("tr");
+      addCell(row, employeeName(leave));
+      addCell(row, employeeIdOf(leave));
+      addCell(row, departmentOf(leave));
+      addCell(row, dateOnly(leave.fromDate));
+      addCell(row, dateOnly(leave.toDate));
+      addCell(row, leaveDays(leave));
+      addCell(row, leave.reason);
+      const statusCell = document.createElement("td");
+      statusCell.appendChild(statusPill(leave.status));
+      row.appendChild(statusCell);
+      const actionsCell = document.createElement("td");
+      actionsCell.className = "leave-actions";
+      if (String(leave.status || "").toUpperCase() === "PENDING") {
+        const approve = document.createElement("button");
+        approve.type = "button"; approve.textContent = "Approve";
+        approve.addEventListener("click", () => updateLeaveStatus(leave.leaveId, "APPROVED"));
+        const reject = document.createElement("button");
+        reject.type = "button"; reject.className = "btn-secondary"; reject.textContent = "Reject";
+        reject.addEventListener("click", () => updateLeaveStatus(leave.leaveId, "REJECTED"));
+        actionsCell.append(approve, reject);
+      }
+      const remove = document.createElement("button");
+      remove.type = "button"; remove.className = "btn-secondary"; remove.textContent = "Delete";
+      remove.addEventListener("click", () => deleteLeave(leave.leaveId));
+      actionsCell.appendChild(remove);
+      row.appendChild(actionsCell);
+      table.appendChild(row);
+    });
+  }
+  async function loadLeaves() {
+    $("refreshButton").disabled = true;
+    try {
+      const data = await requestJson("/leaves/hr");
+      hrLeaves = Array.isArray(data) ? data : [];
+      populateDepartments();
+      renderLeaves();
+      showMessage(hrLeaves.length + " leave request(s) loaded.");
+    } catch (error) {
+      showMessage(error.message || "Unable to load leave records.", true);
+      const table = $("leaveTable"); table.replaceChildren();
+      const row = document.createElement("tr"), cell = document.createElement("td");
+      cell.colSpan = 9; cell.className = "leave-empty"; cell.textContent = "Could not load leave records.";
+      row.appendChild(cell); table.appendChild(row);
+    } finally { $("refreshButton").disabled = false; }
+  }
+  async function updateLeaveStatus(id, status) {
+    const action = status === "APPROVED" ? "approve" : "reject";
+    if (!id || !confirm("Are you sure you want to " + action + " this leave request?")) return;
+    try {
+      await requestJson("/leaves/hr/" + encodeURIComponent(id) + "/status", {
+        method:"PATCH", body:JSON.stringify({status})
+      });
+      showMessage("Leave request " + action + "d successfully.");
+      await loadLeaves();
+    } catch (error) {
+      showMessage(error.message || "Unable to update leave status.", true);
     }
-
-    // =========================
-    // SEARCH BY STATUS
-    // =========================
-    function searchByStatus() {
-
-        const status =
-            document.getElementById("statusFilter").value;
-
-        if (!status) {
-            alert("Please select a status.");
-            return;
-        }
-
-        const filteredLeaves = hrLeaves.filter(leave =>
-            String(leave.status ?? "").toUpperCase() === status
-        );
-
-        displayLeaves(filteredLeaves);
+  }
+  async function deleteLeave(id) {
+    if (!id || !confirm("Delete this leave record permanently? This cannot be undone.")) return;
+    try {
+      await requestJson("/leaves/hr/" + encodeURIComponent(id), {method:"DELETE"});
+      showMessage("Leave record deleted.");
+      await loadLeaves();
+    } catch (error) {
+      showMessage(error.message || "Unable to delete leave record.", true);
     }
-
-    // =========================
-    // SEARCH BETWEEN DATES
-    // =========================
-    function searchBetweenDates() {
-
-        const startDate =
-            document.getElementById("startDate").value;
-
-        const endDate =
-            document.getElementById("endDate").value;
-
-        if (!startDate || !endDate) {
-            alert("Please select both dates.");
-            return;
-        }
-
-        if (startDate > endDate) {
-            alert("From Date cannot be after To Date.");
-            return;
-        }
-
-        const filteredLeaves = hrLeaves.filter(leave => {
-
-            const fromDate = String(leave.fromDate ?? "").substring(0, 10);
-            const toDate = String(leave.toDate ?? "").substring(0, 10);
-
-            // Include leave requests overlapping the selected range.
-            return fromDate &&
-                toDate &&
-                fromDate <= endDate &&
-                toDate >= startDate;
-
-        });
-
-        displayLeaves(filteredLeaves);
-    }
-
-    // =========================
-    // APPROVE OR REJECT LEAVE
-    // =========================
-    async function updateLeaveStatus(id, status) {
-
-        const action = status === "APPROVED" ? "approve" : "reject";
-
-        if (!confirm(`Are you sure you want to ${action} this leave request?`)) {
-            return;
-        }
-
-        try {
-
-            const response = await fetch(`/leaves/hr/${id}/status`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    status: status
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-
-            alert(`Leave request ${action}d successfully!`);
-
-            await loadLeaves();
-
-        } catch (error) {
-
-            console.error("Error updating leave status:", error);
-            alert("Could not update leave status. Please check the backend.");
-
-        }
-    }
-
-    // =========================
-    // DELETE LEAVE
-    // =========================
-    async function deleteLeave(id) {
-
-        if (!confirm("Are you sure you want to delete this leave record?")) {
-            return;
-        }
-
-        try {
-
-            const response = await fetch(`/leaves/hr/${id}`, {
-                method: "DELETE"
-            });
-
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-
-            alert("Leave deleted successfully!");
-
-            await loadLeaves();
-
-        } catch (error) {
-
-            console.error("Error deleting leave:", error);
-            alert("Could not delete leave. Please check the backend response.");
-
-        }
-    }
-
-    // =========================
-    // RESET FILTERS
-    // =========================
-    function resetFilters() {
-
-        document.getElementById("employeeId").value = "";
-        document.getElementById("statusFilter").value = "";
-        document.getElementById("startDate").value = "";
-        document.getElementById("endDate").value = "";
-
-        loadLeaves();
-    }
-
-    // =========================
-    // INITIAL LOAD
-    // =========================
-    document.addEventListener("DOMContentLoaded", loadLeaves);
-
+  }
+  function resetFilters() {
+    $("employeeSearch").value = "";
+    $("departmentFilter").value = "";
+    $("statusFilter").value = "";
+    $("fromDate").value = "";
+    $("toDate").value = "";
+    renderLeaves();
+  }
+  function exportCsv() {
+    const rows = [
+      ["Employee", "Employee ID", "Department", "Leave ID", "From Date", "To Date", "Days", "Reason", "Status"],
+      ...filteredLeaves().map(leave => [employeeName(leave), employeeIdOf(leave), departmentOf(leave), leave.leaveId,
+        dateOnly(leave.fromDate), dateOnly(leave.toDate), leaveDays(leave), leave.reason || "", leave.status || ""])
+    ];
+    const csv = rows.map(row => row.map(value => '"' + String(value ?? "").replace(/"/g, '""') + '"').join(",")).join("\r\n");
+    const blob = new Blob(["\uFEFF" + csv], {type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob), link = document.createElement("a");
+    link.href = url; link.download = "hr-employee-leaves.csv"; link.click();
+    URL.revokeObjectURL(url);
+  }
+  $("applyFilters").addEventListener("click", renderLeaves);
+  $("employeeSearch").addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); renderLeaves(); } });
+  ["departmentFilter","statusFilter","fromDate","toDate"].forEach(id => $(id).addEventListener("change", renderLeaves));
+  $("resetFilters").addEventListener("click", resetFilters);
+  $("refreshButton").addEventListener("click", loadLeaves);
+  $("exportCsv").addEventListener("click", exportCsv);
+  loadLeaves();
+})();
 </script>
-
 </body>
 </html>

@@ -118,4 +118,11 @@ public class AttendanceController {
     public ResponseEntity<List<Attendance>> getHrEmployeeAttendance() {
         return ResponseEntity.ok(attendanceService.getHrEmployeeAttendance());
     }
+
+    @PreAuthorize("hasRole('HR')")
+    @PutMapping("/hr/{id}")
+    public ResponseEntity<Attendance> updateHrEmployeeAttendance(
+            @PathVariable Integer id, @RequestBody Attendance attendance) {
+        return ResponseEntity.ok(attendanceService.updateHrAttendance(id, attendance));
+    }
 }

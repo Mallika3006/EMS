@@ -239,7 +239,15 @@ public class TaskRepository {
 
     private List<Task> queryTasks(String sql, SqlBinder binder) {
         List<Task> tasks = new ArrayList<>();
-        try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+        String enrichedSql = sql;
+        String selectPrefix = "SELECT t.*, p.project_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id";
+        String selectWithNames = "SELECT t.*, p.project_name, e.first_name AS assigned_first_name, e.last_name AS assigned_last_name FROM public.tasks t LEFT JOIN public.projects p ON p.project_id=t.project_id AND p.company_id=t.company_id";
+        if (sql.contains("LEFT JOIN public.employees e")) {
+            enrichedSql = sql.replace("SELECT t.*, p.project_name FROM public.tasks t", "SELECT t.*, p.project_name, e.first_name AS assigned_first_name, e.last_name AS assigned_last_name FROM public.tasks t");
+        } else if (sql.startsWith(selectPrefix)) {
+            enrichedSql = sql.replace(selectPrefix, selectWithNames + " LEFT JOIN public.employees e ON e.employee_id=t.assigned_to AND e.company_id=t.company_id");
+        }
+        try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(enrichedSql)) {
             binder.bind(ps);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) tasks.add(mapTask(rs));
@@ -285,6 +293,8 @@ public class TaskRepository {
         if (!rs.wasNull()) {
             Employee employee = new Employee();
             employee.setEmployeeId(employeeId);
+            employee.setFirstName(rs.getString("assigned_first_name"));
+            employee.setLastName(rs.getString("assigned_last_name"));
             task.setAssignedTo(employee);
         }
         return task;

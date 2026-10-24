@@ -72,6 +72,16 @@ public class LeaveController {
         );
     }
 
+    // ADMIN - APPROVE OR REJECT A PENDING LEAVE REQUEST
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Leave> updateAdminLeaveStatus(
+            @PathVariable Integer id,
+            @RequestBody java.util.Map<String, String> request) {
+        return ResponseEntity.ok(
+                leaveService.updateAdminLeaveStatus(id, request.get("status"))
+        );
+    }
+
     // UPDATE
     @PutMapping("/{id}")
     public ResponseEntity<Leave> updateLeave(

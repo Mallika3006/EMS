@@ -2,6 +2,7 @@
 package com.mallika.EmployeeManagementSystem.controller;
 
 import com.mallika.EmployeeManagementSystem.model.Project;
+import com.mallika.EmployeeManagementSystem.dto.ProjectMemberSummary;
 import com.mallika.EmployeeManagementSystem.service.ProjectService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -68,6 +69,14 @@ public class ProjectController {
         projectService.deleteProject(id, authentication.getName());
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{projectId}/members")
+    public ResponseEntity<List<ProjectMemberSummary>> getProjectMembers(
+            @PathVariable Integer projectId,
+            Authentication authentication) {
+        return ResponseEntity.ok(
+                projectService.getProjectMembers(projectId, authentication.getName()));
     }
 
     @PostMapping("/{projectId}/members/{employeeId}")

@@ -35,6 +35,11 @@
             <th>Project Name</th>
             <th>Start Date</th>
             <th>End Date</th>
+            <th>Status</th>
+            <th>Priority</th>
+            <th>Progress</th>
+            <th>Tasks</th>
+            <th>Assigned Members</th>
             <th>Assign Member</th>
             <th>Actions</th>
         </tr>
@@ -49,7 +54,13 @@
 
 <script>
 
-    // Load projects associated with the manager account
+    function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, character => ({
+            "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        })[character]);
+    }
+
+    // Load only projects assigned to the current manager.
     async function loadProjects() {
 
         const tableBody =
@@ -58,7 +69,7 @@
         try {
 
             const response =
-                await fetch("/projects/manager/team");
+                await fetch("/projects/manager/team", { credentials: "same-origin" });
 
             if (!response.ok) {
                 throw new Error("Failed to fetch manager projects");
@@ -78,7 +89,7 @@
 
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="6">
+                        <td colspan="11">
                             No projects are currently available for your account.
                         </td>
                     </tr>
@@ -94,37 +105,25 @@
 
                 row.innerHTML = `
                     <td>${project.projectId}</td>
-
-                    <td>${project.projectName}</td>
-
+                    <td>${escapeHtml(project.projectName || "-")}</td>
                     <td>${project.startDate ?? "-"}</td>
-
                     <td>${project.endDate ?? "-"}</td>
-
+                    <td>${escapeHtml(project.status || "PLANNED")}</td>
+                    <td>${escapeHtml(project.priority || "MEDIUM")}</td>
+                    <td>${Number(project.progressPercent ?? 0)}%</td>
+                    <td>${Number(project.completedTasks ?? 0)} / ${Number(project.totalTasks ?? 0)}</td>
+                    <td>
+                        ${Number(project.assignedEmployeeCount ?? 0)}
+                        <button type="button" onclick="viewProjectMembers(${project.projectId})">View members</button>
+                    </td>
                     <td>
                         <select id="project-member-${project.projectId}">
                             <option value="">Select employee</option>
                         </select>
-                        <button onclick="assignProjectMember(${project.projectId})">
-                            Assign
-                        </button>
+                        <button onclick="assignProjectMember(${project.projectId})">Assign</button>
                     </td>
-
                     <td>
-                        <button
-                            onclick="viewProjectTasks(${project.projectId})">
-                            View Tasks
-                        </button>
-
-                        <button
-                            onclick="editProject(${project.projectId})">
-                            Edit
-                        </button>
-
-                        <button
-                            onclick="deleteProject(${project.projectId})">
-                            Delete
-                        </button>
+                        <button onclick="viewProjectTasks(${project.projectId})">View Tasks</button>
                     </td>
                 `;
 
@@ -151,7 +150,7 @@
 
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="6">
+                    <td colspan="11">
                         Unable to load projects. Check your access and try again.
                     </td>
                 </tr>
@@ -182,11 +181,33 @@
                 );
             }
             alert("Project assigned to employee.");
+            await loadProjects();
         } catch (error) {
             alert("Could not assign project: " + error.message);
         }
     }
 
+
+    async function viewProjectMembers(projectId) {
+        try {
+            const response = await fetch("/projects/" + projectId + "/members", {
+                credentials: "same-origin"
+            });
+            if (!response.ok) {
+                throw new Error((await response.text()) || "Could not load project members");
+            }
+            const members = await response.json();
+            const message = members.length
+                ? members.map(member => {
+                    const name = [member.firstName, member.lastName].filter(Boolean).join(" ") || "Name unavailable";
+                    return name + " (ID: " + member.employeeId + ")";
+                }).join("\n")
+                : "No active employees are assigned to this project.";
+            alert("Project members\n\n" + message);
+        } catch (error) {
+            alert("Could not load project members: " + error.message);
+        }
+    }
 
     // Open tasks for the selected project
     function viewProjectTasks(projectId) {

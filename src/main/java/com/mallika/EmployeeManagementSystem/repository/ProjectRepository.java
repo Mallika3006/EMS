@@ -1,6 +1,7 @@
 package com.mallika.EmployeeManagementSystem.repository;
 
 import com.mallika.EmployeeManagementSystem.model.Project;
+import com.mallika.EmployeeManagementSystem.dto.ProjectMemberSummary;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -29,19 +30,26 @@ public class ProjectRepository {
         }
         String sql = """
             INSERT INTO public.projects
-                (project_name, start_date, end_date, manager_id, company_id)
-            VALUES (?, ?, ?, ?, ?)
-            RETURNING project_id, project_name, start_date, end_date, manager_id
+                (project_name, description, status, priority, start_date, end_date, manager_id, company_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            RETURNING project_id, project_name, description, status, priority, start_date, end_date, manager_id, company_id
             """;
         try (Connection con = dataSource.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, project.getProjectName());
-            setDate(ps, 2, project.getStartDate());
-            setDate(ps, 3, project.getEndDate());
-            setNullableInt(ps, 4, project.getManagerId());
-            ps.setLong(5, companyId);
+            ps.setString(1, project.getProjectName().trim());
+            ps.setString(2, project.getDescription());
+            ps.setString(3, project.getStatus());
+            ps.setString(4, project.getPriority());
+            setDate(ps, 5, project.getStartDate());
+            setDate(ps, 6, project.getEndDate());
+            setNullableInt(ps, 7, project.getManagerId());
+            ps.setLong(8, companyId);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return mapProject(rs);
+                if (rs.next()) {
+                    Project created = mapProject(rs);
+                    populateProjectMetrics(con, created, companyId);
+                    return created;
+                }
             }
         } catch (SQLException e) {
             throw new RuntimeException("Error creating project", e);
@@ -51,34 +59,46 @@ public class ProjectRepository {
 
     public List<Project> getAllProjects(Long companyId) {
         return queryProjects("""
-            SELECT project_id, project_name, start_date, end_date, manager_id
+            SELECT project_id, project_name, description, status, priority, start_date, end_date, manager_id, company_id
             FROM public.projects WHERE company_id = ? ORDER BY project_id
             """, ps -> ps.setLong(1, companyId));
     }
 
     public Optional<Project> getProjectById(Integer id, Long companyId) {
         return queryOne("""
-            SELECT project_id, project_name, start_date, end_date, manager_id
+            SELECT project_id, project_name, description, status, priority, start_date, end_date, manager_id, company_id
             FROM public.projects WHERE project_id = ? AND company_id = ?
             """, ps -> { ps.setInt(1, id); ps.setLong(2, companyId); });
     }
 
     public Project updateProject(Integer id, Project details, Long companyId) {
+        if (details.getManagerId() != null) {
+            validateEmployeeCompany(details.getManagerId(), companyId);
+        }
         String sql = """
             UPDATE public.projects
-            SET project_name = ?, start_date = ?, end_date = ?
+            SET project_name = ?, description = ?, status = ?, priority = ?,
+                start_date = ?, end_date = ?, manager_id = ?
             WHERE project_id = ? AND company_id = ?
-            RETURNING project_id, project_name, start_date, end_date, manager_id
+            RETURNING project_id, project_name, description, status, priority, start_date, end_date, manager_id, company_id
             """;
         try (Connection con = dataSource.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, details.getProjectName());
-            setDate(ps, 2, details.getStartDate());
-            setDate(ps, 3, details.getEndDate());
-            ps.setInt(4, id);
-            ps.setLong(5, companyId);
+            ps.setString(1, details.getProjectName().trim());
+            ps.setString(2, details.getDescription());
+            ps.setString(3, details.getStatus());
+            ps.setString(4, details.getPriority());
+            setDate(ps, 5, details.getStartDate());
+            setDate(ps, 6, details.getEndDate());
+            setNullableInt(ps, 7, details.getManagerId());
+            ps.setInt(8, id);
+            ps.setLong(9, companyId);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return mapProject(rs);
+                if (rs.next()) {
+                    Project updated = mapProject(rs);
+                    populateProjectMetrics(con, updated, companyId);
+                    return updated;
+                }
             }
         } catch (SQLException e) {
             throw new RuntimeException("Error updating project: " + id, e);
@@ -114,7 +134,7 @@ public class ProjectRepository {
 
     public List<Project> getProjectsByManager(Integer managerId, Long companyId) {
         return queryProjects("""
-            SELECT project_id, project_name, start_date, end_date, manager_id
+            SELECT project_id, project_name, description, status, priority, start_date, end_date, manager_id, company_id
             FROM public.projects
             WHERE manager_id = ? AND company_id = ?
             ORDER BY project_id
@@ -123,7 +143,7 @@ public class ProjectRepository {
 
     public List<Project> getProjectsVisibleToManager(Integer managerId, Long companyId) {
         return queryProjects("""
-            SELECT project_id, project_name, start_date, end_date, manager_id
+            SELECT project_id, project_name, description, status, priority, start_date, end_date, manager_id, company_id
             FROM public.projects
             WHERE company_id = ? AND (manager_id = ? OR manager_id IS NULL)
             ORDER BY project_id
@@ -132,10 +152,12 @@ public class ProjectRepository {
 
     public List<Project> getProjectsByEmployee(Integer employeeId, Long companyId) {
         return queryProjects("""
-            SELECT DISTINCT p.project_id, p.project_name, p.start_date, p.end_date, p.manager_id
+            SELECT DISTINCT p.project_id, p.project_name, p.description, p.status, p.priority, p.start_date, p.end_date, p.manager_id, p.company_id
             FROM public.projects p
-            JOIN public.employee_project ep ON ep.project_id = p.project_id
-            JOIN public.employees e ON e.employee_id = ep.employee_id
+            JOIN public.employee_project ep
+              ON ep.project_id = p.project_id AND ep.company_id = p.company_id
+            JOIN public.employees e
+              ON e.employee_id = ep.employee_id AND e.company_id = p.company_id
             WHERE ep.employee_id = ?
               AND p.company_id = ?
               AND e.company_id = ?
@@ -212,6 +234,40 @@ public class ProjectRepository {
         }
     }
 
+    public List<ProjectMemberSummary> getProjectMembers(Integer projectId, Long companyId) {
+        String sql = """
+            SELECT DISTINCT e.employee_id, e.first_name, e.last_name
+            FROM public.employee_project ep
+            JOIN public.projects p
+              ON p.project_id = ep.project_id AND p.company_id = ep.company_id
+            JOIN public.employees e
+              ON e.employee_id = ep.employee_id AND e.company_id = ep.company_id
+            JOIN public.users u
+              ON u.employee_id = e.employee_id
+             AND u.company_id = e.company_id
+             AND u.is_active = TRUE
+            WHERE ep.project_id = ? AND ep.company_id = ?
+            ORDER BY e.first_name, e.last_name, e.employee_id
+            """;
+        List<ProjectMemberSummary> members = new ArrayList<>();
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, projectId);
+            ps.setLong(2, companyId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    members.add(new ProjectMemberSummary(
+                            rs.getInt("employee_id"),
+                            rs.getString("first_name"),
+                            rs.getString("last_name")));
+                }
+            }
+            return members;
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not load project members", e);
+        }
+    }
+
     private void validateEmployeeCompany(Integer employeeId, Long companyId) {
         String sql = """
             SELECT 1
@@ -246,7 +302,11 @@ public class ProjectRepository {
              PreparedStatement ps = con.prepareStatement(sql)) {
             binder.bind(ps);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) projects.add(mapProject(rs));
+                while (rs.next()) {
+                    Project project = mapProject(rs);
+                    populateProjectMetrics(con, project, rs.getLong("company_id"));
+                    projects.add(project);
+                }
             }
             return projects;
         } catch (SQLException e) {
@@ -262,12 +322,46 @@ public class ProjectRepository {
         Project project = new Project();
         project.setProjectId(rs.getInt("project_id"));
         project.setProjectName(rs.getString("project_name"));
+        project.setDescription(rs.getString("description"));
+        project.setStatus(rs.getString("status"));
+        project.setPriority(rs.getString("priority"));
         Date startDate = rs.getDate("start_date");
         if (startDate != null) project.setStartDate(startDate.toLocalDate());
         Date endDate = rs.getDate("end_date");
         if (endDate != null) project.setEndDate(endDate.toLocalDate());
         project.setManagerId(rs.getObject("manager_id", Integer.class));
         return project;
+    }
+
+    private void populateProjectMetrics(Connection con, Project project, Long companyId) throws SQLException {
+        String sql = """
+            SELECT
+                (SELECT COUNT(*) FROM public.tasks t
+                 WHERE t.project_id = ? AND t.company_id = ?) AS total_tasks,
+                (SELECT COUNT(*) FROM public.tasks t
+                 WHERE t.project_id = ? AND t.company_id = ?
+                   AND LOWER(COALESCE(t.status, '')) = 'completed') AS completed_tasks,
+                (SELECT COUNT(DISTINCT ep.employee_id) FROM public.employee_project ep
+                 WHERE ep.project_id = ? AND ep.company_id = ?) AS assigned_employee_count
+            """;
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, project.getProjectId());
+            ps.setLong(2, companyId);
+            ps.setInt(3, project.getProjectId());
+            ps.setLong(4, companyId);
+            ps.setInt(5, project.getProjectId());
+            ps.setLong(6, companyId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int total = rs.getInt("total_tasks");
+                    int completed = rs.getInt("completed_tasks");
+                    project.setTotalTasks(total);
+                    project.setCompletedTasks(completed);
+                    project.setAssignedEmployeeCount(rs.getInt("assigned_employee_count"));
+                    project.setProgressPercent(total == 0 ? 0 : (int) Math.round(completed * 100.0 / total));
+                }
+            }
+        }
     }
 
     private void setDate(PreparedStatement ps, int index, LocalDate value) throws SQLException {

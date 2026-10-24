@@ -23,6 +23,27 @@ public class Project {
 
     private String projectName;
 
+    @Column(name = "description")
+    private String description;
+
+    @Column(name = "status")
+    private String status;
+
+    @Column(name = "priority")
+    private String priority;
+
+    @Transient
+    private Integer totalTasks;
+
+    @Transient
+    private Integer completedTasks;
+
+    @Transient
+    private Integer progressPercent;
+
+    @Transient
+    private Integer assignedEmployeeCount;
+
     private LocalDate startDate;
 
     private LocalDate endDate;

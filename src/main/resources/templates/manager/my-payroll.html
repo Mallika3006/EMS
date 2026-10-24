@@ -1,192 +1,245 @@
 <!DOCTYPE html>
-
-<html xmlns:th="http://www.thymeleaf.org">
-
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>My Payroll - Employee Management System</title>
-
     <link rel="stylesheet" th:href="@{/style.css}">
-    <link rel="icon"
-          type="image/x-icon"
-          th:href="@{/favicon.ico}">
+    <link rel="icon" type="image/x-icon" th:href="@{/favicon.ico}">
+    <style>
+        .payroll-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin:20px 0; }
+        .payroll-stat { padding:18px; border:1px solid var(--line); border-radius:12px; background:var(--surface); }
+        .payroll-stat span { display:block; color:var(--muted); font-size:.88rem; }
+        .payroll-stat strong { display:block; margin-top:8px; font-size:1.45rem; overflow-wrap:anywhere; }
+        .payroll-filters { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; align-items:end; }
+        .payroll-filters label { margin-top:0; }
+        .payroll-filters input, .payroll-filters select { margin-bottom:0; }
+        .payroll-actions { display:flex; gap:8px; flex-wrap:wrap; }
+        .payroll-actions button { margin:0; }
+        .slip-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 24px; }
+        .slip-row { display:flex; justify-content:space-between; gap:16px; padding:12px 0; border-bottom:1px solid var(--line); }
+        .slip-row span:first-child { color:var(--muted); }
+        .slip-row strong { text-align:right; overflow-wrap:anywhere; }
+        .slip-net { margin-top:18px; padding:18px; border-radius:10px; background:#eef2ff; }
+        .slip-net span { color:#344054; }
+        .slip-net strong { display:block; margin-top:5px; font-size:1.6rem; }
+        .module-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+        @media(max-width:620px) { .slip-grid { grid-template-columns:1fr; } }
+        @media print {
+            body { background:#fff; }
+            .no-print, #payrollHistory, #payrollSummary, #filterCard, .app-actions, .back-link { display:none !important; }
+            .container { width:100%; margin:0; }
+            #salarySlip { border:0; box-shadow:none; }
+            #salarySlip[hidden] { display:none !important; }
+            #salarySlip h2 { font-size:22px; }
+        }
+    </style>
 </head>
-
 <body>
-
 <div class="container">
+    <header class="module-heading">
+        <div>
+            <h1>My Payroll</h1>
+            <p>View your personal salary records, payment history and printable salary slips.</p>
+        </div>
+        <div class="app-actions no-print">
+            <a class="back-link" th:href="@{/manager-dashboard}">← Back to Dashboard</a>
+        </div>
+    </header>
 
-    <h1>My Payroll</h1>
+    <section id="payrollSummary" class="payroll-summary" aria-label="Payroll summary">
+        <article class="payroll-stat"><span>Payroll records</span><strong id="recordCount">—</strong></article>
+        <article class="payroll-stat"><span>Total net payroll recorded</span><strong id="totalNet">—</strong></article>
+        <article class="payroll-stat"><span>Latest payment date</span><strong id="latestPayment">—</strong></article>
+    </section>
 
-    <div class="card" id="payroll">
+    <section id="filterCard" class="card no-print">
+        <h2>Find a payroll record</h2>
+        <div class="payroll-filters">
+            <div>
+                <label for="monthFilter">Pay month</label>
+                <select id="monthFilter"><option value="">All months</option></select>
+            </div>
+            <div>
+                <label for="yearFilter">Year</label>
+                <select id="yearFilter"><option value="">All years</option></select>
+            </div>
+            <div>
+                <label for="searchFilter">Search month or date</label>
+                <input id="searchFilter" type="search" placeholder="e.g. October or 2026">
+            </div>
+            <div><button id="clearFilters" type="button" class="btn-secondary">Clear filters</button></div>
+        </div>
+    </section>
 
-        <p class="loading">
-            Loading payroll...
-        </p>
+    <section id="salarySlip" class="card" hidden aria-live="polite">
+        <div class="module-heading">
+            <div><h2>Salary Slip</h2><p id="slipPeriod"></p></div>
+            <div class="payroll-actions no-print">
+                <button id="printSlip" type="button">Print / Save as PDF</button>
+                <button id="closeSlip" type="button" class="btn-secondary">Close</button>
+            </div>
+        </div>
+        <div class="slip-grid">
+            <div class="slip-row"><span>Pay month</span><strong id="slipMonth">—</strong></div>
+            <div class="slip-row"><span>Payment date</span><strong id="slipDate">—</strong></div>
+            <div class="slip-row"><span>Basic salary</span><strong id="slipBasic">—</strong></div>
+            <div class="slip-row"><span>Allowances</span><strong id="slipAllowances">—</strong></div>
+            <div class="slip-row"><span>Deductions</span><strong id="slipDeductions">—</strong></div>
+        </div>
+        <div class="slip-net"><span>Net salary</span><strong id="slipNet">—</strong></div>
+        <p><small>Personal payroll statement generated from the records available in EMS.</small></p>
+    </section>
 
-    </div>
-
-    <br>
-
-    <a class="back-link" href="/manager-dashboard">
-        ← Back to Dashboard
-    </a>
-
+    <section id="payrollHistory" class="card">
+        <div class="module-heading">
+            <div><h2>Payroll history</h2><p id="resultsMessage" role="status" aria-live="polite">Loading your payroll records…</p></div>
+        </div>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                <tr>
+                    <th>Pay month</th><th>Basic salary</th><th>Allowances</th><th>Deductions</th>
+                    <th>Net salary</th><th>Payment date</th><th class="no-print">Salary slip</th>
+                </tr>
+                </thead>
+                <tbody id="payrollRows"><tr><td colspan="7">Loading…</td></tr></tbody>
+            </table>
+        </div>
+        <p id="errorMessage" class="error-message" role="alert"></p>
+    </section>
 </div>
 
-
 <script>
+(() => {
+    const byId = id => document.getElementById(id);
+    let allPayrolls = [];
+    const money = value => new Intl.NumberFormat("en-IN", {
+        style: "currency", currency: "INR", maximumFractionDigits: 2
+    }).format(Number(value ?? 0));
+    const safe = value => String(value ?? "—").replace(/[&<>"']/g, char => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[char]);
+    const monthText = value => String(value ?? "").trim();
+    const yearOf = payroll => {
+        const combined = String(payroll.payMonth ?? "") + " " + String(payroll.paymentDate ?? "");
+        const match = combined.match(/(?:19|20)\d{2}/);
+        return match ? match[0] : "";
+    };
+    const sortDate = payroll => String(payroll.paymentDate ?? "");
+    const formatDate = value => value ? safe(value) : "—";
 
-    // =========================================================
-    // LOAD MY PAYROLL
-    // =========================================================
+    function populateFilters() {
+        const months = [...new Set(allPayrolls.map(p => monthText(p.payMonth)).filter(Boolean))]
+            .sort((a, b) => a.localeCompare(b, undefined, {numeric:true}));
+        const years = [...new Set(allPayrolls.map(yearOf).filter(Boolean))].sort((a,b) => b.localeCompare(a));
+        byId("monthFilter").innerHTML = '<option value="">All months</option>' +
+            months.map(month => '<option value="' + safe(month) + '">' + safe(month) + '</option>').join("");
+        byId("yearFilter").innerHTML = '<option value="">All years</option>' +
+            years.map(year => '<option value="' + safe(year) + '">' + safe(year) + '</option>').join("");
+    }
 
-    fetch('/payrolls/me')
+    function renderSummary(records) {
+        byId("recordCount").textContent = String(records.length);
+        const total = records.reduce((sum, p) => sum + Number(p.netSalary ?? 0), 0);
+        byId("totalNet").textContent = money(total);
+        const latest = [...records].sort((a,b) => sortDate(b).localeCompare(sortDate(a)))[0];
+        byId("latestPayment").textContent = latest?.paymentDate ? latest.paymentDate : "—";
+    }
 
-        .then(response => {
+    function renderRows() {
+        const selectedMonth = byId("monthFilter").value.toLowerCase();
+        const selectedYear = byId("yearFilter").value;
+        const query = byId("searchFilter").value.trim().toLowerCase();
+        const filtered = allPayrolls.filter(p => {
+            const month = monthText(p.payMonth).toLowerCase();
+            const date = String(p.paymentDate ?? "");
+            return (!selectedMonth || month === selectedMonth)
+                && (!selectedYear || yearOf(p) === selectedYear)
+                && (!query || month.includes(query) || date.toLowerCase().includes(query));
+        }).sort((a,b) => sortDate(b).localeCompare(sortDate(a)) ||
+            String(b.payMonth ?? "").localeCompare(String(a.payMonth ?? "")));
 
-            if (!response.ok) {
+        renderSummary(filtered);
+        byId("resultsMessage").textContent = filtered.length + " payroll record(s) shown.";
+        if (!filtered.length) {
+            byId("payrollRows").innerHTML = '<tr><td colspan="7">No payroll records match these filters.</td></tr>';
+            return;
+        }
+        byId("payrollRows").innerHTML = filtered.map(p => {
+            const index = allPayrolls.indexOf(p);
+            return '<tr>' +
+                '<td>' + safe(p.payMonth) + '</td>' +
+                '<td>' + safe(money(p.basicSalary)) + '</td>' +
+                '<td>' + safe(money(p.allowances)) + '</td>' +
+                '<td>' + safe(money(p.deductions)) + '</td>' +
+                '<td><strong>' + safe(money(p.netSalary)) + '</strong></td>' +
+                '<td>' + formatDate(p.paymentDate) + '</td>' +
+                '<td class="no-print"><button type="button" class="btn-small" data-slip-index="' + index + '">View slip</button></td>' +
+                '</tr>';
+        }).join("");
+    }
 
-                throw new Error(
-                    "Failed to load payroll"
-                );
+    function showSlip(payroll) {
+        if (!payroll) return;
+        byId("slipPeriod").textContent = "Salary details for " + (payroll.payMonth || "the selected pay period");
+        byId("slipMonth").textContent = payroll.payMonth || "—";
+        byId("slipDate").textContent = payroll.paymentDate || "Not recorded";
+        byId("slipBasic").textContent = money(payroll.basicSalary);
+        byId("slipAllowances").textContent = money(payroll.allowances);
+        byId("slipDeductions").textContent = money(payroll.deductions);
+        byId("slipNet").textContent = money(payroll.netSalary);
+        byId("salarySlip").hidden = false;
+        byId("salarySlip").scrollIntoView({behavior:"smooth", block:"start"});
+    }
 
-            }
-
-            return response.json();
-
-        })
-
-
-        .then(payrollList => {
-
-            const payrollDiv =
-                document.getElementById("payroll");
-
-
-            // =====================================================
-            // NO PAYROLL RECORDS
-            // =====================================================
-
-            if (
-                !payrollList ||
-                payrollList.length === 0
-            ) {
-
-                payrollDiv.innerHTML = `
-
-                    <h3>Payroll Records</h3>
-
-                    <p class="empty-message">
-                        No payroll records found.
-                    </p>
-
-                `;
-
-                return;
-            }
-
-
-            // =====================================================
-            // PAYROLL TABLE
-            // =====================================================
-
-            let html = `
-
-                <h3>Payroll Records</h3>
-
-                <table>
-
-                    <thead>
-
-                        <tr>
-
-                            <th>Pay Month</th>
-                            <th>Basic Salary</th>
-                            <th>Allowances</th>
-                            <th>Deductions</th>
-                            <th>Net Salary</th>
-                            <th>Payment Date</th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-            `;
-
-
-            payrollList.forEach(payroll => {
-
-                html += `
-
-                    <tr>
-
-                        <td>
-                            ${payroll.payMonth ?? "-"}
-                        </td>
-
-                        <td>
-                            ₹${payroll.basicSalary ?? "0"}
-                        </td>
-
-                        <td>
-                            ₹${payroll.allowances ?? "0"}
-                        </td>
-
-                        <td>
-                            ₹${payroll.deductions ?? "0"}
-                        </td>
-
-                        <td>
-                            ₹${payroll.netSalary ?? "0"}
-                        </td>
-
-                        <td>
-                            ${payroll.paymentDate ?? "-"}
-                        </td>
-
-                    </tr>
-
-                `;
-
+    async function loadPayroll() {
+        byId("errorMessage").textContent = "";
+        byId("resultsMessage").textContent = "Loading your payroll records…";
+        try {
+            const response = await fetch("/payrolls/me", {
+                credentials:"same-origin",
+                headers:{"Accept":"application/json"}
             });
+            if (!response.ok) {
+                let message = "Unable to load payroll (HTTP " + response.status + ").";
+                try {
+                    const body = await response.json();
+                    if (body?.message) message = body.message;
+                } catch (_) {}
+                throw new Error(message);
+            }
+            const data = await response.json();
+            allPayrolls = Array.isArray(data) ? data : [];
+            populateFilters();
+            renderRows();
+            if (!allPayrolls.length) {
+                byId("resultsMessage").textContent = "No payroll records have been added for your account yet.";
+            }
+        } catch (error) {
+            byId("resultsMessage").textContent = "Payroll records could not be loaded.";
+            byId("errorMessage").textContent = error.message || "An unexpected error occurred.";
+            byId("payrollRows").innerHTML = '<tr><td colspan="7">Unable to load payroll records.</td></tr>';
+            console.error("My payroll loading failed:", error);
+        }
+    }
 
-
-            html += `
-
-                    </tbody>
-
-                </table>
-
-            `;
-
-
-            payrollDiv.innerHTML = html;
-
-        })
-
-
-        // =========================================================
-        // ERROR HANDLING
-        // =========================================================
-
-        .catch(error => {
-
-            document.getElementById("payroll").innerHTML = `
-
-                <p class="error-message">
-                    Unable to load payroll.
-                </p>
-
-            `;
-
-            console.error(error);
-
-        });
-
+    ["monthFilter", "yearFilter", "searchFilter"].forEach(id =>
+        byId(id).addEventListener(id === "searchFilter" ? "input" : "change", renderRows));
+    byId("clearFilters").addEventListener("click", () => {
+        byId("monthFilter").value = "";
+        byId("yearFilter").value = "";
+        byId("searchFilter").value = "";
+        renderRows();
+    });
+    byId("payrollRows").addEventListener("click", event => {
+        const button = event.target.closest("[data-slip-index]");
+        if (button) showSlip(allPayrolls[Number(button.dataset.slipIndex)]);
+    });
+    byId("closeSlip").addEventListener("click", () => { byId("salarySlip").hidden = true; });
+    byId("printSlip").addEventListener("click", () => window.print());
+    loadPayroll();
+})();
 </script>
-
 </body>
-
 </html>

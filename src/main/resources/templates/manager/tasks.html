@@ -1070,49 +1070,23 @@
         `;
 
 
-        const employeeIds =
-            new Set();
-
+        const employeesById = new Map();
 
         allTeamTasks.forEach(task => {
-
-            if (
-                task.assignedTo &&
-                task.assignedTo.employeeId
-            ) {
-
-                employeeIds.add(
-                    task.assignedTo.employeeId
-                );
-
+            const employee = task.assignedTo;
+            if (employee && employee.employeeId) {
+                employeesById.set(employee.employeeId, employee);
             }
-
         });
 
-
-        employeeIds.forEach(employeeId => {
-
-            const option =
-                document.createElement(
-                    "option"
-                );
-
-
-            option.value =
-                employeeId;
-
-
-            option.textContent =
-                "Employee " +
-                employeeId;
-
-
-            employeeSelect.appendChild(
-                option
-            );
-
+        employeesById.forEach(employee => {
+            const option = document.createElement("option");
+            option.value = employee.employeeId;
+            const name = [employee.firstName, employee.lastName]
+                .filter(Boolean).join(" ") || "Name unavailable";
+            option.textContent = name + " (ID: " + employee.employeeId + ")";
+            employeeSelect.appendChild(option);
         });
-
     }
 
 
